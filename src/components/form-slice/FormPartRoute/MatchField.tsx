@@ -82,8 +82,8 @@ export const MatchField = ({ single, multiple, label, pluralLabel, placeholder, 
         />
       </div>
       {conflict && <Alert type="warning" showIcon message={`Both ${single} and ${multiple} are set. Clear one below to resolve the conflict.`} style={{ marginBottom: 8 }} />}
-      {(!many || conflict) && <FormItemTextInput control={control} name={single} aria-label={label} placeholder={placeholder} description={help} required={required} />}
-      {(many || conflict) && <FormItemTagsInput control={control} name={multiple} aria-label={pluralLabel} placeholder={`${placeholder} — press Enter to add`} description={help} required={required} splitChars={[',']} />}
+      {(!many || conflict) && <FormItemTextInput control={control} name={single} aria-label={label} aria-required={required} placeholder={placeholder} description={help} required={required} />}
+      {(many || conflict) && <FormItemTagsInput control={control} name={multiple} aria-label={pluralLabel} aria-required={required} placeholder={`${placeholder} — press Enter to add`} description={help} required={required} splitChars={[',']} />}
       <Modal title={`Keep one ${label.toLowerCase()}`} open={chooseOne} onCancel={() => setChooseOne(false)} onOk={() => selectSingle(keptValue)} okText="Keep selected value" okButtonProps={{ disabled: !keptValue }}>
         <p>Single mode keeps one value. The other values will be removed from this draft.</p>
         <Select aria-label={`Keep one ${label}`} value={keptValue} onChange={setKeptValue} style={{ width: '100%' }} options={[...new Set([...(value ? [value] : []), ...(values ?? [])])].map((item) => ({ value: item, label: item }))} />
