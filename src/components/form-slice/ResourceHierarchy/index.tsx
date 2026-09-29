@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 import { clsx } from 'clsx';
-import { type PropsWithChildren, useState } from 'react';
+import { type PropsWithChildren, useCallback, useState } from 'react';
 
+import { useRevealFormSection } from '@/utils/formNavigation';
 import IconExpandLess from '~icons/material-symbols/expand-less';
 import IconExpandMore from '~icons/material-symbols/expand-more';
 
@@ -103,9 +104,11 @@ export const DependencyChoice = ({
   children,
 }: DependencyChoiceProps) => {
   const [open, setOpen] = useState(defaultOpen);
+  const sectionRef = useRevealFormSection(useCallback(() => setOpen(true), []));
 
   return (
     <div
+      ref={sectionRef}
       className={clsx(
         classes.choice,
         selected && classes.choiceSelected,
@@ -123,6 +126,7 @@ export const DependencyChoice = ({
           <button
             type="button"
             className={classes.choiceToggle}
+            aria-expanded={open}
             onClick={() => setOpen((value) => !value)}
           >
             {open ? <IconExpandLess /> : <IconExpandMore />}
@@ -136,7 +140,7 @@ export const DependencyChoice = ({
           (!collapsible || open) && classes.choiceBodyOpen
         )}
       >
-        <div className={classes.choiceBodyContent}>{children}</div>
+        <div className={classes.choiceBodyContent} inert={collapsible && !open} aria-hidden={collapsible && !open}>{children}</div>
       </div>
     </div>
   );

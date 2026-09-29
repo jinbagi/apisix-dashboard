@@ -97,3 +97,11 @@ test('cleans empty inline controls without cleaning opaque upstream configuratio
   expect(result.upstream?.checks?.active).not.toHaveProperty('host');
   expect(result.upstream?.discovery_args).toEqual({ empty: '', nested: { empty: '' } });
 });
+
+
+test('cleared form values use the same absent-key semantics as JSON transport', () => {
+  const payload = produceRoute({ uri: '/api/*', upstream: undefined, methods: undefined, plugins: { test: { keep: null, text: '' } } });
+  expect(payload).not.toHaveProperty('upstream');
+  expect(payload).not.toHaveProperty('methods');
+  expect(payload.plugins).toEqual({ test: { keep: null, text: '' } });
+});

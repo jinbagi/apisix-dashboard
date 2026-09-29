@@ -14,22 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createContext, use } from 'react';
+import { useEffect, useRef } from 'react';
 
-import type { RoutePostType } from '../components/form-slice/FormPartRoute/schema';
+const REVEAL_FORM_SECTION = 'reveal-form-section';
 
-export const CommonFormContext = createContext<{
-  readOnlyFields: (keyof RoutePostType)[];
-}>({
-  readOnlyFields: [],
-});
+export function revealFormTarget(target: HTMLElement) {
+  target.dispatchEvent(new Event(REVEAL_FORM_SECTION, { bubbles: true }));
+}
 
-export const useFormReadOnlyFields = () => {
-  const { readOnlyFields } = use(CommonFormContext);
-  return readOnlyFields || [];
-};
-
-// Reset transient alternatives whenever the shared form draft is replaced.
-export const FormDraftRevisionContext = createContext(0);
-
-export const FormTOCCtx = createContext<{ refreshTOC: () => void }>({ refreshTOC: () => {} });
+export function useRevealFormSection(open: () => void) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const node = ref.current;
+    node?.addEventListener(REVEAL_FORM_SECTION, open);
+    return () => node?.removeEventListener(REVEAL_FORM_SECTION, open);
+  }, [open]);
+  return ref;
+}
