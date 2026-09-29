@@ -14,100 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import { exec } from 'node:child_process';
-import { readFile, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { promisify } from 'node:util';
+import { expect, test } from '@playwright/test';
 
-import { streamRoutesPom } from '@e2e/pom/stream_routes';
-import { env } from '@e2e/utils/env';
-import { test } from '@e2e/utils/test';
-import { expect } from '@playwright/test';
+const disabledMessage = 'stream mode is disabled, can not add stream routes';
 
-const execAsync = promisify(exec);
-
-const getE2EServerDir = () => {
-  const currentDir = fileURLToPath(new URL('.', import.meta.url));
-  return path.join(currentDir, '../server');
-};
-
-const getRepoRootDir = () => {
-  const currentDir = fileURLToPath(new URL('.', import.meta.url));
-  return path.join(currentDir, '../..');
-};
-
-const updateAPISIXProxyMode = async (proxyMode: 'http' | 'http&stream') => {
-  const confPath = path.join(getE2EServerDir(), 'apisix_conf.yml');
-  const fileContent = await readFile(confPath, 'utf-8');
-  const updatedContent = fileContent.replace(
-    /^(\s*proxy_mode:\s*).+$/m,
-    `$1${proxyMode}`
-  );
-
-  await writeFile(confPath, updatedContent, 'utf-8');
-};
-
-const restartDockerServices = async () => {
-  await execAsync('docker compose restart apisix', { cwd: getRepoRootDir() });
-  const url = env.E2E_TARGET_URL;
-  const maxRetries = 20;
-  const interval = 1000;
-  for (let i = 0; i < maxRetries; i++) {
-    const res = await fetch(url).catch(() => ({ ok: false }));
-    if (res.ok) return;
-    await new Promise((resolve) => setTimeout(resolve, interval));
-  }
-  throw new Error('APISIX is not ready');
-};
-
-test.beforeAll(async () => {
-  test.setTimeout(90000);
-
-  await updateAPISIXProxyMode('http');
-  await restartDockerServices();
-});
-
-test.afterAll(async () => {
-  test.setTimeout(90000);
-
-  await updateAPISIXProxyMode('http&stream');
-  await restartDockerServices();
-});
-
-test('show disabled error', async ({ page }) => {
-  test.setTimeout(90000);
-
-  await streamRoutesPom.toIndex(page);
-
-  // Wait for the error message to appear (extra long timeout for CI after server restart)
-  await expect(
-    page.getByText('stream mode is disabled, can not add stream routes', {
-      exact: true,
-    })
-  ).toBeVisible({ timeout: 30000 });
-
-  // Verify the error message is still shown after refresh
+test('shows the disabled stream API response after navigation and refresh', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('settings:adminKey', JSON.stringify('test-admin-key'));
+  });
+  // Test error presentation without restarting the shared APISIX server or
+  // assuming that every APISIX version rejects GET in HTTP-only mode.
+  await page.route('**/apisix/admin/**', async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    const disabled = path.endsWith('/stream_routes');
+    await route.fulfill({
+      status: disabled ? 400 : 200,
+      contentType: 'application/json',
+      body: JSON.stringify(disabled
+        ? { error_msg: disabledMessage }
+        : { list: [], total: 0 }),
+    });
+  });
+  await page.goto('stream_routes');
+  await expect(page.getByText(disabledMessage, { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Retry', exact: true })).toBeVisible();
   await page.reload();
-  await expect(
-    page.getByText('stream mode is disabled, can not add stream routes', {
-      exact: true,
-    })
-  ).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText(disabledMessage, { exact: true })).toBeVisible();
 });

@@ -76,14 +76,9 @@ test('should CRUD plugin metadata with all fields', async ({ page }) => {
     await addPluginDialog.getByRole('tab', { name: 'Plugin JSON' }).click();
 
     const pluginEditor = await uiGetMonacoEditor(page, addPluginDialog);
-    await page.evaluate(() => {
-      window.__monacoEditor__?.getModel()?.setValue('{');
-    });
-    await page.waitForFunction(
-      () => window.__monacoEditor__?.getModel()?.getValue() === '{'
-    );
-    await pluginEditor.blur();
-    await expect(pluginEditor.getByText('{')).toBeVisible();
+    // Exercise the production editor; its development-only global is unavailable in CI.
+    await uiFillMonacoEditor(page, pluginEditor, 'invalid JSON');
+    await expect(pluginEditor.getByText('invalid JSON')).toBeVisible();
     await expect(
       addPluginDialog.getByText('Fix Plugin JSON syntax before saving.')
     ).toBeVisible();

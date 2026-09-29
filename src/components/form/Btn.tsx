@@ -21,7 +21,21 @@ import { useFormContext, useFormState } from 'react-hook-form';
 export const FormSubmitBtn = (props: ButtonProps) => {
   const form = useFormContext();
   const { isSubmitting } = useFormState(form);
-  return <Button type="primary" size="middle" htmlType="submit" loading={isSubmitting} disabled={isSubmitting} {...props} />;
+  // Keep the action's accessible name stable while Ant Design animates its
+  // loading icon. Expose progress separately instead of naming it "loading Save".
+  const loading = props.loading ?? isSubmitting;
+  return (
+    <Button
+      type="primary"
+      size="middle"
+      htmlType="submit"
+      disabled={isSubmitting}
+      aria-label={typeof props.children === 'string' ? props.children : undefined}
+      aria-busy={!!loading}
+      {...props}
+      loading={loading}
+    />
+  );
 };
 
 export const FormSubmitBtnWithCancel = (props: ButtonProps) => {
