@@ -78,8 +78,8 @@ export const RouteAddForm = (props: Props) => {
   });
 
   const form = useForm({
-    resolver: zodResolver(RoutePostSchema),
-    shouldUnregister: true,
+    resolver: zodResolver(RoutePostSchema, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
     defaultValues: { ...defaultValues, ...enforcedValues },
@@ -89,9 +89,10 @@ export const RouteAddForm = (props: Props) => {
     <FormProvider {...form}>
       <FormJsonTabs
         form={form}
+        preparePayload={produceRoute}
         onSubmit={(d) => postRoute.mutateAsync(d)}
         schema={RoutePostSchema}
-        createJsonTemplate={ROUTE_REQUIRED_TEMPLATE}
+        createJsonTemplate={defaultValues ? undefined : ROUTE_REQUIRED_TEMPLATE}
         submitLabel="Add"
       >
         <FormPartRoute />

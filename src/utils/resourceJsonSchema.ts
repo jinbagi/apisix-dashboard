@@ -14,9 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { RefinementCtx, ZodTypeAny } from 'zod';
+import type { ZodTypeAny } from 'zod';
 
 import { APISIX } from '@/types/schema/apisix';
+import { validateRouteMatch, validateSSLCertificates, validateUpstreamTarget } from '@/utils/resourceValidation';
 
 export type ConditionalRequirement = {
   fieldGroups: string[][];
@@ -27,48 +28,6 @@ export type ConditionalRequirement = {
   };
 };
 
-const hasRouteUri = (data: { uri?: string; uris?: string[] }) =>
-  !!data.uri?.trim() || !!data.uris?.some((uri) => uri.trim());
-
-const validateUpstreamTarget = (
-  data: {
-    nodes?: unknown[] | Record<string, number>;
-    service_name?: string;
-    discovery_type?: string;
-    pass_host?: string;
-    upstream_host?: string;
-  },
-  context: RefinementCtx
-) => {
-  const hasNodes = Array.isArray(data.nodes)
-    ? data.nodes.length > 0
-    : !!data.nodes && Object.keys(data.nodes).length > 0;
-  const hasServiceName = !!data.service_name?.trim();
-  const hasDiscoveryType = !!data.discovery_type?.trim();
-
-  if (!hasNodes && !(hasServiceName && hasDiscoveryType)) {
-    context.addIssue({
-      code: 'custom',
-      message: 'At least one backend source is required (nodes or service discovery)',
-      path: ['nodes'],
-    });
-  }
-  if (hasServiceName !== hasDiscoveryType) {
-    context.addIssue({
-      code: 'custom',
-      message: 'Service Name and Discovery Type must be configured together',
-      path: [hasServiceName ? 'discovery_type' : 'service_name'],
-    });
-  }
-  if (data.pass_host === 'rewrite' && !data.upstream_host?.trim()) {
-    context.addIssue({
-      code: 'custom',
-      message: 'Upstream Host is required when Pass Host is rewrite',
-      path: ['upstream_host'],
-    });
-  }
-};
-
 export const getAdminResourceSchema = (apiPath: string): ZodTypeAny | null => {
   const normalized = apiPath.toLowerCase();
   if (normalized.match(/^\/consumers\/[^/]+\/credentials(?:\/|$)/)) {
@@ -76,16 +35,13 @@ export const getAdminResourceSchema = (apiPath: string): ZodTypeAny | null => {
   }
   if (normalized.includes('/stream_routes')) return APISIX.StreamRoute;
   if (normalized.includes('/routes')) {
-    return APISIX.Route.refine(hasRouteUri, {
-      message: 'At least one request URI is required (uri or uris)',
-      path: ['uri'],
-    });
+    return APISIX.Route.superRefine(validateRouteMatch);
   }
   if (normalized.includes('/services')) return APISIX.Service;
   if (normalized.includes('/upstreams')) {
     return APISIX.Upstream.superRefine(validateUpstreamTarget);
   }
-  if (normalized.includes('/ssls')) return APISIX.SSL;
+  if (normalized.includes('/ssls')) return APISIX.SSL.superRefine(validateSSLCertificates);
   if (normalized.includes('/consumer_groups')) return APISIX.ConsumerGroup;
   if (normalized.includes('/consumers')) return APISIX.Consumer;
   if (normalized.includes('/global_rules')) return APISIX.GlobalRule;

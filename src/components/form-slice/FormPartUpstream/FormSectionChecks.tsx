@@ -156,9 +156,16 @@ const FormSectionChecksActive = () => {
 };
 
 const FormItemChecksPassiveEnabled = () => {
-  const { control } = useFormContext<FormPartUpstreamType>();
+  const { control, unregister, setValue } = useFormContext<FormPartUpstreamType>();
+  const np = useNamePrefix();
   return (
     <FormItemSwitch
+      onChange={(enabled) => {
+        if (!enabled) {
+          unregister(np('checks.passive'));
+          setValue(np('checks.passive'), undefined, { shouldDirty: true });
+        }
+      }}
       control={control}
       name="__checksPassiveEnabled"
       data-testid="checksPassiveEnabled"
@@ -255,9 +262,16 @@ const FormSectionChecksPassive = () => {
 };
 
 const FormItemChecksEnabled = () => {
-  const { control } = useFormContext<FormPartUpstreamType>();
+  const { control, unregister, setValue } = useFormContext<FormPartUpstreamType>();
+  const np = useNamePrefix();
   return (
     <FormItemSwitch
+      onChange={(enabled) => {
+        if (!enabled) {
+          unregister(np('checks'));
+          setValue(np('checks'), undefined, { shouldDirty: true });
+        }
+      }}
       control={control}
       name="__checksEnabled"
       data-testid="checksEnabled"

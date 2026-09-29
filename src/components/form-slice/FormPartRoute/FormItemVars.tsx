@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Button, Input, Select, Space, theme, Tooltip } from 'antd';
-import { useCallback, useEffect, useState } from 'react';
+import { AutoComplete, Button, Input, Segmented, Select, Space, theme, Tooltip } from 'antd';
+import { useState } from 'react';
 import { useController, useFormContext } from 'react-hook-form';
 
 import { InputWrapper } from '@/components/form/InputWrapper';
@@ -63,36 +63,6 @@ const VARIABLE_OPTIONS = [
 
 type VarTuple = [string, string, unknown];
 
-const areVarsEqual = (a: VarTuple[], b: VarTuple[]) => {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i += 1) {
-    if (a[i][0] !== b[i][0] || a[i][1] !== b[i][1] || a[i][2] !== b[i][2]) {
-      return false;
-    }
-  }
-  return true;
-};
-
-const parseVarsString = (val: string | undefined): VarTuple[] => {
-  if (!val) return [];
-  try {
-    const parsed = JSON.parse(val);
-    if (Array.isArray(parsed)) {
-      return parsed.filter(
-        (item) => Array.isArray(item) && item.length >= 3
-      ) as VarTuple[];
-    }
-  } catch {
-    // ignore
-  }
-  return [];
-};
-
-const serializeVars = (vars: VarTuple[]): string => {
-  if (vars.length === 0) return '';
-  return JSON.stringify(vars);
-};
-
 const stringifyVarValue = (value: unknown): string => {
   if (value === undefined || value === null) return '';
   if (typeof value === 'string') return value;
@@ -110,60 +80,53 @@ export const FormItemVars = () => {
   const {
     field: { value, onChange },
     fieldState,
-  } = useController({ control, name: 'vars', defaultValue: '' });
+  } = useController({ control, name: 'vars', defaultValue: [] });
 
-  const [vars, setVars] = useState<VarTuple[]>(() =>
-    parseVarsString(value as string)
-  );
-
-  useEffect(() => {
-    const parsed = parseVarsString(value as string);
-    setVars((prev) => {
-      return areVarsEqual(prev, parsed) ? prev : parsed;
-    });
-  }, [value]);
-
-  const updateVars = useCallback(
-    (newVars: VarTuple[]) => {
-      setVars(newVars);
-      onChange(serializeVars(newVars));
-    },
-    [onChange]
-  );
-
-  const addCondition = useCallback(() => {
-    updateVars([...vars, ['', '==', '']]);
-  }, [vars, updateVars]);
-
-  const removeCondition = useCallback(
-    (index: number) => {
-      updateVars(vars.filter((_, i) => i !== index));
-    },
-    [vars, updateVars]
-  );
-
-  const updateCondition = useCallback(
-    (index: number, field: 0 | 1 | 2, val: string) => {
-      const newVars = [...vars];
-      newVars[index] = [...newVars[index]] as VarTuple;
-      newVars[index][field] = val;
-      updateVars(newVars);
-    },
-    [vars, updateVars]
-  );
+  const [jsonMode, setJsonMode] = useState(false);
+  const simple = value === undefined || (Array.isArray(value) && value.every(
+    (item) => Array.isArray(item) && item.length === 3 &&
+      typeof item[0] === 'string' && typeof item[1] === 'string' &&
+      typeof item[2] === 'string' && OPERATORS.includes(item[1])
+  ));
+  const vars = (Array.isArray(value) ? value : []) as VarTuple[];
+  const useJson = jsonMode || !simple;
+  const updateCondition = (index: number, field: 0 | 1 | 2, val: string) => {
+    const next = vars.map((item) => [...item] as VarTuple);
+    next[index][field] = val;
+    onChange(next);
+  };
 
   return (
     <InputWrapper
       label="Vars"
-      description="Request matching conditions (variable, operator, value)"
+      description="Use conditions for simple string comparisons, or JSON for nested expressions, arrays, numbers and custom operators."
       error={fieldState.error?.message}
       fieldPath="vars"
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <Segmented
+        aria-label="Vars editor mode"
+        options={[
+          { label: 'Conditions', value: 'conditions', disabled: !simple },
+          { label: 'JSON expression', value: 'json' },
+        ]}
+        value={useJson ? 'json' : 'conditions'}
+        onChange={(mode) => setJsonMode(mode === 'json')}
+      />
+      {useJson ? (
+        <Input.TextArea
+          aria-label="Vars JSON expression"
+          autoSize={{ minRows: 4 }}
+          value={typeof value === 'string' ? value : JSON.stringify(value ?? [], null, 2)}
+          onChange={(event) => {
+            try { onChange(JSON.parse(event.target.value)); }
+            catch { onChange(event.target.value); }
+          }}
+        />
+      ) : <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {vars.map((v, i) => (
           <Space key={i} style={{ width: '100%' }} styles={{ item: { flex: 1 } }}>
-            <Select
-              showSearch
+            <AutoComplete
+              aria-label={`Variable ${i + 1}`}
               allowClear
               placeholder="Variable"
               value={v[0] || undefined}
@@ -189,7 +152,7 @@ export const FormItemVars = () => {
                 danger
                 icon={<IconDelete />}
                 aria-label={`Remove condition ${i + 1}`}
-                onClick={() => removeCondition(i)}
+                onClick={() => onChange(vars.filter((_, index) => index !== i))}
               />
             </Tooltip>
           </Space>
@@ -197,12 +160,12 @@ export const FormItemVars = () => {
         <Button
           type="dashed"
           icon={<IconAdd />}
-          onClick={addCondition}
+          onClick={() => onChange([...vars, ['', '==', '']])}
           style={{ color: token.colorTextSecondary }}
         >
           Add Condition
         </Button>
-      </div>
+      </div>}
     </InputWrapper>
   );
 };

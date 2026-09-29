@@ -51,13 +51,13 @@ export const FormItemSwitch = <T extends FieldValues>(
     <div className={classes.switchWrapper}>
       <div className={classes.switchRow}>
         <Switch
+          {...restField}
+          {...switchProps}
           checked={!!value}
           onChange={(checked, e) => {
             fOnChange(checked);
             switchProps.onChange?.(checked, e);
           }}
-          {...restField}
-          {...switchProps}
           aria-label={accessibleLabel}
         />
         {label && <span className={classes.switchLabel}>{label}</span>}
