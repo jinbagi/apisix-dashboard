@@ -57,7 +57,13 @@ const FormPartBasicWithPriority = ({ showID }: { showID: boolean }) => {
 };
 
 const FormSectionMatchRules = () => {
-  const { control } = useFormContext<RoutePostType>();
+  const { control, formState } = useFormContext<RoutePostType>();
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const vars = useWatch({ control, name: 'vars' });
+  const filterFunc = useWatch({ control, name: 'filter_func' });
+  useEffect(() => {
+    if (vars?.length || filterFunc || formState.errors.vars || formState.errors.filter_func) setAdvancedOpen(true);
+  }, [vars, filterFunc, formState.errors.vars, formState.errors.filter_func]);
   const uri = useWatch({ control, name: 'uri' });
   const uris = useWatch({ control, name: 'uris' });
   const host = useWatch({ control, name: 'host' });
@@ -87,7 +93,7 @@ const FormSectionMatchRules = () => {
         label="URI"
         description="Single URI path. Disabled when URIs is set."
         required={!hasUris}
-        disabled={hasUris}
+        disabled={hasUris && !hasUri}
       />
       <FormItemTagsInput
         control={control}
@@ -95,9 +101,46 @@ const FormSectionMatchRules = () => {
         label="URIs"
         description="Multiple URI paths. Disabled when URI is set."
         required={!hasUri}
-        disabled={hasUri}
+        disabled={hasUri && !hasUris}
+      />
+      <InputWrapper label="Enable WebSocket">
+        <FormItemSwitch
+          control={control}
+          name="enable_websocket"
+          aria-label="Enable WebSocket"
+        />
+      </InputWrapper>
+      <FormItemTextInput
+        control={control}
+        name="host"
+        label="Host"
+        description="Single hostname. Disabled when Hosts is set."
+        disabled={hasHosts && !hasHost}
+      />
+      <FormItemTagsInput
+        control={control}
+        name="hosts"
+        label="Hosts"
+        description="Multiple hostnames. Disabled when Host is set."
+        disabled={hasHost && !hasHosts}
+      />
+      <FormItemTextInput
+        control={control}
+        name="remote_addr"
+        label="Remote Address"
+        description="Single IP/CIDR. Disabled when Remote Addresses is set."
+        disabled={hasRemoteAddrs && !hasRemoteAddr}
+      />
+      <FormItemTagsInput
+        control={control}
+        name="remote_addrs"
+        label="Remote Addresses"
+        description="Multiple IPs/CIDRs. Disabled when Remote Address is set."
+        disabled={hasRemoteAddr && !hasRemoteAddrs}
       />
       <Collapse
+        activeKey={advancedOpen ? ['advanced-match'] : []}
+        onChange={(keys) => setAdvancedOpen(keys.includes('advanced-match'))}
         ghost
         items={[
           {
@@ -106,41 +149,6 @@ const FormSectionMatchRules = () => {
             forceRender: true,
             children: (
               <>
-                <InputWrapper label="Enable WebSocket">
-                  <FormItemSwitch
-                    control={control}
-                    name="enable_websocket"
-                    aria-label="Enable WebSocket"
-                  />
-                </InputWrapper>
-                <FormItemTextInput
-                  control={control}
-                  name="host"
-                  label="Host"
-                  description="Single hostname. Disabled when Hosts is set."
-                  disabled={hasHosts}
-                />
-                <FormItemTagsInput
-                  control={control}
-                  name="hosts"
-                  label="Hosts"
-                  description="Multiple hostnames. Disabled when Host is set."
-                  disabled={hasHost}
-                />
-                <FormItemTextInput
-                  control={control}
-                  name="remote_addr"
-                  label="Remote Address"
-                  description="Single IP/CIDR. Disabled when Remote Addresses is set."
-                  disabled={hasRemoteAddrs}
-                />
-                <FormItemTagsInput
-                  control={control}
-                  name="remote_addrs"
-                  label="Remote Addresses"
-                  description="Multiple IPs/CIDRs. Disabled when Remote Address is set."
-                  disabled={hasRemoteAddr}
-                />
                 <FormItemVars />
                 <FormItemEditor
                   control={control}
@@ -235,7 +243,7 @@ export const FormSectionUpstream = ({
       />
       <InputWrapper
         label="Target type"
-        description="Choose one traffic target. Only the selected configuration is submitted."
+        description="Choose the target to edit. Changing the target clears the previous selection."
       >
         <Segmented
           block
@@ -249,7 +257,7 @@ export const FormSectionUpstream = ({
           type="info"
           showIcon
           message="Traffic resolves through the selected Service."
-          description="The Service owns downstream Upstream selection. Route-level Upstream settings are not submitted while Service ID is set."
+          description="Existing Route-level Upstream overrides are preserved on save. Use Admin API JSON to inspect or edit combined configurations."
           style={{ marginBottom: 12 }}
         />
       )}
@@ -257,7 +265,7 @@ export const FormSectionUpstream = ({
         <Alert
           type="info"
           showIcon
-          message="Upstream ID is set. Inline upstream settings below are kept visible for reference, but they are not submitted unless Upstream ID is cleared."
+          message="Upstream ID is set. Any existing inline configuration is preserved until you change the target."
           style={{ marginBottom: 12 }}
         />
       )}
@@ -277,7 +285,7 @@ export const FormSectionUpstream = ({
                   resourceApi={API_SERVICES}
                   resourceLabel="Service"
                   disabled={readOnlyFields.includes('service_id')}
-                  description="Highest-precedence target. Selecting a Service disables Route-level Upstream configuration."
+                  description="Select the shared Service for this Route."
                 />
               </DependencyChoice>
             </div>

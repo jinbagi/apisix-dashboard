@@ -17,57 +17,11 @@
 import { z } from 'zod';
 
 import { APISIX } from '@/types/schema/apisix';
+import { validateUpstreamTarget } from '@/utils/resourceValidation';
 
 const formFlags = {
   __checksEnabled: z.boolean().optional().default(false),
   __checksPassiveEnabled: z.boolean().optional().default(false),
-};
-
-const validateUpstreamTarget = (
-  data: {
-    nodes?: unknown[] | Record<string, number>;
-    service_name?: string;
-    discovery_type?: string;
-    pass_host?: string;
-    upstream_host?: string;
-  },
-  ctx: z.RefinementCtx
-) => {
-  const hasNodes = Array.isArray(data.nodes)
-    ? data.nodes.length > 0
-    : !!data.nodes && Object.keys(data.nodes).length > 0;
-  const hasServiceName = !!data.service_name?.trim();
-  const hasDiscoveryType = !!data.discovery_type?.trim();
-
-  if (!hasNodes && !(hasServiceName && hasDiscoveryType)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message:
-        'At least one backend source is required (nodes or service discovery)',
-      path: ['nodes'],
-    });
-  }
-  if (hasServiceName && !hasDiscoveryType) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Discovery Type is required when Service Name is set',
-      path: ['discovery_type'],
-    });
-  }
-  if (hasDiscoveryType && !hasServiceName) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Service Name is required when Discovery Type is set',
-      path: ['service_name'],
-    });
-  }
-  if (data.pass_host === 'rewrite' && !data.upstream_host?.trim()) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Upstream Host is required when Pass Host is rewrite',
-      path: ['upstream_host'],
-    });
-  }
 };
 
 export const UpstreamPostSchema = APISIX.Upstream.extend({

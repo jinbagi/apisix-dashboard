@@ -20,7 +20,7 @@ import type { TabsProps } from 'antd';
 import { Alert, Button, Modal, Space, Tabs } from 'antd';
 import axios from 'axios';
 import { clsx } from 'clsx';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import type { ZodTypeAny } from 'zod';
 
@@ -161,6 +161,8 @@ type FormJsonTabsProps = {
   form: UseFormReturn<any>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSubmit: (data: any) => unknown;
+  /** Convert UI values to the exact payload shown in JSON and the save diff. */
+  preparePayload?: (data: Record<string, unknown>) => Record<string, unknown>;
   submitLabel?: string;
   disabled?: boolean;
   /** Raw API response data — shown as the Admin API JSON tab so users can see actual APISIX state */
@@ -245,6 +247,7 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
     children,
     form,
     onSubmit,
+    preparePayload,
     submitLabel = 'Submit',
     disabled = false,
     rawData,
@@ -267,7 +270,6 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
   const [, setRawTabDirty] = useState<boolean>(false);
   const [rawTabSaving, setRawTabSaving] = useState<boolean>(false);
   const pendingSubmitRef = useRef<unknown>(null);
-  const formTabInitializedRef = useRef(false);
 
   const formHasUnsavedChanges =
     hasAnyDirtyField(form.formState.dirtyFields) && !disabled;
@@ -335,17 +337,6 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
     }
   }, [focusFormError, form.formState.errors]);
 
-  useEffect(() => {
-    if (activeTab !== 'form' || formTabInitializedRef.current) return;
-
-    const frame = window.requestAnimationFrame(() => {
-      form.reset(form.getValues(), { keepDefaultValues: false });
-      formTabInitializedRef.current = true;
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [activeTab, form]);
-
   const handleRevert = useCallback(() => {
     Modal.confirm({
       title: 'Discard all unsaved changes?',
@@ -358,14 +349,14 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
         if (activeTab === 'json') {
           const values = form.getValues() as Record<string, unknown>;
           const sanitizedValues = rawData ? stripSystemReadonlyFields(values) : values;
-          setJsonStr(JSON.stringify(sortJsonKeys(sanitizedValues), null, 2));
+          setJsonStr(JSON.stringify(sortJsonKeys(preparePayload ? preparePayload(sanitizedValues) : sanitizedValues), null, 2));
           setJsonTabDirty(false);
           setJsonError(null);
         }
         setRawTabDirty(false);
       },
     });
-  }, [form, activeTab, rawData]);
+  }, [form, activeTab, rawData, preparePayload]);
 
   const doSubmit = useCallback(
     async (payload: unknown) => {
@@ -396,9 +387,10 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
   // Show diff modal before saving when rawData is available (edit mode)
   const safeSubmit = useCallback(
     async (data: unknown) => {
+      const prepared = preparePayload && isRecord(data) ? preparePayload(data) : data;
       const payload = rawData === undefined
-        ? data
-        : mergeIdentityPayload(rawData, data);
+        ? prepared
+        : mergeIdentityPayload(rawData, prepared);
 
       if (rawData) {
         pendingSubmitRef.current = payload;
@@ -407,7 +399,7 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
         await doSubmit(payload);
       }
     },
-    [doSubmit, rawData]
+    [doSubmit, rawData, preparePayload]
   );
 
   const confirmDiffAndSave = useCallback(async () => {
@@ -421,6 +413,7 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
   const applyJsonToForm = useCallback(() => {
     try {
       const parsed = JSON.parse(jsonStr || '{}') as Record<string, unknown>;
+      if (!isRecord(parsed)) throw new Error('Payload must be a JSON object');
       const sanitizedParsed = rawData ? stripSystemReadonlyFields(parsed) : parsed;
       form.reset(sanitizedParsed, { keepDefaultValues: true });
       setJsonTabDirty(false);
@@ -448,13 +441,14 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
         const useCreateTemplate =
           rawData === undefined &&
           !hasAnyDirtyField(form.formState.touchedFields) &&
+          !hasAnyDirtyField(form.formState.dirtyFields) &&
           createJsonTemplate !== undefined;
         const sanitizedValues = useCreateTemplate
           ? createJsonTemplate
           : rawData
             ? stripSystemReadonlyFields(values)
             : values;
-        setJsonStr(JSON.stringify(sortJsonKeys(sanitizedValues), null, 2));
+        setJsonStr(JSON.stringify(sortJsonKeys(preparePayload ? preparePayload(sanitizedValues) : sanitizedValues), null, 2));
         setJsonTabDirty(false);
         setJsonError(null);
       } else if (key === 'form' && activeTab === 'json') {
@@ -468,6 +462,7 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
       activeTab,
       applyJsonToForm,
       createJsonTemplate,
+      preparePayload,
       form,
       rawData,
       saveInProgress,
@@ -479,6 +474,7 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
     let parsed: Record<string, unknown>;
     try {
       parsed = JSON.parse(jsonStr || '{}') as Record<string, unknown>;
+      if (!isRecord(parsed)) throw new Error('Payload must be a JSON object');
       if (rawData) {
         parsed = stripSystemReadonlyFields(parsed);
       }

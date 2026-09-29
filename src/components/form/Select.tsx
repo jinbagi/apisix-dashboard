@@ -151,6 +151,7 @@ export const FormItemSelect = <T extends FieldValues, R>(
         optionFilterProp={searchable ? 'label' : undefined}
         {...restField}
         {...restProps}
+        style={{ width: '100%', ...restProps.style }}
         aria-label={ariaLabel}
         options={sanitizedOptions}
       />

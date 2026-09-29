@@ -47,6 +47,8 @@ import { StatusSwitch } from '@/components/StatusTag';
 import { API_ROUTES } from '@/config/constant';
 import { req } from '@/config/req';
 import { type APISIXType } from '@/types/schema/apisix';
+import { verifyAdminApiResource } from '@/utils/adminApiVerification';
+import { buildPatchPayload, stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
 
 type Props = {
@@ -61,8 +63,8 @@ const RouteDetailForm = (props: Props) => {
   const { data: routeData, refetch } = routeQuery;
 
   const form = useForm({
-    resolver: zodResolver(RoutePutSchema),
-    shouldUnregister: true,
+    resolver: zodResolver(RoutePutSchema, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
   });
@@ -83,11 +85,19 @@ const RouteDetailForm = (props: Props) => {
   }, [enforcedValues, routeData, form]);
 
   const putRoute = useMutation({
-    mutationFn: (d: RoutePutType) =>
-      putRouteReq(
-        req,
-        produceRoute({ ...d, ...enforcedValues }) as APISIXType['Route']
-      ),
+    mutationFn: async (d: RoutePutType) => {
+      const payload = produceRoute({ ...d, ...enforcedValues }) as APISIXType['Route'];
+      const response = await putRouteReq(req, payload);
+      await verifyAdminApiResource(
+        `${API_ROUTES}/${id}`,
+        buildPatchPayload(
+          stripSystemReadonlyFields(payload),
+          stripSystemReadonlyFields(routeData.value)
+        ),
+        { ignoredPaths: ['upstream.tls.client_key'] }
+      );
+      return response;
+    },
     async onSuccess() {
       await refetch({ throwOnError: true });
       showNotification({
@@ -102,6 +112,7 @@ const RouteDetailForm = (props: Props) => {
       <FormProvider {...form}>
         <FormJsonTabs
           form={form}
+        preparePayload={produceRoute}
           onSubmit={(d) => putRoute.mutateAsync(d)}
           submitLabel="Save"
           rawData={routeData?.value}
