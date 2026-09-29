@@ -20,7 +20,7 @@ import type { TabsProps } from 'antd';
 import { Alert, Button, Modal, Space, Tabs } from 'antd';
 import axios from 'axios';
 import { clsx } from 'clsx';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import type { ZodTypeAny } from 'zod';
 
@@ -37,10 +37,13 @@ import { useThemeMode } from '@/stores/global';
 import {
   isRecord,
   mergeIdentityPayload,
+  restorePatchReadonlyFields,
   sortJsonKeys,
   stripSystemReadonlyFields,
   stripSystemTimestamps,
 } from '@/utils/apisixEditable';
+import { FormDraftRevisionContext, FormTOCCtx } from '@/utils/form-context';
+import { revealFormTarget } from '@/utils/formNavigation';
 
 import { FormSubmitBtn } from './Btn';
 import classes from './FormJsonTabs.module.css';
@@ -267,8 +270,12 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
   const [apiError, setApiError] = useState<string | null>(null);
   const [diffModalOpen, setDiffModalOpen] = useState(false);
   const [jsonTabDirty, setJsonTabDirty] = useState<boolean>(false);
-  const [, setRawTabDirty] = useState<boolean>(false);
+  const [rawTabDirty, setRawTabDirty] = useState<boolean>(false);
   const [rawTabSaving, setRawTabSaving] = useState<boolean>(false);
+  const [draftRevision, setDraftRevision] = useState(0);
+  const [rawRevision, setRawRevision] = useState(0);
+  const { refreshTOC } = useContext(FormTOCCtx);
+  useEffect(() => { refreshTOC(); }, [activeTab, refreshTOC]);
   const pendingSubmitRef = useRef<unknown>(null);
 
   const formHasUnsavedChanges =
@@ -288,8 +295,11 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
           `[data-form-field="${escapeAttributeValue(path)}"]`
         );
         if (target) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          form.setFocus(path, { shouldSelect: true });
+          revealFormTarget(target);
+          window.requestAnimationFrame(() => {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            form.setFocus(path, { shouldSelect: true });
+          });
 
           target.classList.add('form-field-error-shake');
           setTimeout(() => {
@@ -346,6 +356,7 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
       okButtonProps: { danger: true },
       onOk: () => {
         form.reset();
+        setDraftRevision((revision) => revision + 1);
         if (activeTab === 'json') {
           const values = form.getValues() as Record<string, unknown>;
           const sanitizedValues = rawData ? stripSystemReadonlyFields(values) : values;
@@ -370,6 +381,7 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
           { keepDefaultValues: false }
         );
         setJsonTabDirty(false);
+        setDraftRevision((revision) => revision + 1);
       } catch (e) {
         const msg = axios.isAxiosError(e)
           ? getRequestErrorMessage(e)
@@ -415,7 +427,8 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
       const parsed = JSON.parse(jsonStr || '{}') as Record<string, unknown>;
       if (!isRecord(parsed)) throw new Error('Payload must be a JSON object');
       const sanitizedParsed = rawData ? stripSystemReadonlyFields(parsed) : parsed;
-      form.reset(sanitizedParsed, { keepDefaultValues: true });
+      form.reset(isRecord(rawData) ? restorePatchReadonlyFields(sanitizedParsed, rawData) : sanitizedParsed, { keepDefaultValues: true });
+      setDraftRevision((revision) => revision + 1);
       setJsonTabDirty(false);
       setJsonError(null);
       void form.trigger();
@@ -436,7 +449,35 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
     (key: string) => {
       if (saveInProgress) return;
 
-      if (key === 'json' && activeTab === 'form') {
+      if (key === 'raw' && jsonHasUnsavedChanges) {
+        Modal.confirm({
+          title: 'Discard this draft and open saved API state?',
+          content: 'Admin API JSON edits the saved resource separately. Use Payload JSON to continue editing this draft.',
+          okText: 'Discard draft', cancelText: 'Keep editing', okButtonProps: { danger: true },
+          onOk: () => { form.reset(); setJsonTabDirty(false); setDraftRevision((revision) => revision + 1); setActiveTab(key); },
+        });
+        return;
+      }
+      if (activeTab === 'raw' && rawTabDirty) {
+        Modal.confirm({
+          title: 'Discard unsaved Admin API JSON changes?',
+          content: 'These changes have not been saved. Cancel to continue editing them.',
+          okText: 'Discard changes', cancelText: 'Keep editing', okButtonProps: { danger: true },
+          onOk: () => {
+            setRawRevision((revision) => revision + 1);
+            setRawTabDirty(false);
+            if (key === 'json') {
+              const values = stripSystemReadonlyFields(form.getValues());
+              setJsonStr(JSON.stringify(sortJsonKeys(preparePayload ? preparePayload(values) : values), null, 2));
+              setJsonTabDirty(false);
+              setJsonError(null);
+            }
+            setActiveTab(key);
+          },
+        });
+        return;
+      }
+      if (key === 'json' && activeTab !== 'json') {
         const values = form.getValues() as Record<string, unknown>;
         const useCreateTemplate =
           rawData === undefined &&
@@ -451,7 +492,7 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
         setJsonStr(JSON.stringify(sortJsonKeys(preparePayload ? preparePayload(sanitizedValues) : sanitizedValues), null, 2));
         setJsonTabDirty(false);
         setJsonError(null);
-      } else if (key === 'form' && activeTab === 'json') {
+      } else if (activeTab === 'json') {
         if (!applyJsonToForm()) {
           return;
         }
@@ -466,6 +507,8 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
       form,
       rawData,
       saveInProgress,
+      jsonHasUnsavedChanges,
+      rawTabDirty,
     ]
   );
 
@@ -483,7 +526,8 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
       return;
     }
     // Reset form with parsed values then trigger Zod validation via handleSubmit
-    form.reset(parsed, { keepDefaultValues: true });
+    form.reset(isRecord(rawData) ? restorePatchReadonlyFields(parsed, rawData) : parsed, { keepDefaultValues: true });
+    setDraftRevision((revision) => revision + 1);
     setJsonTabDirty(false);
     setIsSubmitting(true);
     try {
@@ -523,7 +567,9 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
           <Alert type="error" showIcon closable message={apiError} onClose={() => setApiError(null)} style={{ marginBottom: 16 }} />
         )}
         <FormErrorSummary errors={validationErrors} onFocusError={focusFormError} />
-        {children}
+        <FormDraftRevisionContext.Provider value={draftRevision}>
+          <fieldset disabled={isSaving} inert={isSaving} style={{ minWidth: 0, border: 0, margin: 0, padding: 0 }}>{children}</fieldset>
+        </FormDraftRevisionContext.Provider>
         {!disabled && (
           <FormActionBar
             errorCount={validationErrors.length}
@@ -555,17 +601,18 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
         ...detailTabs,
       ];
 
-  if (rawData === undefined) {
-    tabItems.push({
+  {
+    tabItems.splice(1, 0, {
       key: 'json',
       label: 'Payload JSON',
       children: (
         <div>
+          {apiError && <Alert type="error" showIcon message={apiError} style={{ marginBottom: 12 }} />}
           <Alert
             type="info"
             showIcon
-            message="Create this resource by editing the same Payload JSON that the visual editor will validate and submit."
-            description="Apply JSON edits to review them in the Visual Editor before submitting."
+            message="One draft, two editors"
+            description="Payload JSON and the form share your changes, validation, and save review. Switching to the form applies your JSON without saving."
             style={{ marginBottom: 12, padding: '8px 12px', fontSize: 'var(--app-font-size-sm)' }}
           />
           {schema && <JsonSchemaGuide schema={schema} value={jsonStr} compact />}
@@ -610,8 +657,8 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
               <Button
                 type="primary"
                 size="middle"
-                loading={isSubmitting}
-                disabled={isSubmitting || isSaving}
+                loading={isSubmitting || isSaving}
+                disabled={isSubmitting || isSaving || (rawData !== undefined && !jsonHasUnsavedChanges)}
                 onClick={handleJsonSubmit}
               >
                 {submitLabel}
@@ -624,12 +671,14 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
         </div>
       ),
     });
-  } else {
+  }
+  if (rawData !== undefined) {
     tabItems.push({
       key: 'raw',
       label: 'Admin API JSON',
       children: (
         <AdminApiJsonEditor
+          key={rawRevision}
           api={adminApi ?? ''}
           disabled={disabled || !adminApi}
           height="500px"

@@ -54,4 +54,7 @@ export const produceVarsToAPI = produce((draft: RoutePostType) => {
   }
 });
 
-export const produceRoute = produceVarsToAPI;
+// Compare and preview exactly what JSON transport sends. RHF keeps cleared
+// fields as undefined; readback must treat those keys as absent/deleted.
+export const produceRoute = (data: RoutePostType): RoutePostType =>
+  JSON.parse(JSON.stringify(produceVarsToAPI(data)));
