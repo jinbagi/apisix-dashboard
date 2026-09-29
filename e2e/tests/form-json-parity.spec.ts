@@ -79,3 +79,21 @@ for (const payload of [{}, { cert: 'cert' }, { key: 'key' }, { cert: 'cert', key
     expect(issues(SSLPutSchema, input)).toEqual(expected);
   });
 }
+
+test('cleans empty inline controls without cleaning opaque upstream configuration', () => {
+  const result = produceRoute({
+    uri: '/',
+    upstream: {
+      name: '', desc: '', service_name: '', discovery_type: '', upstream_host: '',
+      nodes: { 'localhost:80': 1 },
+      tls: { verify: false, client_cert: '', client_key: '', client_cert_id: '' },
+      checks: { active: { host: '', http_path: '', healthy: {}, unhealthy: {} } },
+      discovery_args: { empty: '', nested: { empty: '' } },
+    },
+  });
+  expect(result.upstream).not.toHaveProperty('name');
+  expect(result.upstream).not.toHaveProperty('service_name');
+  expect(result.upstream?.tls).toEqual({ verify: false });
+  expect(result.upstream?.checks?.active).not.toHaveProperty('host');
+  expect(result.upstream?.discovery_args).toEqual({ empty: '', nested: { empty: '' } });
+});

@@ -139,6 +139,8 @@ test('turning off inline health checks explicitly removes them', async ({ page }
   await page.getByRole('dialog', { name: 'Review Changes Before Saving' }).getByRole('button', { name: 'Confirm & Save' }).click();
   await expect.poll(() => writes.length).toBe(1);
   expect(writes[0].body.upstream).not.toHaveProperty('checks');
+  expect(writes[0].body.upstream).not.toHaveProperty('name');
+  expect(writes[0].body.upstream).not.toHaveProperty('service_name');
 });
 
 test('a form save reports an error if the API does not return the saved value', async ({ page }) => {

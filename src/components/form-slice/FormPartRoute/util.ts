@@ -29,6 +29,24 @@ export const produceVarsToAPI = produce((draft: RoutePostType) => {
   for (const field of ['uris', 'hosts', 'remote_addrs', 'methods', 'vars']) {
     if (Array.isArray(payload[field]) && payload[field].length === 0) delete payload[field];
   }
+  // Inline Upstream controls also register empty optional strings. Clean only
+  // these known input paths, never arbitrary nested plugin/discovery data.
+  const upstream = draft.upstream;
+  if (upstream) {
+    for (const field of ['name', 'desc', 'service_name', 'discovery_type', 'key', 'upstream_host'] as const) {
+      if (typeof upstream[field] === 'string' && !upstream[field].trim()) delete upstream[field];
+    }
+    if (upstream.tls) {
+      for (const field of ['client_cert', 'client_key', 'client_cert_id'] as const) {
+        if (upstream.tls[field] === '') delete upstream.tls[field];
+      }
+    }
+    if (upstream.checks?.active) {
+      for (const field of ['host', 'http_path'] as const) {
+        if (upstream.checks.active[field] === '') delete upstream.checks.active[field];
+      }
+    }
+  }
   // Only top-level UI flags belong to this form. Never recursively clean plugin
   // configs or vars: empty strings, nulls and nested expressions can be meaningful.
   for (const field of Object.keys(payload)) {
