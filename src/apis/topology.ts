@@ -20,6 +20,7 @@ import { getServiceListReq } from '@/apis/services';
 import { getStreamRouteListReq } from '@/apis/stream_routes';
 import { getUpstreamListReq } from '@/apis/upstreams';
 import type { APISIXType } from '@/types/schema/apisix';
+import { formatUpstreamNodeAddress } from '@/utils/upstreamNodes';
 
 type TopologyResourceKey = 'routes' | 'streamRoutes' | 'services' | 'upstreams';
 
@@ -67,8 +68,8 @@ export function getUpstreamTargets(upstream?: Partial<APISIXType['Upstream']>): 
     if (Array.isArray(nodes)) {
       targets.push(
         ...nodes
-          .filter((n) => n?.host && typeof n.port === 'number')
-          .map((n) => `${n.host}:${n.port}`)
+          .filter((node) => !!node?.host)
+          .map(formatUpstreamNodeAddress)
       );
     } else if (nodes && typeof nodes === 'object') {
       targets.push(...Object.keys(nodes));

@@ -160,7 +160,6 @@ export const FormPartSSL = ({ showID = true }: { showID?: boolean } = {}) => {
       <FormPartBasic
         showID={showID}
         showName={false}
-        showDesc={false}
         showStatus
       />
       <FormSSLValidity />

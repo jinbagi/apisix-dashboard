@@ -16,7 +16,7 @@ editable payload fields. JSON remains the full-payload editing surface.
 | Stream Route | server address/port, remote address, SNI, service/upstream references, inline upstream, plugins, protocol name/superior ID/conf/logger | Same stripping/cleanup and inline-validation gaps; protocol config is opaque JSON | Same preservation and validation fix, including protocol values |
 | Upstream | nodes, discovery name/type/args, scheme, balancing/hash/key, pass-host/rewrite host, retries, timeout, TLS, keepalive, active/passive checks | Unknown nested fields were stripped and opaque discovery values cleaned; checks entered in JSON could appear disabled in the visual editor | Retain payload fields and opaque values; infer check switches after JSON replaces the draft; explicit removal still deletes checks |
 | Consumer | username, consumer-group reference, plugins, description/labels | JSON-only fields and plugin empty/null/internal-looking keys could be lost | Preserve validated input and opaque plugin values on create and edit |
-| SSL | certificate type, SNI/SNIs, default/additional cert-key pairs, protocols/status/labels, client CA/depth/skip-mTLS regex | JSON client config could be removed because `__clientEnabled` was absent; unknown client fields stripped | Infer switch from client config, preserve JSON client settings, explicitly remove client config when disabled; omit validity metadata |
+| SSL | description, certificate type, SNI/SNIs, default/additional cert-key pairs, protocols/status/labels, client CA/depth/skip-mTLS regex | JSON client config could be removed because `__clientEnabled` was absent; unknown client fields stripped | Infer switch from client config, preserve JSON client settings, explicitly remove client config when disabled; omit validity metadata |
 | Consumer Group | name, description, labels, plugins | Older resolver and recursive cleanup; supported `name` hidden in form/model | Same validated-input preservation; expose `name` |
 | Global Rule | identity and plugins | Older resolver and recursive cleanup | Preserve opaque plugin configuration in create/edit/direct JSON |
 | Plugin Config | name, description, labels, plugins | Older resolver and recursive cleanup | Same preservation and payload preparation |
@@ -103,6 +103,7 @@ browser's separate native constraint validation so the shared schema can show
 the same error messages and error summary as JSON submission. Certificate parsing, key
 matching and resolving secret references remain server checks.
 
+The supported SSL description is also exposed in Basic Information.
 Conflicting SNI inputs remain editable so the user can clear one. Incomplete
 additional certificate/key pairs show both inputs, including a missing side,
 so the user can repair a JSON draft without deleting its certificate.

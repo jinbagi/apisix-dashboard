@@ -208,3 +208,25 @@ test('empty SSL visual submission uses the shared error summary instead of nativ
   await expect(page.getByText('A server certificate requires SNI or SNIs').first()).toBeVisible();
   expect(writes).toHaveLength(0);
 });
+
+test('Route expanded list formats portless and IPv6 inline nodes', async ({ page }) => {
+  await mockApi(page, 'routes', { name: 'Portless route', uri: '/', upstream: { nodes: [
+    { host: 'example.com', weight: 1 }, { host: '2001:db8::1', port: 443, weight: 2 },
+  ] } });
+  await page.goto('routes');
+  await page.getByRole('button', { name: 'Expand row', exact: true }).first().click();
+  const nodes = page.getByText('Inline nodes:', { exact: true }).locator('..');
+  await expect(nodes).toBeVisible();
+  await expect(nodes).toContainText('example.com, [2001:db8::1]:443');
+  await expect(nodes).not.toContainText('undefined');
+});
+
+test('SSL description is editable and saved with its certificate binding', async ({ page }) => {
+  const writes = await mockApi(page, 'ssls', { ...ssl, desc: 'Existing certificate note' });
+  await page.goto('ssls/detail/parity');
+  await page.getByLabel('Description', { exact: true }).fill('Certificate rotation note');
+  await page.screenshot({ path: test.info().outputPath('ssl-description.png'), animations: 'disabled' });
+  await saveDetail(page);
+  await expect.poll(() => writes.length).toBe(1);
+  expect(writes[0]).toMatchObject({ ...ssl, desc: 'Certificate rotation note' });
+});

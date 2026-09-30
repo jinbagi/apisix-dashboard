@@ -107,3 +107,11 @@ test('builds topology data with inline discovery targets and partial failure sta
   expect(topology.upstreams[0].nodes).toEqual(['10.0.0.13:9080']);
   expect(topology.unavailableResources).toEqual(['streamRoutes']);
 });
+
+test('retains portless and IPv6 array nodes as topology targets', () => {
+  expect(getUpstreamTargets({ nodes: [
+    { host: 'example.com', weight: 1 },
+    { host: '2001:db8::1', weight: 2 },
+    { host: '2001:db8::2', port: 443, weight: 3 },
+  ] })).toEqual(['example.com', '2001:db8::1', '[2001:db8::2]:443']);
+});

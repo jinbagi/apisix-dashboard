@@ -39,6 +39,7 @@ import { queryClient } from '@/config/global';
 import type { APISIXType } from '@/types/schema/apisix';
 import { pageSearchSchema } from '@/types/schema/pageSearch';
 import { getPluginFilterOptions, hasPluginName, renderPluginCount, renderUnixDateTime, unixFieldSorter } from '@/utils/columns';
+import { formatUpstreamNodeAddress } from '@/utils/upstreamNodes';
 import { useBulkActions } from '@/utils/useBulkActions';
 import type { ListPageKeys } from '@/utils/useTablePagination';
 
@@ -98,7 +99,7 @@ const RouteExpandedRow = ({ route }: { route: APISIXType['Route'] }) => {
             <Typography.Text style={{ fontSize: 'var(--app-font-size-md)' }}>
               <strong>Inline nodes:</strong>{' '}
               {Array.isArray(route.upstream.nodes)
-                ? route.upstream.nodes.map((n) => `${n.host}:${n.port}`).join(', ')
+                ? route.upstream.nodes.map(formatUpstreamNodeAddress).join(', ')
                 : Object.keys(route.upstream.nodes).join(', ')}
             </Typography.Text>
           )}
