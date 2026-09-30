@@ -14,6 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { randomInt } from 'node:crypto';
+
 import { streamRoutesPom } from '@e2e/pom/stream_routes';
 import { randomId } from '@e2e/utils/common';
 import { e2eReq } from '@e2e/utils/req';
@@ -48,10 +50,11 @@ test('CRUD stream route with required fields', async ({ page }) => {
 
   // Use unique server addresses to avoid collisions when running tests in parallel
   const uniqueId = randomId('test');
-  const uniqueIpSuffix = parseInt(uniqueId.slice(-6), 36) % 240 + 10; // 10-249
+  const uniqueIpSuffix = randomInt(10, 250);
+  const portOffset = randomInt(0, 1000);
   const streamRouteData = {
     server_addr: `127.0.1.${uniqueIpSuffix}`,
-    server_port: 9000 + parseInt(uniqueId.slice(-4), 36) % 1000, // Unique port
+    server_port: 9000 + portOffset, // Unique port
   };
 
   // Fill required fields
@@ -85,7 +88,10 @@ test('CRUD stream route with required fields', async ({ page }) => {
     { timeout: 30000 }
   );
   await submitButton.click();
-  await createResponse;
+  const response = await createResponse;
+  const responsePayload = await response.json();
+  expect(response.ok(), JSON.stringify(responsePayload)).toBeTruthy();
+  expect(responsePayload).toHaveProperty('value.id');
   await streamRoutesPom.isDetailPage(page);
   const streamRouteId = await page
     .getByRole('textbox', { name: 'ID', exact: true })
