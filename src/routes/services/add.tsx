@@ -34,6 +34,7 @@ import { SERVICE_REQUIRED_TEMPLATE } from '@/config/resourceTemplates';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const ServiceAddForm = ({ defaultValues }: { defaultValues?: ServicePostType }) => {
@@ -55,6 +56,7 @@ const ServiceAddForm = ({ defaultValues }: { defaultValues?: ServicePostType }) 
       return response;
     },
     async onSuccess(response) {
+      await refreshResourceCaches('services', API_SERVICES);
       showNotification({
         message: 'Service created and verified',
         type: 'success',

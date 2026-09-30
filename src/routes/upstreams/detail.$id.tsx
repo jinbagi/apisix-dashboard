@@ -45,6 +45,7 @@ import { API_UPSTREAMS } from '@/config/constant';
 import { req } from '@/config/req';
 import type { APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareUpstreamFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
@@ -79,6 +80,7 @@ const UpstreamDetailForm = (
     mutationFn: (d: APISIXType['Upstream']) => putUpstreamReq(req, d),
     async onSuccess() {
       await refetch({ throwOnError: true });
+      await refreshResourceCaches('upstreams', API_UPSTREAMS);
       showNotification({
         message: 'Upstream saved and reloaded from APISIX',
         type: 'success',

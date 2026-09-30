@@ -38,6 +38,7 @@ import { API_SECRETS } from '@/config/constant';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
@@ -77,6 +78,7 @@ const SecretDetailForm = (props: Props) => {
       putSecretReq(req, prepareResourceFormPayload(d)),
     async onSuccess() {
       await refetch({ throwOnError: true });
+      await refreshResourceCaches('secrets', API_SECRETS);
       showNotification({
         message: 'Secret saved and reloaded from APISIX',
         type: 'success',

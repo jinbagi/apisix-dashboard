@@ -34,6 +34,7 @@ import { UPSTREAM_REQUIRED_TEMPLATE } from '@/config/resourceTemplates';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareUpstreamFormPayload } from '@/utils/resourceFormPayload';
 
 type PostUpstreamType = z.infer<typeof UpstreamPostSchema>;
@@ -53,6 +54,7 @@ const UpstreamAddForm = ({ defaultValues }: { defaultValues?: PostUpstreamType }
       return response;
     },
     async onSuccess(response) {
+      await refreshResourceCaches('upstreams', API_UPSTREAMS);
       showNotification({
         message: 'Upstream created and verified',
         type: 'success',

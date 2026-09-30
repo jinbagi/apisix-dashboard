@@ -32,6 +32,7 @@ import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripPatchReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const CredentialAddForm = () => {
@@ -52,6 +53,7 @@ const CredentialAddForm = () => {
       return { response, id };
     },
     async onSuccess({ id }) {
+      await refreshResourceCaches(['credentials', username], API_CREDENTIALS(username));
       showNotification({
         message: 'Credential created and verified',
         type: 'success',

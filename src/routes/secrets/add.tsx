@@ -27,11 +27,11 @@ import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import PageHeader from '@/components/page/PageHeader';
 import { API_SECRETS } from '@/config/constant';
-import { queryClient } from '@/config/global';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiExists } from '@/utils/adminApiVerification';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const SecretAddForm = () => {
@@ -47,12 +47,12 @@ const SecretAddForm = () => {
       return response;
     },
     async onSuccess() {
+      await refreshResourceCaches('secrets', API_SECRETS);
       showNotification({
         message: 'Secret created and verified',
         type: 'success',
       });
       try {
-        await queryClient.invalidateQueries({ queryKey: ['secrets'] });
         await router.navigate({
           to: '/secrets',
         });

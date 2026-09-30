@@ -71,6 +71,16 @@ function CredentialsList() {
         ),
       },
       {
+        dataIndex: ['value', 'name'],
+        title: 'Name',
+        key: 'name',
+        render: (_, record) => (
+          <Link to="/consumers/detail/$username/credentials/detail/$id" params={{ username, id: record.value.id }}>
+            {record.value.name || '-'}
+          </Link>
+        ),
+      },
+      {
         dataIndex: ['value', 'desc'],
         title: 'Description',
         key: 'desc',

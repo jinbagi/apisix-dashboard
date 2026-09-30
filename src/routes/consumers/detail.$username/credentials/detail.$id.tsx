@@ -38,6 +38,7 @@ import { API_CREDENTIALS } from '@/config/constant';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type CredentialFormProps = {
@@ -76,6 +77,7 @@ const CredentialDetailForm = (props: CredentialFormProps) => {
       putCredentialReq(req, prepareResourceFormPayload({ ...d, username })),
     async onSuccess() {
       await refetch({ throwOnError: true });
+      await refreshResourceCaches(['credentials', username], API_CREDENTIALS(username));
       showNotification({
         message: 'Credential saved and reloaded from APISIX',
         type: 'success',

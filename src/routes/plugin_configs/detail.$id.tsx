@@ -38,6 +38,7 @@ import { API_PLUGIN_CONFIGS } from '@/config/constant';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
@@ -58,6 +59,7 @@ const PluginConfigDetailForm = (props: Props) => {
       putPluginConfigReq(req, prepareResourceFormPayload({ ...d, id })),
     async onSuccess() {
       await pluginConfigQuery.refetch({ throwOnError: true });
+      await refreshResourceCaches('plugin_configs', API_PLUGIN_CONFIGS);
       showNotification({
         message: 'Plugin Config saved and reloaded from APISIX',
         type: 'success',

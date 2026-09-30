@@ -14,6 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { randomInt } from 'node:crypto';
+
 import { streamRoutesPom } from '@e2e/pom/stream_routes';
 import { randomId } from '@e2e/utils/common';
 import { e2eReq } from '@e2e/utils/req';
@@ -50,11 +52,12 @@ test('CRUD stream route with all fields', async ({ page }) => {
 
   // Use unique server addresses to avoid collisions when running tests in parallel
   const uniqueId = randomId('test');
-  const dnsSafeUniqueId = uniqueId.replace(/[^a-zA-Z0-9-]/g, '-');
-  const uniqueIpSuffix = parseInt(uniqueId.slice(-6), 36) % 240 + 10; // 10-249
+  const dnsSafeUniqueId = uniqueId.replace(/[^a-zA-Z0-9]/g, '');
+  const uniqueIpSuffix = randomInt(10, 250);
+  const portOffset = randomInt(0, 1000);
   const streamRouteData = {
     server_addr: `127.0.0.${uniqueIpSuffix}`,
-    server_port: 9100 + parseInt(uniqueId.slice(-4), 36) % 1000, // Unique port
+    server_port: 9100 + portOffset, // Unique port
     remote_addr: '192.168.10.0/24',
     sni: `edge-${dnsSafeUniqueId}.example.com`,
     desc: `Stream route with optional fields - ${uniqueId}`,
@@ -95,7 +98,10 @@ test('CRUD stream route with all fields', async ({ page }) => {
     { timeout: 30000 }
   );
   await submitButton.click();
-  await createResponse;
+  const response = await createResponse;
+  const created = await response.json();
+  expect(response.ok(), created.error_msg ?? 'Stream Route creation must succeed').toBe(true);
+  expect(created).toHaveProperty('value.id');
   await streamRoutesPom.isDetailPage(page);
   const streamRouteId = await page
     .getByRole('textbox', { name: 'ID', exact: true })
@@ -110,7 +116,7 @@ test('CRUD stream route with all fields', async ({ page }) => {
   const updatedIpSuffix = (uniqueIpSuffix + 100) % 240 + 10;
   const updatedData = {
     server_addr: `127.0.0.${updatedIpSuffix}`,
-    server_port: 9200 + parseInt(uniqueId.slice(-4), 36) % 1000, // Unique port
+    server_port: 9200 + portOffset, // Unique port
     remote_addr: '10.10.0.0/16',
     sni: `edge-updated-${dnsSafeUniqueId}.example.com`,
     desc: `Updated stream route with optional fields - ${uniqueId}`,

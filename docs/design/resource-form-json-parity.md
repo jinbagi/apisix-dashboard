@@ -121,9 +121,40 @@ throwing. Only owned provider definitions are indexed.
 
 ![Repairable SSL names and certificate pairs](../en/assets/screenshots/parity-ssl-repairable-pairs.png)
 
-## Remaining audit queue
+## Creation, editing and reference selection
 
-- Validate against the version and plugins used by a user's connected server;
-  the pinned source comparison and mocked regressions do not replace that check.
-- Review resource creation cache refresh and nondeterministic reference selection
-  in the previously retried CRUD tests.
+A previously opened resource selector could keep its empty results for 30 seconds
+after a resource was created, or show its old name after editing. Verified
+creation and detail saves now refresh the corresponding cached lists and
+reference selectors before reporting success or navigating. This applies to
+all resource create and detail pages, including a consumer's credential list.
+Only existing cache entries are refetched; it does not load unrelated resources. Pending
+pre-save reads are cancelled first, so a delayed old response cannot replace
+the fresh results. A regression holds an initial selector response until after
+creation is verified, then checks the new option remains available.
+
+Browser regressions prime the list and selector before creating an Upstream,
+Service, Consumer Group or Plugin Config, then select the new ID and return to
+the refreshed list without reloading the app. The same cases rename the resource
+and verify the warmed selector and list expose the saved name immediately.
+The end-to-end hot-path test also waits for the actual reference option and asserts the outgoing reference IDs,
+so pressing Enter before an asynchronous option load cannot silently produce a
+resource without its intended backend. Consumer Group, Credential and Proto
+lists also expose the names supported by their forms, so saved resources can
+be recognized without memorizing IDs.
+
+Stream Route CRUD fixtures now generate IP suffixes and ports from bounded
+integer ranges. Parsing Nano ID tails as base-36 numbers could produce `NaN`
+or negative address components when a tail began with `_` or `-`. Both create
+flows assert successful API responses before checking navigation.
+
+![New Upstream offered by a previously opened selector](../en/assets/screenshots/parity-created-resource-options.png)
+
+![Consumer Group names in the refreshed list](../en/assets/screenshots/parity-consumer-group-names.png)
+
+## Deployment-specific verification
+
+The planned editor and conversion audit is complete. Verification against a
+user's connected APISIX version and installed plugins remains environment
+specific; the pinned source comparison and mocked regressions do not replace
+that check.

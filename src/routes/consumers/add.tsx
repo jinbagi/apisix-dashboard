@@ -30,6 +30,7 @@ import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const ConsumerAddForm = () => {
@@ -46,6 +47,7 @@ const ConsumerAddForm = () => {
       return { response, username: payload.username };
     },
     async onSuccess({ username }) {
+      await refreshResourceCaches('consumers', API_CONSUMERS);
       showNotification({
         message: 'Consumer created and verified',
         type: 'success',
