@@ -20,6 +20,7 @@ import axios, { type AxiosResponse } from 'axios';
 import { queryClient } from '@/config/global';
 import { getRequestErrorMessage, req } from '@/config/req';
 import { checkDependencies } from '@/utils/checkDependencies';
+import { notifyResourceDeleted } from '@/utils/formNavigation';
 import { useCallbackRef } from '@/utils/hooks';
 import { showNotification } from '@/utils/notification';
 
@@ -115,6 +116,7 @@ export const DeleteResourceBtn = (props: DeleteResourceProps) => {
           throw error;
         }
 
+        notifyResourceDeleted(api);
         showNotification({
           message: `${name} deleted successfully`,
           type: 'success',
