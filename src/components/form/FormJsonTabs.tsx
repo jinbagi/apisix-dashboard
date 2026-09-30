@@ -576,6 +576,7 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
     label: rawData === undefined ? 'Visual Editor' : 'Configuration',
     children: (
       <form
+        noValidate
         onSubmit={form.handleSubmit(safeSubmit, (errors) => {
           const firstError = flattenErrors(errors)[0];
           if (firstError) {

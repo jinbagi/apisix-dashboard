@@ -30,10 +30,11 @@ import { InputWrapper } from '@/components/form/InputWrapper';
 import { AntdConfigProvider } from '@/config/antdConfigProvider';
 import type { InputWrapperProps } from '@/types/input-wrapper';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
+import { upstreamNodeMapToArray, type UpstreamNodeRow,upstreamNodeRowsToPayload } from '@/utils/upstreamNodes';
 
 import { genControllerProps } from '../../form/util';
 
-type DataSource = APISIXType['UpstreamNode'] & APISIXType['ID'];
+type DataSource = UpstreamNodeRow;
 
 const zValidateField = <T extends ZodRawShape, R extends keyof T>(
   zObj: ZodObject<T>,
@@ -57,46 +58,17 @@ const genRecord = (data?: DataSource | APISIXType['UpstreamNode']) => {
     priority: 0,
   };
   return {
-    id: nanoid(),
     ...d,
+    __rowKey: nanoid(),
   } as DataSource;
-};
-
-const objToUpstreamNodes = (data: APISIXType['UpstreamNodeObj']) => {
-  return Object.entries(data).map(([key, val]) => {
-    const [host, port] = key.split(':');
-    const d: APISIXType['UpstreamNode'] = {
-      host,
-      port: Number(port) || 80,
-      weight: val,
-      priority: 0,
-    };
-    return d;
-  });
 };
 
 const parseToDataSource = (data: APISIXType['UpstreamNodeListOrObj']) => {
   let val: APISIXType['UpstreamNodes'];
   if (isNil(data)) val = [];
   else if (Array.isArray(data)) val = data as APISIXType['UpstreamNodes'];
-  else val = objToUpstreamNodes(data as APISIXType['UpstreamNodeObj']);
+  else val = upstreamNodeMapToArray(data as APISIXType['UpstreamNodeObj']);
   return val.map(genRecord);
-};
-
-const parseToUpstreamNodes = (data: DataSource[] | undefined) => {
-  if (!data?.length) return [];
-  return data.map((item) => {
-    const d: APISIXType['UpstreamNode'] = {
-      host: item.host,
-      port: Number(item.port),
-      weight: Number(item.weight),
-      priority:
-        item.priority === undefined || item.priority === null
-          ? undefined
-          : Number(item.priority),
-    };
-    return d;
-  });
 };
 
 const genProps = (field: keyof APISIXType['UpstreamNode']) => {
@@ -129,7 +101,7 @@ const FormItemNodesInner = <T extends FieldValues>(
   } = useController<T>(controllerProps);
   const syncFormValue = useCallback(
     (data: DataSource[]) => {
-      const vals = parseToUpstreamNodes(data);
+      const vals = upstreamNodeRowsToPayload(data);
       fOnChange?.(vals);
       restProps.onChange?.(vals);
     },
@@ -156,8 +128,8 @@ const FormItemNodesInner = <T extends FieldValues>(
   const columns = useMemo<ProColumns<DataSource>[]>(
     () => [
       {
-        title: 'id',
-        dataIndex: 'id',
+        title: 'Row',
+        dataIndex: '__rowKey',
         hidden: true,
       },
       {
@@ -184,7 +156,7 @@ const FormItemNodesInner = <T extends FieldValues>(
         }),
         formItemProps: genProps('port'),
         render: (_, entity) => {
-          return entity.port.toString();
+          return entity.port?.toString() ?? 'Auto';
         },
       },
       {
@@ -228,13 +200,16 @@ const FormItemNodesInner = <T extends FieldValues>(
     [disabled, syncNodeField]
   );
   useEffect(() => {
-    setNodeValues(parseToDataSource(value));
-  }, [setNodeValues, value]);
+    const next = parseToDataSource(value);
+    // Local edits already updated the rows. Keep their keys so typing does not
+    // recreate the editable inputs; an external JSON replacement resets them.
+    setValues((previous) => equals(JSON.parse(JSON.stringify(upstreamNodeRowsToPayload(previous))), JSON.parse(JSON.stringify(upstreamNodeRowsToPayload(next)))) ? previous : next);
+  }, [value]);
   useEffect(() => {
     setIsDisabled(disabled || false);
   }, [disabled]);
 
-  const editableKeys = isDisabled ? [] : values.map((item) => item.id);
+  const editableKeys = isDisabled ? [] : values.map((item) => item.__rowKey);
   const nodeCount = values.length;
   const totalWeight = values.reduce((sum, item) => sum + (Number(item.weight) || 0), 0);
 
@@ -249,7 +224,7 @@ const FormItemNodesInner = <T extends FieldValues>(
       <input name={fName} type="hidden" />
       <div style={{ marginBottom: 8 }}>
         <Typography.Text type="secondary" style={{ fontSize: 'var(--app-font-size-md)' }}>
-          {nodeCount} backend node{nodeCount === 1 ? '' : 's'} configured. Total weight: {totalWeight}.
+          {nodeCount} backend node{nodeCount === 1 ? '' : 's'} configured. Total weight: {totalWeight}. A blank port uses the scheme's default.
         </Typography.Text>
       </div>
       {nodeCount === 0 && (
@@ -264,7 +239,7 @@ const FormItemNodesInner = <T extends FieldValues>(
       <AntdConfigProvider>
         <EditableProTable<DataSource>
           defaultSize="small"
-          rowKey="id"
+          rowKey="__rowKey"
           bordered
           controlled
           scroll={{ x: 560 }}
@@ -281,7 +256,7 @@ const FormItemNodesInner = <T extends FieldValues>(
             editableKeys,
             onValuesChange(changedRecord, dataSource) {
               const next = dataSource.map((item) =>
-                item.id === changedRecord.id
+                item.__rowKey === changedRecord.__rowKey
                   ? { ...item, ...changedRecord }
                   : item
               );
@@ -296,7 +271,7 @@ const FormItemNodesInner = <T extends FieldValues>(
                   size="small"
                   style={{ padding: 0 }}
                   onClick={() => {
-                    const next = values.filter((item) => item.id !== row.id);
+                    const next = values.filter((item) => item.__rowKey !== row.__rowKey);
                     setNodeValues(next);
                     syncFormValue(next);
                   }}

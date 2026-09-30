@@ -224,7 +224,7 @@ const FormSectionManager = (props: FormSectionManagerProps) => {
   const changeManager = (next: Manager) => {
     if (next === manager) return;
     const values = getValues() as Record<string, unknown>;
-    if (manager && manager in managerFields) {
+    if (manager && Object.hasOwn(managerFields, manager)) {
       drafts.current[manager] = Object.fromEntries(managerFields[manager].map((key) => [key, values[key]]));
     }
     for (const fields of Object.values(managerFields)) {

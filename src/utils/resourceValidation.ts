@@ -83,14 +83,34 @@ export const validateRouteMatch = (
 };
 
 export const validateSSLCertificates = (
-  data: { cert?: string; certs?: string[]; key?: string; keys?: string[]; client?: { ca?: string }; __clientEnabled?: boolean },
+  data: { type?: string; sni?: string; snis?: string[]; cert?: string; certs?: string[]; key?: string; keys?: string[]; client?: { ca?: string }; __clientEnabled?: boolean },
   context: RefinementCtx
 ) => {
-  if (!data.cert?.trim() && !data.certs?.some((cert) => cert.trim())) {
-    context.addIssue({ code: 'custom', message: 'At least one certificate is required (cert or certs)', path: ['cert'] });
+  if (!data.cert?.trim()) {
+    context.addIssue({ code: 'custom', message: 'Default Certificate is required', path: ['cert'] });
   }
-  if (!data.key?.trim() && !data.keys?.some((key) => key.trim())) {
-    context.addIssue({ code: 'custom', message: 'At least one key is required (key or keys)', path: ['key'] });
+  if (!data.key?.trim()) {
+    context.addIssue({ code: 'custom', message: 'Default Private Key is required', path: ['key'] });
+  }
+  if (data.type !== 'client') {
+    const hasSni = !!data.sni?.trim();
+    const hasSnis = !!data.snis?.length;
+    if (!hasSni && !hasSnis) {
+      context.addIssue({ code: 'custom', message: 'A server certificate requires SNI or SNIs', path: ['sni'] });
+    }
+    if (hasSni && hasSnis) {
+      context.addIssue({ code: 'custom', message: 'Use either SNI or SNIs for a server certificate', path: ['sni'] });
+    }
+    if ((data.certs?.length ?? 0) !== (data.keys?.length ?? 0)) {
+      context.addIssue({ code: 'custom', message: 'Additional certificates and private keys must have the same count', path: ['certs'] });
+    }
+  }
+  for (const field of ['certs', 'keys', 'snis'] as const) {
+    data[field]?.forEach((value, index) => {
+      if (!value.trim()) {
+        context.addIssue({ code: 'custom', message: 'Value must not be empty', path: [field, index] });
+      }
+    });
   }
   if ((data.__clientEnabled || data.client) && !data.client?.ca?.trim()) {
     context.addIssue({ code: 'custom', message: 'Client CA Certificate is required when client certificate verification is enabled', path: ['client', 'ca'] });

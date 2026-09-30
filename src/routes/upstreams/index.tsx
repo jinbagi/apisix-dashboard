@@ -37,6 +37,7 @@ import { queryClient } from '@/config/global';
 import type { APISIXType } from '@/types/schema/apisix';
 import { pageSearchSchema } from '@/types/schema/pageSearch';
 import { renderUnixDateTime, unixFieldSorter } from '@/utils/columns';
+import { formatUpstreamNodeAddress } from '@/utils/upstreamNodes';
 import { useBulkActions } from '@/utils/useBulkActions';
 
 function RouteComponent() {
@@ -107,7 +108,7 @@ function RouteComponent() {
           if (!nodes) return '-';
           const hosts: string[] = [];
           if (Array.isArray(nodes)) {
-            for (const n of nodes) hosts.push(`${n.host}:${n.port}`);
+            for (const n of nodes) hosts.push(formatUpstreamNodeAddress(n));
           } else {
             hosts.push(...Object.keys(nodes));
           }
