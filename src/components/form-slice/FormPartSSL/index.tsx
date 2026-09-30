@@ -114,6 +114,8 @@ const FormSSLValidity = () => {
 
 const FormSectionServerNames = () => {
   const { control } = useFormContext<SSLPostType>();
+  const certificateType = useWatch({ control, name: 'type' });
+  const isServer = certificateType !== 'client';
   const sni = useWatch({ control, name: 'sni' });
   const snis = useWatch({ control, name: 'snis' });
   const hasSni = typeof sni === 'string' && sni.trim().length > 0;
@@ -121,7 +123,7 @@ const FormSectionServerNames = () => {
 
   return (
     <FormSection legend="Server Names" collapsible defaultOpen={true}>
-      {hasSni && hasSnis && (
+      {isServer && hasSni && hasSnis && (
         <Alert
           type="warning"
           showIcon
@@ -135,17 +137,17 @@ const FormSectionServerNames = () => {
         label="SNI"
         name="sni"
         placeholder="domain1.com"
-        required={!hasSnis}
-        disabled={hasSnis}
-        description={hasSnis ? 'Disabled because SNIs is set.' : 'Use this for one hostname.'}
+        required={isServer && !hasSnis}
+        disabled={isServer && hasSnis && !hasSni}
+        description={!isServer ? 'Optional for client certificates.' : hasSnis && !hasSni ? 'Disabled because SNIs is set.' : 'Use this for one hostname.'}
       />
       <FormItemTagsInput
         control={control}
         label="SNIs"
         name="snis"
         placeholder="domain1.com, domain2.com"
-        disabled={hasSni}
-        description={hasSni ? 'Disabled because SNI is set.' : 'Use this for multiple hostnames.'}
+        disabled={isServer && hasSni && !hasSnis}
+        description={!isServer ? 'Optional for client certificates.' : hasSni && !hasSnis ? 'Disabled because SNI is set.' : 'Use this for multiple hostnames.'}
       />
     </FormSection>
   );

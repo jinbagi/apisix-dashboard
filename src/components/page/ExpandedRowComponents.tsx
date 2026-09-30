@@ -18,6 +18,7 @@ import { Link } from '@tanstack/react-router';
 import { Tag, Typography } from 'antd';
 
 import type { APISIXType } from '@/types/schema/apisix';
+import { formatUpstreamNodeAddress } from '@/utils/upstreamNodes';
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div style={{ minWidth: 0 }}>
@@ -107,7 +108,7 @@ export const ServiceExpandedRow = ({ service }: { service: APISIXType['Service']
       {service.upstream?.nodes && (
         <Field label="Inline Nodes">
           {Array.isArray(service.upstream.nodes)
-            ? service.upstream.nodes.map((n) => `${n.host}:${n.port}`).join(', ')
+            ? service.upstream.nodes.map(formatUpstreamNodeAddress).join(', ')
             : Object.keys(service.upstream.nodes).join(', ')}
         </Field>
       )}
@@ -122,7 +123,7 @@ export const UpstreamExpandedRow = ({ upstream }: { upstream: APISIXType['Upstre
   const nodes: string[] = [];
   if (upstream.nodes) {
     if (Array.isArray(upstream.nodes)) {
-      for (const n of upstream.nodes) nodes.push(`${n.host}:${n.port} (w:${n.weight})`);
+      for (const n of upstream.nodes) nodes.push(`${formatUpstreamNodeAddress(n)} (w:${n.weight})`);
     } else {
       for (const [addr, weight] of Object.entries(upstream.nodes)) nodes.push(`${addr} (w:${weight})`);
     }

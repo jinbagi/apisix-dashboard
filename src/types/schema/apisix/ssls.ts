@@ -28,7 +28,7 @@ const SSLProtocols = z.union([
 
 const SSLClient = z.object({
   ca: z.string().optional(),
-  depth: z.number().min(0).default(1).optional(),
+  depth: z.number().int().min(0).default(1).optional(),
   skip_mtls_uri_regex: z.array(z.string()).optional(),
 });
 
@@ -37,7 +37,7 @@ const SSL = z
     cert: z.string(),
     key: z.string(),
     sni: z.string().optional(),
-    snis: z.array(z.string()),
+    snis: z.array(z.string()).min(1),
     certs: z.array(z.string()),
     keys: z.array(z.string()),
     client: SSLClient.optional(),

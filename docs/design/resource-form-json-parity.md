@@ -90,11 +90,39 @@ version. This comparison does not certify every constraint for every release.
 
 ![Proto basic metadata controls](../en/assets/screenshots/parity-proto-basic-fields.png)
 
+## SSL and upstream constraint review
+
+The same pinned upstream schema requires a default SSL `cert` and `key`, even
+when additional `certs`/`keys` are present. A server certificate requires exactly
+one of `sni` or `snis`; client certificates do not require server names. The
+[upstream SSL checker](https://github.com/apache/apisix/blob/c6b2adc32ed358ee68c83b91de21d951b9c000a0/apisix/ssl.lua)
+also rejects different additional certificate/key counts for server certificates.
+The shared form/Admin API validator now enforces these structural constraints,
+nonblank array entries and integer client depth. Visual submission disables the
+browser's separate native constraint validation so the shared schema can show
+the same error messages and error summary as JSON submission. Certificate parsing, key
+matching and resolving secret references remain server checks.
+
+Conflicting SNI inputs remain editable so the user can clear one. Incomplete
+additional certificate/key pairs show both inputs, including a missing side,
+so the user can repair a JSON draft without deleting its certificate.
+
+Node ports are optional in the pinned schema, weights are nonnegative integers,
+and node metadata is an object. The node table now parses bracketed IPv6
+addresses without splitting the address, retains absent ports, and preserves
+metadata and future node properties when editing another field. Its own row
+keys stay stable while typing. List and expanded views show addresses without
+an invented port or an ambiguous IPv6 separator.
+
+An inherited-property Secret manager (`__proto__` or `constructor`) supplied in
+an invalid JSON draft can now be corrected through the Manager selector without
+throwing. Only owned provider definitions are indexed.
+
+![Repairable SSL names and certificate pairs](../en/assets/screenshots/parity-ssl-repairable-pairs.png)
+
 ## Remaining audit queue
 
-- Finish the pinned upstream comparison for SSL and node constraints, retaining
-  server-side validation for version-dependent or opaque configuration.
-- Review SSL certificate/key array pairing and SNI conflict handling: existing
-  visual warnings are not a complete server-equivalent validator.
-- Exercise upstream node editing with IPv6 and additional node properties;
-  the node table has its own object/array conversion separate from this fix.
+- Validate against the version and plugins used by a user's connected server;
+  the pinned source comparison and mocked regressions do not replace that check.
+- Review resource creation cache refresh and nondeterministic reference selection
+  in the previously retried CRUD tests.
