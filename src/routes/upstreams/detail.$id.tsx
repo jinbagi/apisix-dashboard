@@ -45,7 +45,7 @@ import { API_UPSTREAMS } from '@/config/constant';
 import { req } from '@/config/req';
 import type { APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { prepareUpstreamFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
   readOnly: boolean;
@@ -69,8 +69,8 @@ const UpstreamDetailForm = (
   } = useSuspenseQuery(getUpstreamQueryOptions(id));
 
   const form = useForm({
-    resolver: zodResolver(FormPartUpstreamSchema),
-    shouldUnregister: true,
+    resolver: zodResolver(FormPartUpstreamSchema, undefined, { raw: true }),
+    shouldUnregister: false,
     mode: 'all',
     disabled: readOnly,
   });
@@ -99,8 +99,9 @@ const UpstreamDetailForm = (
   return (
     <FormProvider {...form}>
       <FormJsonTabs
+        preparePayload={prepareUpstreamFormPayload}
         form={form}
-        onSubmit={(d) => putUpstream.mutateAsync(pipeProduce()(d))}
+        onSubmit={(d) => putUpstream.mutateAsync(prepareUpstreamFormPayload(d))}
         submitLabel="Save"
         disabled={readOnly}
         rawData={upstreamData}

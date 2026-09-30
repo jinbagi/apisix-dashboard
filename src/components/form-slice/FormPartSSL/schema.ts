@@ -18,6 +18,7 @@ import { produce } from 'immer';
 import { z } from 'zod';
 
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 import { validateSSLCertificates } from '@/utils/resourceValidation';
 
 const SSLForm = z.object({
@@ -53,8 +54,11 @@ export const produceToSSLForm = (data: APISIXType['SSL']) =>
     }
   });
 
-export const produceSSLSubmitPayload = produce((draft: SSLPostType) => {
-  if (!draft.__clientEnabled || !draft.client?.ca?.trim()) {
-    delete draft.client;
-  }
-});
+export const produceSSLSubmitPayload = <T extends SSLPostType>(data: T): T => {
+  const payload = prepareResourceFormPayload(data);
+  // The switch removes client explicitly; JSON does not carry UI flags.
+  if (data.__clientEnabled === false) delete payload.client;
+  delete (payload as Record<string, unknown>).validity_start;
+  delete (payload as Record<string, unknown>).validity_end;
+  return payload;
+};

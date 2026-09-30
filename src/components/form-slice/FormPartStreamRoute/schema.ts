@@ -18,12 +18,15 @@ import { type TypeOf, z } from 'zod';
 
 import { APISIXCommon } from '@/types/schema/apisix/common';
 import { APISIXStreamRoutes } from '@/types/schema/apisix/stream_routes';
+import { validateInlineUpstream } from '@/utils/resourceValidation';
 
 export const StreamRoutePostSchema = APISIXStreamRoutes.StreamRoute.omit({
   create_time: true,
   update_time: true,
 }).merge(APISIXCommon.Basic).extend({
   id: z.string().optional(),
-});
+}).superRefine(validateInlineUpstream);
 
 export type StreamRoutePostType = TypeOf<typeof StreamRoutePostSchema>;
+
+export const StreamRoutePutSchema = APISIXStreamRoutes.StreamRoute.superRefine(validateInlineUpstream);

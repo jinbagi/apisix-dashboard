@@ -19,7 +19,9 @@ import type { ZodTypeAny } from 'zod';
 
 import { RoutePostSchema, RoutePutSchema } from '@/components/form-slice/FormPartRoute/schema';
 import { produceRoute } from '@/components/form-slice/FormPartRoute/util';
+import { ServicePostSchema, ServicePutSchema } from '@/components/form-slice/FormPartService/schema';
 import { SSLPostSchema, SSLPutSchema } from '@/components/form-slice/FormPartSSL/schema';
+import { StreamRoutePostSchema, StreamRoutePutSchema } from '@/components/form-slice/FormPartStreamRoute/schema';
 import { FormPartUpstreamSchema, UpstreamPostSchema } from '@/components/form-slice/FormPartUpstream/schema';
 import { getAdminResourceSchema } from '@/utils/resourceJsonSchema';
 
@@ -105,3 +107,25 @@ test('cleared form values use the same absent-key semantics as JSON transport', 
   expect(payload).not.toHaveProperty('methods');
   expect(payload.plugins).toEqual({ test: { keep: null, text: '' } });
 });
+
+for (const [resource, create, edit] of [
+  ['services', ServicePostSchema, ServicePutSchema],
+  ['stream_routes', StreamRoutePostSchema, StreamRoutePutSchema],
+] as const) {
+  for (const upstream of [{}, { service_name: 'backend' }, { nodes: { 'localhost:80': 1 }, pass_host: 'rewrite' }]) {
+    test(`${resource} inline validation parity: ${JSON.stringify(upstream)}`, () => {
+      const input = { ...identity, upstream };
+      const expected = issues(getAdminResourceSchema(`/${resource}/parity`)!, input);
+      expect(expected.length).toBeGreaterThan(0);
+      expect(issues(create, input)).toEqual(expected);
+      expect(issues(edit, input)).toEqual(expected);
+    });
+  }
+
+  test(`${resource} permits no inline upstream and a complete discovery upstream`, () => {
+    for (const schema of [create, edit, getAdminResourceSchema(`/${resource}/parity`)!]) {
+      expect(issues(schema, identity)).toEqual([]);
+      expect(issues(schema, { ...identity, upstream: { discovery_type: 'dns', service_name: 'backend' } })).toEqual([]);
+    }
+  });
+}

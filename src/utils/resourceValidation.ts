@@ -55,6 +55,18 @@ export const validateUpstreamTarget = (
   }
 };
 
+export const validateInlineUpstream = (
+  data: { upstream?: Parameters<typeof validateUpstreamTarget>[0] },
+  context: RefinementCtx
+) => {
+  if (data.upstream) {
+    validateUpstreamTarget(data.upstream, {
+      ...context,
+      addIssue: (issue) => context.addIssue({ ...issue, path: ['upstream', ...(issue.path ?? [])] }),
+    });
+  }
+};
+
 export const validateRouteMatch = (
   data: { uri?: string; uris?: string[]; host?: string; hosts?: string[]; remote_addr?: string; remote_addrs?: string[]; upstream?: Parameters<typeof validateUpstreamTarget>[0] },
   context: RefinementCtx
@@ -67,12 +79,7 @@ export const validateRouteMatch = (
       context.addIssue({ code: 'custom', message: `Use either ${single} or ${multiple}, not both`, path: [single] });
     }
   }
-  if (data.upstream) {
-    validateUpstreamTarget(data.upstream, {
-      ...context,
-      addIssue: (issue) => context.addIssue({ ...issue, path: ['upstream', ...(issue.path ?? [])] }),
-    });
-  }
+  validateInlineUpstream(data, context);
 };
 
 export const validateSSLCertificates = (

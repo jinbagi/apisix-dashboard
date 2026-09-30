@@ -43,7 +43,6 @@ import { StatusSwitch } from '@/components/StatusTag';
 import { API_SSLS } from '@/config/constant';
 import { req } from '@/config/req';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
 
 const SSLDetailForm = (props: { id: string }) => {
   const { id } = props;
@@ -54,13 +53,13 @@ const SSLDetailForm = (props: { id: string }) => {
   } = useSuspenseQuery(getSSLQueryOptions(id));
 
   const form = useForm({
-    resolver: zodResolver(SSLPutSchema),
-    shouldUnregister: true,
+    resolver: zodResolver(SSLPutSchema, undefined, { raw: true }),
+    shouldUnregister: false,
     mode: 'all',
   });
 
   const putSSL = useMutation({
-    mutationFn: (d: SSLPutType) => putSSLReq(req, pipeProduce()(d)),
+    mutationFn: (d: SSLPutType) => putSSLReq(req, produceSSLSubmitPayload(d)),
     async onSuccess() {
       await refetch({ throwOnError: true });
       showNotification({
@@ -84,9 +83,10 @@ const SSLDetailForm = (props: { id: string }) => {
     <FormTOCBox>
       <FormProvider {...form}>
         <FormJsonTabs
+          preparePayload={produceSSLSubmitPayload}
           form={form}
           onSubmit={(d) =>
-            putSSL.mutateAsync(pipeProduce(produceSSLSubmitPayload)(d))
+            putSSL.mutateAsync(produceSSLSubmitPayload(d))
           }
           submitLabel="Save"
           rawData={sslData}

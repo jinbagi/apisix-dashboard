@@ -16,6 +16,7 @@
  */
 import { Alert, Descriptions, theme, Typography } from 'antd';
 import dayjs from 'dayjs';
+import { useEffect } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import { FormItemNumberInput } from '@/components/form/NumberInput';
@@ -32,8 +33,13 @@ import { FormItemCertKeyList } from './FormItemCertKeyList';
 import type { SSLPostType } from './schema';
 
 const FormSectionClient = () => {
-  const { control } = useFormContext<SSLPostType>();
-  const clientEnabled = useWatch({ control, name: '__clientEnabled' });
+  const { control, unregister, setValue } = useFormContext<SSLPostType>();
+  const client = useWatch({ control, name: 'client' });
+  const clientFlag = useWatch({ control, name: '__clientEnabled' });
+  const clientEnabled = clientFlag ?? !!client;
+  useEffect(() => {
+    if (clientFlag === undefined) setValue('__clientEnabled', !!client);
+  }, [clientFlag, client, setValue]);
   const { token } = theme.useToken();
   return (
     <FormSection
@@ -42,6 +48,12 @@ const FormSectionClient = () => {
         <FormItemSwitch
           control={control}
           name="__clientEnabled"
+          onChange={(enabled) => {
+            if (!enabled) {
+              unregister('client');
+              setValue('client', undefined, { shouldDirty: true });
+            }
+          }}
           aria-label="Enable client certificate verification"
         />
       )}

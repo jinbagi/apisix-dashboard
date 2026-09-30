@@ -38,7 +38,7 @@ import { API_CONSUMERS } from '@/config/constant';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
   readOnly: boolean;
@@ -53,8 +53,8 @@ const ConsumerDetailForm = (props: Props) => {
   const { data: consumerData, isLoading, refetch } = consumerQuery;
 
   const form = useForm({
-    resolver: zodResolver(APISIX.ConsumerPut),
-    shouldUnregister: true,
+    resolver: zodResolver(APISIX.ConsumerPut, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
     disabled: readOnly,
@@ -84,8 +84,9 @@ const ConsumerDetailForm = (props: Props) => {
   return (
     <FormProvider {...form}>
       <FormJsonTabs
+        preparePayload={prepareResourceFormPayload}
         form={form}
-        onSubmit={(d) => putConsumer.mutateAsync(pipeProduce()(d))}
+        onSubmit={(d) => putConsumer.mutateAsync(prepareResourceFormPayload(d))}
         submitLabel="Save"
         disabled={readOnly}
         rawData={consumerData?.value}

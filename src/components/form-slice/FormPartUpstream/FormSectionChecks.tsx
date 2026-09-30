@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 import { theme,Typography } from 'antd';
+import { useEffect } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import { FormItemLabels } from '@/components/form/Labels';
@@ -306,6 +307,15 @@ const FormSectionChecksCore = () => {
 };
 
 export const FormSectionChecks = () => {
+  const { control, setValue } = useFormContext<FormPartUpstreamType>();
+  const np = useNamePrefix();
+  const checks = useWatch({ control, name: np('checks') });
+  const enabled = useWatch({ control, name: '__checksEnabled' });
+  const passiveEnabled = useWatch({ control, name: '__checksPassiveEnabled' });
+  useEffect(() => {
+    if (enabled === undefined) setValue('__checksEnabled', !!checks);
+    if (passiveEnabled === undefined) setValue('__checksPassiveEnabled', !!checks?.passive);
+  }, [checks, enabled, passiveEnabled, setValue]);
   return (
     <FormSection
       legend="Health Checks"
