@@ -34,13 +34,12 @@ import { queryClient } from '@/config/global';
 import { req } from '@/config/req';
 import { verifyAdminApiExists } from '@/utils/adminApiVerification';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
 
 const SSLAddForm = () => {
   const router = useRouter();
   const postSSL = useMutation({
     mutationFn: async (d: SSLPostType) => {
-      const payload = pipeProduce(produceSSLSubmitPayload)(d);
+      const payload = produceSSLSubmitPayload(d);
       const response = await postSSLReq(req, payload);
       await verifyAdminApiExists(`${API_SSLS}/${response.data.value.id}`);
       return response;
@@ -66,14 +65,14 @@ const SSLAddForm = () => {
   });
 
   const form = useForm({
-    resolver: zodResolver(SSLPostSchema),
-    shouldUnregister: true,
+    resolver: zodResolver(SSLPostSchema, undefined, { raw: true }),
+    shouldUnregister: false,
     mode: 'all',
   });
 
   return (
     <FormProvider {...form}>
-      <FormJsonTabs form={form} onSubmit={(d) => postSSL.mutateAsync(d)} schema={SSLPostSchema} submitLabel="Add">
+      <FormJsonTabs preparePayload={produceSSLSubmitPayload} form={form} onSubmit={(d) => postSSL.mutateAsync(d)} schema={SSLPostSchema} submitLabel="Add">
         <FormPartSSL />
       </FormJsonTabs>
     </FormProvider>

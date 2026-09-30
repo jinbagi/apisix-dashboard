@@ -30,6 +30,7 @@ import { getStreamRouteQueryOptions } from '@/apis/hooks';
 import { putStreamRouteReq } from '@/apis/stream_routes';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartStreamRoute } from '@/components/form-slice/FormPartStreamRoute';
+import { StreamRoutePutSchema } from '@/components/form-slice/FormPartStreamRoute/schema';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
@@ -37,9 +38,9 @@ import PageHeader from '@/components/page/PageHeader';
 import { StreamRoutesErrorComponent } from '@/components/page-slice/stream_routes/ErrorComponent';
 import { API_STREAM_ROUTES } from '@/config/constant';
 import { req } from '@/config/req';
-import { APISIX, type APISIXType } from '@/types/schema/apisix';
+import type { APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
   readOnly: boolean;
@@ -54,8 +55,8 @@ const StreamRouteDetailForm = (props: Props) => {
   const { data: streamRouteData, refetch } = streamRouteQuery;
 
   const form = useForm({
-    resolver: zodResolver(APISIX.StreamRoute),
-    shouldUnregister: true,
+    resolver: zodResolver(StreamRoutePutSchema, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
     disabled: readOnly,
@@ -69,7 +70,7 @@ const StreamRouteDetailForm = (props: Props) => {
 
   const putStreamRoute = useMutation({
     mutationFn: (d: APISIXType['StreamRoute']) =>
-      putStreamRouteReq(req, pipeProduce()(d)),
+      putStreamRouteReq(req, prepareResourceFormPayload(d)),
     async onSuccess() {
       await refetch({ throwOnError: true });
       showNotification({
@@ -82,6 +83,7 @@ const StreamRouteDetailForm = (props: Props) => {
   return (
     <FormProvider {...form}>
       <FormJsonTabs
+        preparePayload={prepareResourceFormPayload}
         form={form}
         onSubmit={(d) => putStreamRoute.mutateAsync(d)}
         submitLabel="Save"

@@ -30,6 +30,7 @@ import { getServiceQueryOptions } from '@/apis/hooks';
 import { putServiceReq } from '@/apis/services';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartService } from '@/components/form-slice/FormPartService';
+import { ServicePutSchema } from '@/components/form-slice/FormPartService/schema';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
@@ -37,10 +38,9 @@ import PageHeader from '@/components/page/PageHeader';
 import { ReverseReferences } from '@/components/page/ReverseReferences';
 import { API_SERVICES } from '@/config/constant';
 import { req } from '@/config/req';
-import { APISIX, type APISIXType } from '@/types/schema/apisix';
-import { produceRmUpstreamWhenHas } from '@/utils/form-producer';
+import type { APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const ServiceDetailForm = () => {
   const { id } = useParams({ from: '/services/detail/$id' });
@@ -49,7 +49,7 @@ const ServiceDetailForm = () => {
   const { data: serviceData, isLoading, refetch } = serviceQuery;
 
   const form = useForm({
-    resolver: zodResolver(APISIX.Service),
+    resolver: zodResolver(ServicePutSchema, undefined, { raw: true }),
     shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
@@ -65,7 +65,7 @@ const ServiceDetailForm = () => {
     mutationFn: (d: APISIXType['Service']) =>
       putServiceReq(
         req,
-        pipeProduce(produceRmUpstreamWhenHas('upstream_id'))(d)
+        prepareResourceFormPayload(d)
       ),
     async onSuccess() {
       await refetch({ throwOnError: true });
@@ -83,6 +83,7 @@ const ServiceDetailForm = () => {
   return (
     <FormProvider {...form}>
       <FormJsonTabs
+        preparePayload={prepareResourceFormPayload}
         form={form}
         onSubmit={(d) => putService.mutateAsync(d)}
         submitLabel="Save"

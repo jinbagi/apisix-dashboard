@@ -17,9 +17,12 @@
 import { z } from 'zod';
 
 import { APISIXServices } from '@/types/schema/apisix/services';
+import { validateInlineUpstream } from '@/utils/resourceValidation';
 
 export const ServicePostSchema = APISIXServices.ServicePost.extend({
   id: z.string().optional(),
-});
+}).superRefine(validateInlineUpstream);
 
 export type ServicePostType = z.infer<typeof ServicePostSchema>;
+
+export const ServicePutSchema = APISIXServices.Service.superRefine(validateInlineUpstream);

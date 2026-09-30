@@ -34,7 +34,7 @@ import { UPSTREAM_REQUIRED_TEMPLATE } from '@/config/resourceTemplates';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { prepareUpstreamFormPayload } from '@/utils/resourceFormPayload';
 
 type PostUpstreamType = z.infer<typeof UpstreamPostSchema>;
 
@@ -42,7 +42,7 @@ const UpstreamAddForm = ({ defaultValues }: { defaultValues?: PostUpstreamType }
   const router = useRouter();
   const postUpstream = useMutation({
     mutationFn: async (d: PostUpstreamType) => {
-      const payload = pipeProduce()(d);
+      const payload = prepareUpstreamFormPayload(d);
       const response = await postUpstreamReq(req, payload);
       const id = response.data.value.id;
       await verifyAdminApiResource(
@@ -72,8 +72,8 @@ const UpstreamAddForm = ({ defaultValues }: { defaultValues?: PostUpstreamType }
     },
   });
   const form = useForm({
-    resolver: zodResolver(UpstreamPostSchema),
-    shouldUnregister: true,
+    resolver: zodResolver(UpstreamPostSchema, undefined, { raw: true }),
+    shouldUnregister: false,
     mode: 'all',
     defaultValues,
   });
@@ -81,6 +81,7 @@ const UpstreamAddForm = ({ defaultValues }: { defaultValues?: PostUpstreamType }
   return (
     <FormProvider {...form}>
       <FormJsonTabs
+        preparePayload={prepareUpstreamFormPayload}
         form={form}
         onSubmit={(d) => postUpstream.mutateAsync(d)}
         schema={UpstreamPostSchema}

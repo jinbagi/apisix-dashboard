@@ -17,7 +17,7 @@
 import type { ZodTypeAny } from 'zod';
 
 import { APISIX } from '@/types/schema/apisix';
-import { validateRouteMatch, validateSSLCertificates, validateUpstreamTarget } from '@/utils/resourceValidation';
+import { validateInlineUpstream, validateRouteMatch, validateSSLCertificates, validateUpstreamTarget } from '@/utils/resourceValidation';
 
 export type ConditionalRequirement = {
   fieldGroups: string[][];
@@ -33,11 +33,11 @@ export const getAdminResourceSchema = (apiPath: string): ZodTypeAny | null => {
   if (normalized.match(/^\/consumers\/[^/]+\/credentials(?:\/|$)/)) {
     return APISIX.Credential;
   }
-  if (normalized.includes('/stream_routes')) return APISIX.StreamRoute;
+  if (normalized.includes('/stream_routes')) return APISIX.StreamRoute.superRefine(validateInlineUpstream);
   if (normalized.includes('/routes')) {
     return APISIX.Route.superRefine(validateRouteMatch);
   }
-  if (normalized.includes('/services')) return APISIX.Service;
+  if (normalized.includes('/services')) return APISIX.Service.superRefine(validateInlineUpstream);
   if (normalized.includes('/upstreams')) {
     return APISIX.Upstream.superRefine(validateUpstreamTarget);
   }
