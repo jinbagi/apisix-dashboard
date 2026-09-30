@@ -22,7 +22,8 @@ const Proto = z
   .object({
     content: z.string().min(1, 'Proto content is required'),
   })
-  .merge(APISIXCommon.Info);
+  .merge(APISIXCommon.Info)
+  .merge(APISIXCommon.Basic.omit({ status: true }));
 
 export const APISIXProtos = {
   Proto,

@@ -33,7 +33,7 @@ import { APISIXProtos } from '@/types/schema/apisix/protos';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const defaultValues: APISIXType['ProtoPost'] = {
   content: '',
@@ -44,7 +44,7 @@ const ProtoAddForm = () => {
 
   const postProto = useMutation({
     mutationFn: async (d: APISIXType['ProtoPost']) => {
-      const payload = pipeProduce()(d);
+      const payload = prepareResourceFormPayload(d);
       const response = await postProtoReq(req, payload);
       await verifyAdminApiResource(
         `${API_PROTOS}/${response.data.value.id}`,
@@ -73,8 +73,8 @@ const ProtoAddForm = () => {
   });
 
   const form = useForm({
-    resolver: zodResolver(APISIXProtos.ProtoPost),
-    shouldUnregister: true,
+    resolver: zodResolver(APISIXProtos.ProtoPost, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     defaultValues,
     mode: 'onChange',
@@ -82,7 +82,7 @@ const ProtoAddForm = () => {
 
   return (
     <FormProvider {...form}>
-      <FormJsonTabs form={form} onSubmit={(d) => postProto.mutateAsync(d)} schema={APISIXProtos.ProtoPost} submitLabel="Add">
+      <FormJsonTabs preparePayload={prepareResourceFormPayload} form={form} onSubmit={(d) => postProto.mutateAsync(d)} schema={APISIXProtos.ProtoPost} submitLabel="Add">
         <FormPartProto />
       </FormJsonTabs>
     </FormProvider>

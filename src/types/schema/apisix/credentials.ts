@@ -24,7 +24,7 @@ const Credential = z
     plugins: APISIXPlugins.Plugins.optional(),
   })
   .merge(APISIXCommon.Info)
-  .merge(APISIXCommon.Basic.omit({ name: true }));
+  .merge(APISIXCommon.Basic);
 
 const ConsumerCredentials = z.array(Credential);
 

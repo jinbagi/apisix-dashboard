@@ -22,6 +22,7 @@ import {
   FormItemTextareaWithUpload,
   type FormItemTextareaWithUploadProps,
 } from '../form/TextareaWithUpload';
+import { FormPartBasic } from './FormPartBasic';
 
 const fileTypes = '.proto,.pb';
 export const FormPartProto = <T extends FieldValues>(
@@ -29,14 +30,17 @@ export const FormPartProto = <T extends FieldValues>(
 ) => {
   const form = useFormContext<APISIXType['ProtoPost']>();
   return (
-    <FormItemTextareaWithUpload
-      name="content"
-      label="Content"
-      placeholder={`Paste or upload ${fileTypes} file`}
-      control={form.control}
-      minRows={10}
-      acceptFileTypes={fileTypes}
-      {...props}
-    />
+    <>
+      <FormPartBasic showID={false} />
+      <FormItemTextareaWithUpload
+        name="content"
+        label="Content"
+        placeholder={`Paste or upload ${fileTypes} file`}
+        control={form.control}
+        minRows={10}
+        acceptFileTypes={fileTypes}
+        {...props}
+      />
+    </>
   );
 };

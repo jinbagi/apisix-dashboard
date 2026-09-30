@@ -38,7 +38,7 @@ import { API_GLOBAL_RULES } from '@/config/constant';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
   readOnly: boolean;
@@ -50,8 +50,8 @@ const GlobalRuleDetailForm = (props: Props) => {
   const detailReq = useSuspenseQuery(getGlobalRuleQueryOptions(id));
 
   const form = useForm({
-    resolver: zodResolver(APISIX.GlobalRulePut),
-    shouldUnregister: true,
+    resolver: zodResolver(APISIX.GlobalRulePut, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     defaultValues: {},
     mode: 'onChange',
@@ -78,8 +78,9 @@ const GlobalRuleDetailForm = (props: Props) => {
   return (
     <FormProvider {...form}>
       <FormJsonTabs
+        preparePayload={prepareResourceFormPayload}
         form={form}
-        onSubmit={(d) => putGlobalRule.mutateAsync(pipeProduce()(d))}
+        onSubmit={(d) => putGlobalRule.mutateAsync(prepareResourceFormPayload(d))}
         submitLabel="Save"
         disabled={readOnly}
         rawData={detailReq.data?.value}

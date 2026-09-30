@@ -38,7 +38,7 @@ import { API_CREDENTIALS } from '@/config/constant';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type CredentialFormProps = {
   readOnly: boolean;
@@ -58,8 +58,8 @@ const CredentialDetailForm = (props: CredentialFormProps) => {
   } = useSuspenseQuery(getCredentialQueryOptions(username, id));
 
   const form = useForm({
-    resolver: zodResolver(APISIX.CredentialPut),
-    shouldUnregister: true,
+    resolver: zodResolver(APISIX.CredentialPut, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
     disabled: readOnly,
@@ -73,7 +73,7 @@ const CredentialDetailForm = (props: CredentialFormProps) => {
 
   const putCredential = useMutation({
     mutationFn: (d: APISIXType['CredentialPut']) =>
-      putCredentialReq(req, pipeProduce()({ ...d, username })),
+      putCredentialReq(req, prepareResourceFormPayload({ ...d, username })),
     async onSuccess() {
       await refetch({ throwOnError: true });
       showNotification({
@@ -90,6 +90,7 @@ const CredentialDetailForm = (props: CredentialFormProps) => {
   return (
     <FormProvider {...form}>
       <FormJsonTabs
+        preparePayload={prepareResourceFormPayload}
         form={form}
         onSubmit={(d) => putCredential.mutateAsync(d)}
         submitLabel="Save"

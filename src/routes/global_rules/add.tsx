@@ -36,14 +36,14 @@ import { APISIX } from '@/types/schema/apisix';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const GlobalRuleAddForm = () => {
   const router = useReactRouter();
 
   const putGlobalRule = useMutation({
     mutationFn: async (d: APISIXType['GlobalRulePut']) => {
-      const payload = pipeProduce()(d);
+      const payload = prepareResourceFormPayload(d);
       const response = await putGlobalRuleReq(req, payload);
       await verifyAdminApiResource(
         `${API_GLOBAL_RULES}/${payload.id}`,
@@ -73,8 +73,8 @@ const GlobalRuleAddForm = () => {
   });
 
   const form = useForm({
-    resolver: zodResolver(APISIX.GlobalRulePut),
-    shouldUnregister: true,
+    resolver: zodResolver(APISIX.GlobalRulePut, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     defaultValues: {
       plugins: {},
@@ -85,7 +85,7 @@ const GlobalRuleAddForm = () => {
 
   return (
     <FormProvider {...form}>
-      <FormJsonTabs form={form} onSubmit={(d) => putGlobalRule.mutateAsync(d)} schema={APISIX.GlobalRulePut} submitLabel="Add">
+      <FormJsonTabs preparePayload={prepareResourceFormPayload} form={form} onSubmit={(d) => putGlobalRule.mutateAsync(d)} schema={APISIX.GlobalRulePut} submitLabel="Add">
         <FormSectionGeneral />
         <FormPartGlobalRules />
       </FormJsonTabs>
