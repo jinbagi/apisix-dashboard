@@ -121,9 +121,30 @@ throwing. Only owned provider definitions are indexed.
 
 ![Repairable SSL names and certificate pairs](../en/assets/screenshots/parity-ssl-repairable-pairs.png)
 
-## Remaining audit queue
+## Creation and reference selection
 
-- Validate against the version and plugins used by a user's connected server;
-  the pinned source comparison and mocked regressions do not replace that check.
-- Review resource creation cache refresh and nondeterministic reference selection
-  in the previously retried CRUD tests.
+A previously opened resource selector could keep its empty results for 30 seconds
+after a resource was created. Verified creation now refreshes the corresponding
+cached lists and reference selectors before navigation. This applies to all
+resource create pages, including a consumer's credential list. Only existing
+cache entries are refetched; it does not load unrelated resources.
+
+Browser regressions prime the list and selector before creating an Upstream,
+Service, Consumer Group or Plugin Config, then select the new ID and return to
+the refreshed list without reloading the app. The end-to-end hot-path test also
+waits for the actual reference option and asserts the outgoing reference IDs,
+so pressing Enter before an asynchronous option load cannot silently produce a
+resource without its intended backend. Consumer Group, Credential and Proto
+lists also expose the names supported by their forms, so saved resources can
+be recognized without memorizing IDs.
+
+![New Upstream offered by a previously opened selector](../en/assets/screenshots/parity-created-resource-options.png)
+
+![Consumer Group names in the refreshed list](../en/assets/screenshots/parity-consumer-group-names.png)
+
+## Deployment-specific verification
+
+The planned editor and conversion audit is complete. Verification against a
+user's connected APISIX version and installed plugins remains environment
+specific; the pinned source comparison and mocked regressions do not replace
+that check.

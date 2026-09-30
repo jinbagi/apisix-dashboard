@@ -90,6 +90,16 @@ function ConsumerGroupsList() {
         ),
       },
       {
+        dataIndex: ['value', 'name'],
+        title: 'Name',
+        key: 'name',
+        render: (_, record) => (
+          <Link to="/consumer_groups/detail/$id" params={{ id: record.value.id }}>
+            {record.value.name || '-'}
+          </Link>
+        ),
+      },
+      {
         dataIndex: ['value', 'desc'],
         title: 'Description',
         key: 'desc',

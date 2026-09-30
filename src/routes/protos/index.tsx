@@ -83,6 +83,16 @@ function RouteComponent() {
         ),
       },
       {
+        dataIndex: ['value', 'name'],
+        title: 'Name',
+        key: 'name',
+        render: (_, record) => (
+          <Link to="/protos/detail/$id" params={{ id: record.value.id }}>
+            {record.value.name || '-'}
+          </Link>
+        ),
+      },
+      {
         dataIndex: ['value', 'content'],
         title: 'Content Preview',
         key: 'content',

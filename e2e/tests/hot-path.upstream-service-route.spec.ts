@@ -191,8 +191,8 @@ test('can create upstream -> service -> route', async ({ page }) => {
         'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " ant-select ")][1]'
       )
       .click();
-    await page.keyboard.type(upstream.id);
-    await page.keyboard.press('Enter');
+    await page.getByRole('combobox', { name: 'Upstream ID', exact: true }).fill(upstream.id);
+    await page.locator('.ant-select-dropdown:visible').getByText(upstream.id, { exact: true }).click();
 
     // Add plugins
     await selectPluginsBtn.click();
@@ -244,6 +244,7 @@ test('can create upstream -> service -> route', async ({ page }) => {
 
     // intercept the response, get id from response
     const response = await postReq;
+    expect(response.request().postDataJSON().upstream_id).toBe(upstream.id);
     const data =
       (await response.json()) as APISIXType['RespServiceDetail']['data'];
     expect(data).toHaveProperty('value.id');
@@ -323,8 +324,8 @@ test('can create upstream -> service -> route', async ({ page }) => {
         'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " ant-select ")][1]'
       )
       .click();
-    await page.keyboard.type(service.id);
-    await page.keyboard.press('Enter');
+    await page.getByRole('combobox', { name: 'Service ID', exact: true }).fill(service.id);
+    await page.locator('.ant-select-dropdown:visible').getByText(service.id, { exact: true }).click();
 
     // Add plugins
     await selectPluginsBtn.click();
@@ -365,7 +366,9 @@ test('can create upstream -> service -> route', async ({ page }) => {
     await expect(page.getByText(routePluginName, { exact: true })).toBeVisible();
 
     // Submit the form
+    const routeResponse = page.waitForResponse((response) => response.url().includes('/apisix/admin/routes') && response.request().method() === 'POST');
     await routesPom.getAddBtn(page).click();
+    expect((await routeResponse).request().postDataJSON().service_id).toBe(service.id);
 
     // Wait for success message
     await uiHasToastMsg(page, {

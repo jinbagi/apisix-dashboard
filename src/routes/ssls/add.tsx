@@ -30,10 +30,10 @@ import {
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import PageHeader from '@/components/page/PageHeader';
 import { API_SSLS } from '@/config/constant';
-import { queryClient } from '@/config/global';
 import { req } from '@/config/req';
 import { verifyAdminApiExists } from '@/utils/adminApiVerification';
 import { showNotification } from '@/utils/notification';
+import { refreshCreatedResource } from '@/utils/resourceCache';
 
 const SSLAddForm = () => {
   const router = useRouter();
@@ -45,12 +45,12 @@ const SSLAddForm = () => {
       return response;
     },
     async onSuccess() {
+      await refreshCreatedResource('ssls', API_SSLS);
       showNotification({
         message: 'SSL created and verified',
         type: 'success',
       });
       try {
-        await queryClient.invalidateQueries({ queryKey: ['ssls'] });
         await router.navigate({
           to: '/ssls',
         });

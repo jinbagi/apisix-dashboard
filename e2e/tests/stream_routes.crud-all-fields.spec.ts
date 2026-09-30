@@ -95,7 +95,10 @@ test('CRUD stream route with all fields', async ({ page }) => {
     { timeout: 30000 }
   );
   await submitButton.click();
-  await createResponse;
+  const response = await createResponse;
+  const created = await response.json();
+  expect(response.ok(), created.error_msg ?? 'Stream Route creation must succeed').toBe(true);
+  expect(created).toHaveProperty('value.id');
   await streamRoutesPom.isDetailPage(page);
   const streamRouteId = await page
     .getByRole('textbox', { name: 'ID', exact: true })
