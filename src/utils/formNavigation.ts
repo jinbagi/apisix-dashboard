@@ -31,3 +31,10 @@ export function useRevealFormSection(open: () => void) {
   }, [open]);
   return ref;
 }
+
+// A confirmed deletion makes that resource's local draft obsolete.
+export const RESOURCE_DELETED_EVENT = 'apisix:resource-deleted';
+
+export const notifyResourceDeleted = (api: string) => {
+  window.dispatchEvent(new CustomEvent(RESOURCE_DELETED_EVENT, { detail: api }));
+};

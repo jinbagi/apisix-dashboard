@@ -81,6 +81,10 @@ test('create forms show conditional required fields and minimal JSON templates',
   );
   await expect(page.locator('input[name="uri"]')).toHaveValue('/orders');
 
+  await page.getByRole('button', { name: 'Revert changes', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Discard all unsaved changes?' })
+    .getByRole('button', { name: 'Revert', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Revert changes', exact: true })).toBeHidden();
   await page.goto('/ui/services/add');
   await page.getByRole('tab', { name: 'Payload JSON' }).click();
   await expect

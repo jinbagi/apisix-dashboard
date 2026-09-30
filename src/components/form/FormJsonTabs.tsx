@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 import { DiffEditor } from '@monaco-editor/react';
-import { useRouter } from '@tanstack/react-router';
+import { useBlocker, useRouter } from '@tanstack/react-router';
 import type { TabsProps } from 'antd';
 import { Alert, Button, Modal, Space, Tabs } from 'antd';
 import axios from 'axios';
@@ -43,7 +43,7 @@ import {
   stripSystemTimestamps,
 } from '@/utils/apisixEditable';
 import { FormDraftRevisionContext, FormTOCCtx } from '@/utils/form-context';
-import { revealFormTarget } from '@/utils/formNavigation';
+import { RESOURCE_DELETED_EVENT, revealFormTarget } from '@/utils/formNavigation';
 
 import { FormSubmitBtn } from './Btn';
 import classes from './FormJsonTabs.module.css';
@@ -283,6 +283,26 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
   const jsonHasUnsavedChanges =
     (formHasUnsavedChanges || jsonTabDirty) && !disabled;
   const saveInProgress = isSaving || rawTabSaving;
+  const deletedResourceRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const handleDeleted = (event: Event) => {
+      if (event instanceof CustomEvent && event.detail === adminApi) {
+        deletedResourceRef.current = adminApi;
+      }
+    };
+    window.addEventListener(RESOURCE_DELETED_EVENT, handleDeleted);
+    return () => window.removeEventListener(RESOURCE_DELETED_EVENT, handleDeleted);
+  }, [adminApi]);
+  const hasUnsavedDraft = jsonHasUnsavedChanges || rawTabDirty;
+  const draftIsObsolete = () => !!adminApi && deletedResourceRef.current === adminApi;
+  const navigationBlocker = useBlocker({
+    shouldBlockFn: ({ current, next }) =>
+      current.pathname !== next.pathname && hasUnsavedDraft &&
+      !saveInProgress && !draftIsObsolete(),
+    enableBeforeUnload: () =>
+      (hasUnsavedDraft || saveInProgress) && !draftIsObsolete(),
+    withResolver: true,
+  });
   const validationErrors = flattenErrors(form.formState.errors);
   const idleStatusText =
     rawData === undefined ? 'Fill required fields, then submit' : 'No pending changes';
@@ -720,6 +740,19 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
         onChange={handleTabChange}
         items={tabItems}
       />
+      <Modal
+        open={navigationBlocker.status === 'blocked'}
+        title="Leave without saving?"
+        onCancel={() => navigationBlocker.reset?.()}
+        onOk={() => navigationBlocker.proceed?.()}
+        okText="Discard and leave"
+        cancelText="Keep editing"
+        okButtonProps={{ danger: true }}
+        cancelButtonProps={{ autoFocus: true }}
+      >
+        Your unsaved form or JSON changes will be lost. Keep editing to review
+        and save them, or discard this draft to leave the page.
+      </Modal>
       <Modal
         open={diffModalOpen}
         title="Review Changes Before Saving"
