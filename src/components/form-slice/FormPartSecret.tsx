@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 import { Alert, Divider } from 'antd';
+import { useContext, useEffect, useRef } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import { InputWrapper } from '@/components/form/InputWrapper';
@@ -23,6 +24,7 @@ import { FormItemSelect } from '@/components/form/Select';
 import { FormItemSwitch } from '@/components/form/Switch';
 import { FormItemTextInput } from '@/components/form/TextInput';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
+import { FormDraftRevisionContext } from '@/utils/form-context';
 
 import { FormItemTagsInput } from '../form/TagInput';
 import { FormSection } from './FormSection';
@@ -204,15 +206,42 @@ const GCPSecretForm = () => {
   );
 };
 
+const managerFields = {
+  vault: ['uri', 'prefix', 'token', 'namespace'],
+  aws: ['access_key_id', 'secret_access_key', 'session_token', 'region', 'endpoint_url'],
+  gcp: ['auth_file', 'auth_config', 'ssl_verify'],
+} as const;
+type Manager = keyof typeof managerFields;
+
 type FormSectionManagerProps = { readOnlyManager?: boolean };
 const FormSectionManager = (props: FormSectionManagerProps) => {
   const { readOnlyManager } = props;
-  const { control } = useFormContext<APISIXType['Secret']>();
+  const { control, watch, getValues, unregister, setValue, formState } = useFormContext<APISIXType['Secret']>();
+  const manager = watch('manager');
+  const revision = useContext(FormDraftRevisionContext);
+  const drafts = useRef<Partial<Record<Manager, Record<string, unknown>>>>({});
+  useEffect(() => { drafts.current = {}; }, [revision, formState.defaultValues]);
+  const changeManager = (next: Manager) => {
+    if (next === manager) return;
+    const values = getValues() as Record<string, unknown>;
+    if (manager && manager in managerFields) {
+      drafts.current[manager] = Object.fromEntries(managerFields[manager].map((key) => [key, values[key]]));
+    }
+    for (const fields of Object.values(managerFields)) {
+      for (const key of fields) unregister(key);
+    }
+    setValue('manager', next, { shouldDirty: true });
+    for (const key of managerFields[next]) {
+      setValue(key, drafts.current[next]?.[key] as never, { shouldDirty: true });
+    }
+  };
   return (
     <FormSection legend="Secret Manager" disabled={readOnlyManager} collapsible defaultOpen={true}>
       <FormItemSelect
         control={control}
         name="manager"
+        label="Manager"
+        onChange={(next) => changeManager(next as Manager)}
         defaultValue={APISIX.Secret.options[0].shape.manager.value}
         data={APISIX.Secret.options.map((v) => v.shape.manager.value)}
       />

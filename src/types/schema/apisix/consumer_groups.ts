@@ -16,7 +16,7 @@
  */
 import { APISIXPluginConfigs } from './plugin_configs';
 
-const ConsumerGroup = APISIXPluginConfigs.PluginConfig.omit({ name: true });
+const ConsumerGroup = APISIXPluginConfigs.PluginConfig;
 
 export const APISIXConsumerGroups = {
   ConsumerGroup,

@@ -38,7 +38,7 @@ import { API_PROTOS } from '@/config/constant';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type ProtoFormProps = {
   id: string;
@@ -54,14 +54,14 @@ const ProtoDetailForm = ({ id, readOnly }: ProtoFormProps) => {
   } = useSuspenseQuery(getProtoQueryOptions(id));
 
   const form = useForm<APISIXType['Proto']>({
-    resolver: zodResolver(APISIX.Proto),
-    shouldUnregister: true,
+    resolver: zodResolver(APISIX.Proto, undefined, { raw: true }),
+    shouldUnregister: false,
     mode: 'all',
     disabled: readOnly,
   });
 
   const putProto = useMutation({
-    mutationFn: (d: APISIXType['Proto']) => putProtoReq(req, pipeProduce()(d)),
+    mutationFn: (d: APISIXType['Proto']) => putProtoReq(req, prepareResourceFormPayload(d)),
     async onSuccess() {
       await refetch({ throwOnError: true });
       showNotification({
@@ -85,6 +85,7 @@ const ProtoDetailForm = ({ id, readOnly }: ProtoFormProps) => {
   return (
     <FormProvider {...form}>
       <FormJsonTabs
+        preparePayload={prepareResourceFormPayload}
         form={form}
         onSubmit={(d) => putProto.mutateAsync(d)}
         submitLabel="Save"

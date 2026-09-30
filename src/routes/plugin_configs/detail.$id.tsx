@@ -38,7 +38,7 @@ import { API_PLUGIN_CONFIGS } from '@/config/constant';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
   id: string;
@@ -55,7 +55,7 @@ const PluginConfigDetailForm = (props: Props) => {
 
   const putPluginConfig = useMutation({
     mutationFn: (d: APISIXType['PluginConfigPut']) =>
-      putPluginConfigReq(req, pipeProduce()({ ...d, id })),
+      putPluginConfigReq(req, prepareResourceFormPayload({ ...d, id })),
     async onSuccess() {
       await pluginConfigQuery.refetch({ throwOnError: true });
       showNotification({
@@ -66,8 +66,8 @@ const PluginConfigDetailForm = (props: Props) => {
   });
 
   const form = useForm({
-    resolver: zodResolver(APISIX.PluginConfigPut),
-    shouldUnregister: true,
+    resolver: zodResolver(APISIX.PluginConfigPut, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
     disabled: readOnly,
@@ -83,6 +83,7 @@ const PluginConfigDetailForm = (props: Props) => {
   return (
     <FormProvider {...form}>
       <FormJsonTabs
+        preparePayload={prepareResourceFormPayload}
         form={form}
         onSubmit={(d) => putPluginConfig.mutateAsync(d)}
         submitLabel="Save"
