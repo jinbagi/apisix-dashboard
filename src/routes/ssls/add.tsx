@@ -33,7 +33,7 @@ import { API_SSLS } from '@/config/constant';
 import { req } from '@/config/req';
 import { verifyAdminApiExists } from '@/utils/adminApiVerification';
 import { showNotification } from '@/utils/notification';
-import { refreshCreatedResource } from '@/utils/resourceCache';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 
 const SSLAddForm = () => {
   const router = useRouter();
@@ -45,7 +45,7 @@ const SSLAddForm = () => {
       return response;
     },
     async onSuccess() {
-      await refreshCreatedResource('ssls', API_SSLS);
+      await refreshResourceCaches('ssls', API_SSLS);
       showNotification({
         message: 'SSL created and verified',
         type: 'success',

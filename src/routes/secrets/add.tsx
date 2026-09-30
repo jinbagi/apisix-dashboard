@@ -31,7 +31,7 @@ import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiExists } from '@/utils/adminApiVerification';
 import { showNotification } from '@/utils/notification';
-import { refreshCreatedResource } from '@/utils/resourceCache';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const SecretAddForm = () => {
@@ -47,7 +47,7 @@ const SecretAddForm = () => {
       return response;
     },
     async onSuccess() {
-      await refreshCreatedResource('secrets', API_SECRETS);
+      await refreshResourceCaches('secrets', API_SECRETS);
       showNotification({
         message: 'Secret created and verified',
         type: 'success',

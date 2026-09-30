@@ -43,6 +43,7 @@ import { StatusSwitch } from '@/components/StatusTag';
 import { API_SSLS } from '@/config/constant';
 import { req } from '@/config/req';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 
 const SSLDetailForm = (props: { id: string }) => {
   const { id } = props;
@@ -62,6 +63,7 @@ const SSLDetailForm = (props: { id: string }) => {
     mutationFn: (d: SSLPutType) => putSSLReq(req, produceSSLSubmitPayload(d)),
     async onSuccess() {
       await refetch({ throwOnError: true });
+      await refreshResourceCaches('ssls', API_SSLS);
       showNotification({
         message: 'SSL saved and reloaded from APISIX',
         type: 'success',

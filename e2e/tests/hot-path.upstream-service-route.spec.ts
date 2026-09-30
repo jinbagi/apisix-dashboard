@@ -192,7 +192,7 @@ test('can create upstream -> service -> route', async ({ page }) => {
       )
       .click();
     await page.getByRole('combobox', { name: 'Upstream ID', exact: true }).fill(upstream.id);
-    await page.locator('.ant-select-dropdown:visible').getByText(upstream.id, { exact: true }).click();
+    await page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({ has: page.getByText(upstream.id, { exact: true }) }).click();
 
     // Add plugins
     await selectPluginsBtn.click();
@@ -325,7 +325,7 @@ test('can create upstream -> service -> route', async ({ page }) => {
       )
       .click();
     await page.getByRole('combobox', { name: 'Service ID', exact: true }).fill(service.id);
-    await page.locator('.ant-select-dropdown:visible').getByText(service.id, { exact: true }).click();
+    await page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({ has: page.getByText(service.id, { exact: true }) }).click();
 
     // Add plugins
     await selectPluginsBtn.click();

@@ -32,7 +32,7 @@ import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
-import { refreshCreatedResource } from '@/utils/resourceCache';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const ConsumerGroupAddForm = () => {
@@ -49,7 +49,7 @@ const ConsumerGroupAddForm = () => {
       return response;
     },
     async onSuccess(response) {
-      await refreshCreatedResource('consumer_groups', API_CONSUMER_GROUPS);
+      await refreshResourceCaches('consumer_groups', API_CONSUMER_GROUPS);
       showNotification({
         message: 'Consumer Group created and verified',
         type: 'success',

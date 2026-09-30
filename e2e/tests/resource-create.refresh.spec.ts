@@ -25,7 +25,7 @@ const cases = [
 
 // Prime the list and reference selector before creation to exercise staleTime.
 for (const entry of cases) {
-  test(`${entry.resource}: created resource is immediately available in cached reference selectors and lists`, async ({ page }) => {
+  test(`${entry.resource}: created and edited resources are immediately available in cached reference selectors and lists`, async ({ page }) => {
     let value: Record<string, unknown> | undefined;
     let reads = 0;
     await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('test-admin-key')));
@@ -65,8 +65,10 @@ for (const entry of cases) {
     await page.getByRole('menuitem', { name: entry.targetMenu, exact: true }).click();
     await page.getByRole('link', { name: entry.targetAdd, exact: true }).click();
     await page.getByRole('combobox', { name: entry.label, exact: true }).click();
-    const option = page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({ hasText: 'created-resource' });
+    await page.getByRole('combobox', { name: entry.label, exact: true }).fill('fresh');
+    const option = page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({ has: page.getByText('fresh', { exact: true }) });
     await expect(option).toBeVisible();
+    await expect(option).toContainText('created-resource');
     await page.screenshot({ path: test.info().outputPath(`${entry.resource}-fresh-options.png`), animations: 'disabled' });
     await option.click();
     await expect(page.getByRole('combobox', { name: entry.label, exact: true }).locator('xpath=ancestor::div[contains(@class,"ant-select")][1]')).toContainText('fresh');
@@ -74,6 +76,20 @@ for (const entry of cases) {
     await page.getByRole('dialog', { name: 'Leave without saving?' }).getByRole('button', { name: 'Discard and leave' }).click();
     await expect(page.getByRole('cell', { name: 'created-resource', exact: true })).toBeVisible();
     await page.screenshot({ path: test.info().outputPath(`${entry.resource}-fresh-list.png`), animations: 'disabled' });
+    // Renaming a verified resource must also update an already warmed selector.
+    await page.getByRole('link', { name: 'created-resource', exact: true }).click();
+    await page.getByLabel('Name', { exact: true }).fill('updated-resource');
+    await page.getByLabel('Description', { exact: true }).fill('Updated description');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('dialog', { name: 'Review Changes Before Saving' }).getByRole('button', { name: 'Confirm & Save' }).click();
+    await expect(page.getByText('No pending changes', { exact: true })).toBeVisible();
+    await page.getByRole('menuitem', { name: entry.targetMenu, exact: true }).click();
+    await page.getByRole('link', { name: entry.targetAdd, exact: true }).click();
+    await page.getByRole('combobox', { name: entry.label, exact: true }).click();
+    await expect(page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({ hasText: 'updated-resource' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await page.getByRole('menuitem', { name: entry.menu, exact: true }).click();
+    await expect(page.getByRole('cell', { name: 'updated-resource', exact: true })).toBeVisible();
   });
 }
 
@@ -93,3 +109,51 @@ for (const resource of ['protos', 'credentials']) {
     await page.screenshot({ path: test.info().outputPath(`${resource}-named-list.png`), animations: 'disabled' });
   });
 }
+
+
+test('a pre-creation selector response arriving after verification cannot hide the new resource', async ({ page }) => {
+  let value: Record<string, unknown> | undefined;
+  let initialReadPending = false;
+  let releaseInitialRead: () => void = () => {};
+  const initialRead = new Promise<void>((resolve) => { releaseInitialRead = resolve; });
+  await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('test-admin-key')));
+  await page.route('**/apisix/admin/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const path = url.pathname.replace('/apisix/admin', '');
+    let response: unknown = { list: [], total: 0 };
+    if (path === '/upstreams' && request.method() === 'POST') {
+      value = { ...request.postDataJSON(), id: 'fresh', create_time: 1, update_time: 1 };
+      response = { value };
+    } else if (path === '/upstreams/fresh') response = { value };
+    else if (path === '/upstreams') {
+      response = { list: value ? [{ value }] : [], total: value ? 1 : 0 };
+      if (url.searchParams.get('page_size') === '500' && !initialReadPending) {
+        initialReadPending = true;
+        await initialRead;
+      }
+    }
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(response) });
+  });
+  await page.goto('services/add');
+  const oldResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname.endsWith('/upstreams') && url.searchParams.get('page_size') === '500';
+  });
+  await page.getByRole('combobox', { name: 'Upstream ID', exact: true }).click();
+  await expect.poll(() => initialReadPending).toBe(true);
+  await page.keyboard.press('Escape');
+  await page.getByRole('menuitem', { name: 'Upstreams', exact: true }).click();
+  await page.getByRole('link', { name: 'Add Upstream', exact: true }).click();
+  await page.getByLabel('Name', { exact: true }).fill('Created during pending read');
+  await page.getByRole('button', { name: 'Add a Node', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Host', exact: true }).fill('localhost');
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(page).toHaveURL(/upstreams\/detail\/fresh$/);
+  releaseInitialRead();
+  await oldResponse;
+  await page.getByRole('menuitem', { name: 'Services', exact: true }).click();
+  await page.getByRole('link', { name: 'Add Service', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Upstream ID', exact: true }).click();
+  await expect(page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({ hasText: 'Created during pending read' })).toBeVisible();
+});

@@ -16,11 +16,16 @@
  */
 import { queryClient } from '@/config/global';
 
-// Creation is already verified against APISIX before this runs. Refresh cached
-// lists, including inactive ones, before navigation so the new resource is
-// available in lists and in reference selectors opened within staleTime.
-export const refreshCreatedResource = (resourceKey: string | readonly string[], resourceApi: string) =>
-  Promise.all([
-    queryClient.invalidateQueries({ queryKey: typeof resourceKey === 'string' ? [resourceKey] : resourceKey, refetchType: 'all' }),
-    queryClient.invalidateQueries({ queryKey: ['resource-select', resourceApi], refetchType: 'all' }),
-  ]);
+// Refresh cached lists and reference options after a verified create or save,
+// including inactive queries, before reporting success or navigating. This
+// keeps created resources and renamed labels available within staleTime.
+export const refreshResourceCaches = async (resourceKey: string | readonly string[], resourceApi: string) => {
+  const queryKeys = [
+    typeof resourceKey === 'string' ? [resourceKey] : resourceKey,
+    ['resource-select', resourceApi],
+  ];
+  // A first fetch with no cached data can otherwise reuse its pre-save promise
+  // and publish an old snapshot after invalidation. Discard it before refetching.
+  await Promise.all(queryKeys.map((queryKey) => queryClient.cancelQueries({ queryKey })));
+  await Promise.all(queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey, refetchType: 'all' })));
+};

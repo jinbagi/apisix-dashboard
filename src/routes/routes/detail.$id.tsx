@@ -50,6 +50,7 @@ import { type APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { buildPatchPayload, stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 
 type Props = {
   id: string;
@@ -100,6 +101,7 @@ const RouteDetailForm = (props: Props) => {
     },
     async onSuccess() {
       await refetch({ throwOnError: true });
+      await refreshResourceCaches('routes', API_ROUTES);
       showNotification({
         message: 'Route saved and reloaded from APISIX',
         type: 'success',

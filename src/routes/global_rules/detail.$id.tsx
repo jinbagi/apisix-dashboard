@@ -38,6 +38,7 @@ import { API_GLOBAL_RULES } from '@/config/constant';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
@@ -68,6 +69,7 @@ const GlobalRuleDetailForm = (props: Props) => {
     mutationFn: (d: APISIXType['GlobalRulePut']) => putGlobalRuleReq(req, d),
     async onSuccess() {
       await detailReq.refetch({ throwOnError: true });
+      await refreshResourceCaches('global_rules', API_GLOBAL_RULES);
       showNotification({
         message: 'Global Rule saved and reloaded from APISIX',
         type: 'success',

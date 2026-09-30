@@ -33,7 +33,7 @@ import { APISIXProtos } from '@/types/schema/apisix/protos';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
-import { refreshCreatedResource } from '@/utils/resourceCache';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const defaultValues: APISIXType['ProtoPost'] = {
@@ -54,7 +54,7 @@ const ProtoAddForm = () => {
       return response;
     },
     async onSuccess(response) {
-      await refreshCreatedResource('protos', API_PROTOS);
+      await refreshResourceCaches('protos', API_PROTOS);
       showNotification({
         message: 'Proto created and verified',
         type: 'success',

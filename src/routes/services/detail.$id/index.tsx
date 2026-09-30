@@ -40,6 +40,7 @@ import { API_SERVICES } from '@/config/constant';
 import { req } from '@/config/req';
 import type { APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const ServiceDetailForm = () => {
@@ -69,6 +70,7 @@ const ServiceDetailForm = () => {
       ),
     async onSuccess() {
       await refetch({ throwOnError: true });
+      await refreshResourceCaches('services', API_SERVICES);
       showNotification({
         message: 'Service saved and reloaded from APISIX',
         type: 'success',

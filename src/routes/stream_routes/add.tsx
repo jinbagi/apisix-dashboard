@@ -35,7 +35,7 @@ import type { APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
-import { refreshCreatedResource } from '@/utils/resourceCache';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
@@ -58,7 +58,7 @@ export const StreamRouteAddForm = (props: Props) => {
       return response;
     },
     async onSuccess(response) {
-      await refreshCreatedResource('stream_routes', API_STREAM_ROUTES);
+      await refreshResourceCaches('stream_routes', API_STREAM_ROUTES);
       showNotification({
         message: 'Stream Route created and verified',
         type: 'success',

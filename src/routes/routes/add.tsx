@@ -39,7 +39,7 @@ import type { APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
-import { refreshCreatedResource } from '@/utils/resourceCache';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 
 type Props = {
   navigate: (res: APISIXType['RespRouteDetail']) => Promise<void>;
@@ -63,7 +63,7 @@ export const RouteAddForm = (props: Props) => {
       return response;
     },
     async onSuccess(response) {
-      await refreshCreatedResource('routes', API_ROUTES);
+      await refreshResourceCaches('routes', API_ROUTES);
       showNotification({
         message: 'Route created and verified',
         type: 'success',

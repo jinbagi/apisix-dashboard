@@ -38,6 +38,7 @@ import { API_CONSUMERS } from '@/config/constant';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
@@ -70,6 +71,7 @@ const ConsumerDetailForm = (props: Props) => {
     mutationFn: (d: APISIXType['ConsumerPut']) => putConsumerReq(req, d),
     async onSuccess() {
       await refetch({ throwOnError: true });
+      await refreshResourceCaches('consumers', API_CONSUMERS);
       showNotification({
         message: 'Consumer saved and reloaded from APISIX',
         type: 'success',

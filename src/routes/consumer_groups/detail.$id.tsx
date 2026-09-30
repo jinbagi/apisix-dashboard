@@ -38,6 +38,7 @@ import { API_CONSUMER_GROUPS } from '@/config/constant';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
@@ -57,6 +58,7 @@ const ConsumerGroupDetailForm = (props: Props) => {
       putConsumerGroupReq(req, d),
     async onSuccess() {
       await consumerGroupQuery.refetch({ throwOnError: true });
+      await refreshResourceCaches('consumer_groups', API_CONSUMER_GROUPS);
       showNotification({
         message: 'Consumer Group saved and reloaded from APISIX',
         type: 'success',

@@ -38,6 +38,7 @@ import { API_PROTOS } from '@/config/constant';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type ProtoFormProps = {
@@ -64,6 +65,7 @@ const ProtoDetailForm = ({ id, readOnly }: ProtoFormProps) => {
     mutationFn: (d: APISIXType['Proto']) => putProtoReq(req, prepareResourceFormPayload(d)),
     async onSuccess() {
       await refetch({ throwOnError: true });
+      await refreshResourceCaches('protos', API_PROTOS);
       showNotification({
         message: 'Proto saved and reloaded from APISIX',
         type: 'success',

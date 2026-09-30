@@ -40,6 +40,7 @@ import { API_STREAM_ROUTES } from '@/config/constant';
 import { req } from '@/config/req';
 import type { APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
@@ -73,6 +74,7 @@ const StreamRouteDetailForm = (props: Props) => {
       putStreamRouteReq(req, prepareResourceFormPayload(d)),
     async onSuccess() {
       await refetch({ throwOnError: true });
+      await refreshResourceCaches('stream_routes', API_STREAM_ROUTES);
       showNotification({
         message: 'Stream Route saved and reloaded from APISIX',
         type: 'success',

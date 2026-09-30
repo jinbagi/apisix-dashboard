@@ -32,7 +32,7 @@ import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
-import { refreshCreatedResource } from '@/utils/resourceCache';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const PluginConfigAddForm = () => {
@@ -49,7 +49,7 @@ const PluginConfigAddForm = () => {
       return response;
     },
     async onSuccess(response) {
-      await refreshCreatedResource('plugin_configs', API_PLUGIN_CONFIGS);
+      await refreshResourceCaches('plugin_configs', API_PLUGIN_CONFIGS);
       showNotification({
         message: 'Plugin Config created and verified',
         type: 'success',

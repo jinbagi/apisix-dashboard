@@ -36,7 +36,7 @@ import { APISIX } from '@/types/schema/apisix';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
-import { refreshCreatedResource } from '@/utils/resourceCache';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const GlobalRuleAddForm = () => {
@@ -53,7 +53,7 @@ const GlobalRuleAddForm = () => {
       return response;
     },
     async onSuccess(res) {
-      await refreshCreatedResource('global_rules', API_GLOBAL_RULES);
+      await refreshResourceCaches('global_rules', API_GLOBAL_RULES);
       showNotification({
         id: 'add-global_rule',
         message: 'Global Rule created and verified',
