@@ -165,7 +165,7 @@ export const GlobalSearch = () => {
               setQuery(value);
               resetSelection();
             }}
-            onKeyDown={handleKeyDown} allowClear autoFocus size="large" />
+            onKeyDown={handleKeyDown} allowClear size="large" />
           <Select aria-label="Resource type" value={scope} className={classes.scope} showSearch={{ optionFilterProp: 'label' }}
             options={[{ value: 'all', label: 'All resources' }, ...RESOURCES.map((r) => ({ value: r.key, label: RESOURCE_LABELS[r.key] }))]}
             onChange={(value) => { abort.current?.abort(); setScope(value); resetSelection(); inputRef.current?.focus(); }} />
