@@ -15,99 +15,81 @@
  * limitations under the License.
  */
 import { useNavigate } from '@tanstack/react-router';
-import { Alert, Button, Input, Modal, Spin, Tag, Typography } from 'antd';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Button, Input, type InputRef, Modal, Select, Spin, Tag } from 'antd';
+import { useEffect, useId, useRef, useState } from 'react';
 
+import { RESOURCES } from '@/apis/dashboard';
 import {
-  getResourceDetailPath,
-  getResourceId,
-  RESOURCES,
-} from '@/apis/dashboard';
-import { PAGE_SIZE_MAX } from '@/config/constant';
-import { req } from '@/config/req';
+  loadSearchCollection, rankSearchItems, RESOURCE_LABELS,
+  type ResourceSearchItem, type SearchCollection, type SearchResource,
+} from '@/apis/resourceSearch';
+import IconArrowForward from '~icons/material-symbols/arrow-forward';
 import IconSearch from '~icons/material-symbols/search';
 
 import classes from './GlobalSearch.module.css';
 
-type SearchResult = {
-  resourceType: string;
-  id: string;
-  name?: string;
-  detailPath: string;
-};
-
-const RESOURCE_COLORS: Record<string, string> = {
-  routes: 'blue',
-  services: 'green',
-  upstreams: 'purple',
-  consumers: 'orange',
-  ssls: 'magenta',
-  streamRoutes: 'cyan',
-  consumerGroups: 'geekblue',
-  globalRules: 'volcano',
-  pluginConfigs: 'lime',
-  secrets: 'gold',
-  protos: 'default',
-};
-
-const SEARCHABLE_FIELDS = [
-  'id',
-  'username',
-  'name',
-  'desc',
-  'sni',
-  'snis',
-  'uri',
-  'uris',
-  'host',
-  'hosts',
-  'service_id',
-  'upstream_id',
-  'plugin_config_id',
-  'manager',
-] as const;
-
-const appendSearchValue = (values: string[], value: unknown) => {
-  if (value === undefined || value === null) return;
-  if (Array.isArray(value)) {
-    value.forEach((item) => appendSearchValue(values, item));
-    return;
-  }
-  if (typeof value === 'object') {
-    Object.entries(value).forEach(([key, item]) => {
-      values.push(key);
-      appendSearchValue(values, item);
-    });
-    return;
-  }
-  values.push(String(value));
-};
-
-const resourceMatchesQuery = (value: Record<string, unknown>, query: string) => {
-  const values: string[] = [];
-  SEARCHABLE_FIELDS.forEach((field) => appendSearchValue(values, value[field]));
-  appendSearchValue(values, value.labels);
-  return values.join(' ').toLowerCase().includes(query);
-};
+const PAGE_SIZE = 20;
+const QUICK_ACTIONS = [
+  { key: 'routes', name: 'Browse Routes', context: 'Match incoming requests', detailPath: '/routes', group: 'Navigate' },
+  { key: 'services', name: 'Browse Services', context: 'Shared traffic configuration', detailPath: '/services', group: 'Navigate' },
+  { key: 'upstreams', name: 'Browse Upstreams', context: 'Backend targets and load balancing', detailPath: '/upstreams', group: 'Navigate' },
+  { key: 'topology', name: 'Open Topology', context: 'Explore resource relationships', detailPath: '/topology', group: 'Navigate' },
+  { key: 'console', name: 'Open API Console', context: 'Inspect Admin API requests', detailPath: '/raw_api', group: 'Navigate' },
+  { key: 'new-route', name: 'Create Route', context: 'Open a new route draft', detailPath: '/routes/add', group: 'Create' },
+  { key: 'new-service', name: 'Create Service', context: 'Open a new service draft', detailPath: '/services/add', group: 'Create' },
+  { key: 'new-upstream', name: 'Create Upstream', context: 'Open a new upstream draft', detailPath: '/upstreams/add', group: 'Create' },
+];
 
 export const GlobalSearch = () => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [scope, setScope] = useState<SearchResource['key'] | 'all'>('all');
+  const [results, setResults] = useState<ResourceSearchItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [unavailableCount, setUnavailableCount] = useState(0);
+  const [unavailable, setUnavailable] = useState<string[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [retry, setRetry] = useState(0);
+  const [resultKey, setResultKey] = useState('');
+  const cache = useRef(new Map<string, SearchCollection>());
+  const abort = useRef<AbortController | null>(null);
+  const inputRef = useRef<InputRef>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const listId = useId();
   const navigate = useNavigate();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const abortRef = useRef<AbortController>(undefined);
+  const normalizedQuery = query.trim().toLowerCase();
+  const searchKey = `${scope}:${normalizedQuery}`;
+  const isSearching = !!normalizedQuery;
+  const currentResults = resultKey === searchKey ? results : [];
+  const isLoading = isSearching && (loading || resultKey !== searchKey);
+  const visibleResults = currentResults.slice(0, limit);
+  const choices = isSearching ? (isLoading ? [] : visibleResults) : QUICK_ACTIONS;
+  const selected = Math.min(selectedIndex, Math.max(choices.length - 1, 0));
+  const collections = scope === 'all' ? RESOURCES : RESOURCES.filter((r) => r.key === scope);
 
-  // Ctrl+K / Cmd+K keyboard shortcut
+  const resetSelection = () => { setSelectedIndex(0); setLimit(PAGE_SIZE); };
+  const close = () => {
+    abort.current?.abort();
+    setOpen(false);
+    setQuery('');
+    setScope('all');
+    setResults([]);
+    setResultKey('');
+    setUnavailable([]);
+    resetSelection();
+    cache.current.clear();
+  };
+  const select = (choice: { detailPath: string }) => {
+    close();
+    void navigate({ to: choice.detailPath });
+  };
+
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
+    const handler = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
         setOpen(true);
+        inputRef.current?.focus();
       }
     };
     window.addEventListener('keydown', handler);
@@ -115,246 +97,118 @@ export const GlobalSearch = () => {
   }, []);
 
   useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-    } else {
-      clearTimeout(debounceRef.current);
-      abortRef.current?.abort();
-      setQuery('');
-      setResults([]);
-      setSelectedIndex(0);
-      setLoading(false);
-      setUnavailableCount(0);
-    }
-  }, [open]);
-
-  const doSearch = useCallback(async (q: string) => {
-    abortRef.current?.abort();
-    const normalizedQuery = q.trim().toLowerCase();
-
-    if (!normalizedQuery) {
-      setResults([]);
-      setSelectedIndex(0);
-      setLoading(false);
-      return;
-    }
-
+    if (!open || !normalizedQuery) return;
     const controller = new AbortController();
-    abortRef.current = controller;
-
-    setResults([]);
-    setSelectedIndex(0);
-    setUnavailableCount(0);
-    setLoading(true);
-    const searchResults: SearchResult[] = [];
-    let failedResources = 0;
-
-    const promises = RESOURCES.map(async (r) => {
-      try {
-        const res = await req.get(r.api, {
-          params: { page: 1, page_size: PAGE_SIZE_MAX },
-          signal: controller.signal,
-        });
-        const list = Array.isArray(res.data?.list) ? [...res.data.list] : [];
-        const totalPages = Math.ceil((res.data?.total ?? 0) / PAGE_SIZE_MAX);
-        if (totalPages > 1) {
-          const rest = await Promise.allSettled(
-            Array.from({ length: totalPages - 1 }, (_, index) =>
-              req.get(r.api, {
-                params: { page: index + 2, page_size: PAGE_SIZE_MAX },
-                signal: controller.signal,
-              })
-            )
-          );
-          rest.forEach((page) => {
-            if (
-              page.status === 'fulfilled' &&
-              Array.isArray(page.value.data?.list)
-            ) {
-              list.push(...page.value.data.list);
-            }
-          });
+    abort.current = controller;
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      const requested = scope === 'all' ? RESOURCES : RESOURCES.filter((r) => r.key === scope);
+      const loaded = await Promise.all(requested.map(async (resource) => {
+        const saved = cache.current.get(resource.key);
+        if (saved && !saved.incomplete) return { resource, collection: saved };
+        try {
+          const collection = await loadSearchCollection(resource, controller.signal);
+          if (!controller.signal.aborted) cache.current.set(resource.key, collection);
+          return { resource, collection };
+        } catch {
+          return { resource, collection: { items: [], incomplete: true } };
         }
-        for (const item of list) {
-          const v = item.value as Record<string, unknown>;
-          if (!resourceMatchesQuery(v, normalizedQuery)) continue;
-          const id = getResourceId(r.key, v);
-          searchResults.push({
-            resourceType: r.key,
-            id,
-            name: String(v.name || v.desc || v.sni || ''),
-            detailPath: getResourceDetailPath(r, v),
-          });
-        }
-      } catch {
-        if (!controller.signal.aborted) failedResources += 1;
-      }
-    });
+      }));
+      if (controller.signal.aborted) return;
+      setResults(rankSearchItems(loaded.flatMap(({ collection }) => collection.items), normalizedQuery));
+      setUnavailable(loaded.filter(({ collection }) => collection.incomplete).map(({ resource }) => RESOURCE_LABELS[resource.key]));
+      setResultKey(`${scope}:${normalizedQuery}`);
+      setLoading(false);
+    }, 250);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [open, normalizedQuery, scope, retry]);
 
-    await Promise.allSettled(promises);
+  useEffect(() => {
+    resultsRef.current?.querySelector(`[id="${listId}-${selected}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [listId, selected, isLoading, open]);
 
-    // Don't update state if this search was cancelled
-    if (controller.signal.aborted) return;
-
-    setResults(searchResults.slice(0, 20));
-    setUnavailableCount(failedResources);
-    setSelectedIndex(0);
-    setLoading(false);
-  }, []);
-
-  const handleQueryChange = useCallback(
-    (value: string) => {
-      setQuery(value);
-      clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => doSearch(value), 300);
-    },
-    [doSearch]
-  );
-
-  const handleSelect = useCallback(
-    (result: SearchResult) => {
-      setOpen(false);
-      navigate({ to: result.detailPath });
-    },
-    [navigate]
-  );
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSelectedIndex((i) => Math.min(i + 1, results.length - 1));
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSelectedIndex((i) => Math.max(i - 1, 0));
-      } else if (e.key === 'Enter' && results[selectedIndex]) {
-        handleSelect(results[selectedIndex]);
-      }
-    },
-    [results, selectedIndex, handleSelect]
-  );
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.nativeEvent.isComposing || event.target !== inputRef.current?.input) return;
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!choices.length) return;
+      const direction = event.key === 'ArrowDown' ? 1 : -1;
+      setSelectedIndex((selected + direction + choices.length) % choices.length);
+    } else if (event.key === 'Enter' && choices[selected]) {
+      event.preventDefault();
+      select(choices[selected]);
+    }
+  };
 
   return (
     <>
-      <Input
-        className={classes.trigger}
-        prefix={<IconSearch />}
-        placeholder="Search resources"
-        suffix={<kbd className={classes.shortcut}>Ctrl K</kbd>}
-        readOnly
-        onClick={() => setOpen(true)}
-        size="small"
-      />
-      <Modal
-        className={classes.modal}
-        open={open}
-        onCancel={() => setOpen(false)}
-        footer={null}
-        closable={false}
-        width={600}
-      >
+      <Button className={classes.trigger} icon={<IconSearch />} onClick={() => setOpen(true)} aria-label="Search resources" size="small">
+        <span className={classes.triggerLabel}>Search resources</span>
+        <kbd className={classes.shortcut}>Ctrl / ⌘ K</kbd>
+      </Button>
+      <Modal className={classes.modal} title="Find resources & go to" open={open} onCancel={close} footer={null} width={680}
+        afterOpenChange={(visible) => { if (visible) inputRef.current?.focus(); }}>
         <div className={classes.inputArea}>
-          <Input
-            ref={inputRef as never}
-            prefix={<IconSearch />}
-            placeholder="Search all resources by name..."
-            value={query}
-            onChange={(e) => handleQueryChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            allowClear
-            size="large"
-            autoFocus
-          />
+          <Input ref={inputRef} prefix={<IconSearch />} placeholder="Search by name, ID, URI, host or label"
+            aria-label="Search all resources" role="combobox" aria-autocomplete="list" aria-expanded={open}
+            aria-controls={listId} aria-activedescendant={choices.length ? `${listId}-${selected}` : undefined}
+            value={query} onChange={(event) => { abort.current?.abort(); setQuery(event.target.value); resetSelection(); }}
+            onKeyDown={handleKeyDown} allowClear size="large" />
+          <Select aria-label="Resource type" value={scope} className={classes.scope}
+            options={[{ value: 'all', label: 'All resources' }, ...RESOURCES.map((r) => ({ value: r.key, label: RESOURCE_LABELS[r.key] }))]}
+            onChange={(value) => { abort.current?.abort(); setScope(value); resetSelection(); inputRef.current?.focus(); }} />
         </div>
-        <div className={classes.results} aria-live="polite">
-          {loading && (
-            <div className={classes.emptyState}>
-              <Spin />
-            </div>
-          )}
-          {!loading && query && unavailableCount === RESOURCES.length && (
-            <Alert
-              className={classes.searchAlert}
-              type="warning"
-              showIcon
-              message="Search unavailable"
-              description="Resource collections could not be loaded. Check the APISIX connection and try again."
-              action={
-                <Button size="small" onClick={() => void doSearch(query)}>
-                  Retry
-                </Button>
-              }
-            />
-          )}
-          {!loading &&
-            query &&
-            unavailableCount > 0 &&
-            unavailableCount < RESOURCES.length && (
-              <Alert
-                className={classes.searchAlert}
-                type="warning"
-                showIcon
-                message="Results may be incomplete"
-                description={`${unavailableCount} of ${RESOURCES.length} resource collections could not be searched.`}
-                action={
-                  <Button size="small" onClick={() => void doSearch(query)}>
-                    Retry
-                  </Button>
-                }
-              />
-            )}
-          {!loading &&
-            query &&
-            results.length === 0 &&
-            unavailableCount < RESOURCES.length && (
-            <div className={classes.emptyState}>
-              <Typography.Text type="secondary">
-                {unavailableCount > 0
-                  ? 'No results found in the available collections'
-                  : 'No results found'}
-              </Typography.Text>
-            </div>
-          )}
-          {!loading && results.map((result, idx) => (
-            <button
-              type="button"
-              key={`${result.resourceType}-${result.id}`}
-              onClick={() => handleSelect(result)}
-              className={`${classes.result} ${idx === selectedIndex ? classes.selected : ''}`}
-              onMouseEnter={() => setSelectedIndex(idx)}
-            >
-              <Tag
-                color={RESOURCE_COLORS[result.resourceType] ?? 'default'}
-                className={classes.resourceTag}
-              >
-                {result.resourceType}
-              </Tag>
-              <Typography.Text strong ellipsis className={classes.resultName}>
-                {result.name || result.id}
-              </Typography.Text>
-              <Typography.Text type="secondary" className={classes.resultId}>
-                {result.id}
-              </Typography.Text>
-            </button>
-          ))}
+        <div className={classes.summary} role="status">
+          {!isSearching ? 'Jump to a workspace or start a new draft. Type to search gateway resources.'
+            : isLoading ? 'Searching gateway resources…'
+            : `${currentResults.length} ${unavailable.length ? 'available ' : ''}result${currentResults.length === 1 ? '' : 's'} · ${scope === 'all' ? 'All resources' : RESOURCE_LABELS[scope]}`}
         </div>
-        {!loading && (
-          <div className={classes.footer}>
-            <span>
-              <kbd>Up</kbd>
-              <kbd>Down</kbd>
-              Navigate
-            </span>
-            <span>
-              <kbd>Enter</kbd>
-              Open
-            </span>
-            <span>
-              <kbd>Esc</kbd>
-              Close
-            </span>
-          </div>
+        {isSearching && !isLoading && unavailable.length > 0 && (
+          <Alert className={classes.searchAlert} type="warning" showIcon
+            message={unavailable.length === collections.length && !currentResults.length ? 'Search unavailable' : 'Results may be incomplete'}
+            description={`Could not completely search: ${unavailable.join(', ')}. Available results are shown.`}
+            action={<Button size="small" onClick={() => { setResultKey(''); setRetry((value) => value + 1); resetSelection(); }}>Retry</Button>} />
         )}
+        <div className={classes.results} ref={resultsRef}>
+          {isLoading && <div className={classes.emptyState}><Spin aria-label="Searching" /></div>}
+          {!isLoading && isSearching && !currentResults.length && unavailable.length < collections.length && (
+            <div className={classes.emptyState}>
+              <strong>No results found{unavailable.length ? ' in the available collections' : ''}</strong>
+              <p>Try a resource name, exact ID, URI, host or label.</p>
+              <Button onClick={() => { setQuery(''); setScope('all'); resetSelection(); }}>Clear search</Button>
+            </div>
+          )}
+          <div id={listId} role="listbox" aria-label={isSearching ? 'Resource results' : 'Quick navigation'}>
+            {!isLoading && choices.map((choice, index) => (
+              <div key={choice.key}>
+                {!isSearching && (index === 0 || QUICK_ACTIONS[index - 1].group !== QUICK_ACTIONS[index].group) && (
+                  <div className={classes.groupLabel}>{QUICK_ACTIONS[index].group}</div>
+                )}
+                <button id={`${listId}-${index}`} type="button" role="option" aria-selected={index === selected} tabIndex={-1}
+                  onClick={() => select(choice)} onMouseEnter={() => setSelectedIndex(index)}
+                  className={`${classes.result} ${index === selected ? classes.selected : ''}`}>
+                  <span className={classes.resultCopy}>
+                    <strong className={classes.resultName}>{choice.name}</strong>
+                    <span className={classes.resultContext}>{'id' in choice ? `${choice.id}${choice.context ? ` · ${choice.context}` : ''}` : choice.context}</span>
+                  </span>
+                  {'resourceType' in choice && <Tag className={classes.resourceTag}>{RESOURCE_LABELS[choice.resourceType]}</Tag>}
+                  <IconArrowForward className={classes.resultArrow} />
+                </button>
+              </div>
+            ))}
+          </div>
+          {!isLoading && isSearching && currentResults.length > limit && (
+            <Button block className={classes.showMore} onClick={() => setLimit((value) => value + PAGE_SIZE)}>
+              Show more ({currentResults.length - limit} remaining)
+            </Button>
+          )}
+        </div>
+        <div className={classes.footer}>
+          <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+          <span><kbd>Enter</kbd> Open</span>
+          <span><kbd>Esc</kbd> Close</span>
+          <span className={classes.footerHint}>Opens a page; no changes are applied</span>
+        </div>
       </Modal>
     </>
   );
