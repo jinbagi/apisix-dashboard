@@ -92,11 +92,11 @@
 
 @media (width <= 1100px) { .shortcut { display: none; } }
 @media (width <= 640px) {
-  .modal { top: 24px; padding-bottom: 24px; }
+  .modal:global(.ant-modal) { top: 16px; margin-block: 0; padding-bottom: 0; }
   .modal :global(.ant-modal-container) {
     display: flex;
     flex-direction: column;
-    max-height: calc(100dvh - 48px);
+    max-height: calc(100dvh - 32px);
   }
   .modal :global(.ant-modal-body) { display: flex; flex-direction: column; min-height: 0; }
   .inputArea, .summary, .searchAlert, .footer { flex-shrink: 0; }
