@@ -14,7 +14,7 @@ not presented as a screenshot-based UX audit or a completed manual visual review
 | --- | --- |
 | Opening search displays a blank result area. | Show labeled workspace shortcuts and actions that open creation drafts. |
 | A readonly textbox acts as the trigger. | Use a labeled button, available from keyboard and as an icon on narrow screens. |
-| All collections are fetched again for each query. | Scope to a resource type; reuse successful reads during the open session, and clear that cache on close. |
+| All collections are fetched again for each query. | Search and select a resource type; reuse successful reads during the open session, and clear that cache on close. |
 | Only the first 20 results are reachable. | Report the match count and reveal further results in batches. Exact IDs and names sort first. |
 | Resource types use internal camel-case labels and identifying context is limited. | Show readable types, name, ID, URI/host and Secret manager when available. |
 | Unavailable later pages are silently skipped. | Name incomplete collections, retain available matches and offer Retry. |

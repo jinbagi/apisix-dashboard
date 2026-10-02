@@ -146,8 +146,7 @@ export const GlobalSearch = () => {
         <span className={classes.triggerLabel}>Search resources</span>
         <kbd className={classes.shortcut}>Ctrl / ⌘ K</kbd>
       </Button>
-      <Modal className={classes.modal} title="Find resources & go to" open={open} onCancel={close} footer={null} width={680}
-        afterOpenChange={(visible) => { if (visible) inputRef.current?.focus(); }}>
+      <Modal className={classes.modal} title="Find resources & go to" open={open} onCancel={close} footer={null} width={680} destroyOnHidden>
         <div className={classes.inputArea}>
           <Input ref={inputRef} prefix={<IconSearch />} placeholder="Search by name, ID, URI, host or label"
             aria-label="Search all resources" role="combobox" aria-autocomplete="list" aria-expanded={open}
@@ -158,8 +157,8 @@ export const GlobalSearch = () => {
               setQuery(value);
               resetSelection();
             }}
-            onKeyDown={handleKeyDown} allowClear size="large" />
-          <Select aria-label="Resource type" value={scope} className={classes.scope}
+            onKeyDown={handleKeyDown} allowClear autoFocus size="large" />
+          <Select aria-label="Resource type" value={scope} className={classes.scope} showSearch={{ optionFilterProp: 'label' }}
             options={[{ value: 'all', label: 'All resources' }, ...RESOURCES.map((r) => ({ value: r.key, label: RESOURCE_LABELS[r.key] }))]}
             onChange={(value) => { abort.current?.abort(); setScope(value); resetSelection(); inputRef.current?.focus(); }} />
         </div>

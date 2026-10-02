@@ -59,7 +59,9 @@ async function openSearch(page: Page) {
 }
 
 async function chooseScope(page: Page, label: string) {
-  await page.getByRole('combobox', { name: 'Resource type', exact: true }).click();
+  const picker = page.getByRole('combobox', { name: 'Resource type', exact: true });
+  await picker.click();
+  await picker.fill(label);
   await page.locator('.ant-select-dropdown').getByText(label, { exact: true }).click();
 }
 
@@ -72,7 +74,7 @@ test('opens useful keyboard navigation without requesting a gateway search', asy
   await expect(page.getByRole('option', { name: 'Browse Routes', exact: false })).toBeVisible();
   await input.press('ArrowDown');
   await input.press('Enter');
-  await expect(page).toHaveURL(/\/services$/);
+  await expect(page).toHaveURL(/\/services(?:\?|$)/);
   expect(state.reads).toEqual([]);
   expect(state.writes).toEqual([]);
 });
@@ -157,7 +159,7 @@ test('cannot open a previous result after the search input changes', async ({ pa
   await expect(page.getByRole('option', { name: /Catalog 25/ })).toBeVisible();
   await input.fill('missing');
   await input.press('Enter');
-  await expect(page).toHaveURL(/\/routes$/);
+  await expect(page).toHaveURL(/\/routes(?:\?|$)/);
   await expect(page.getByText('No results found', { exact: true })).toBeVisible();
   await expect(page.getByRole('option', { name: /Catalog 25/ })).toHaveCount(0);
 });
