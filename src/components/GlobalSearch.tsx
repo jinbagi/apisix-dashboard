@@ -54,6 +54,7 @@ export const GlobalSearch = () => {
   const cache = useRef(new Map<string, SearchCollection>());
   const abort = useRef<AbortController | null>(null);
   const inputRef = useRef<InputRef>(null);
+  const interactedDuringOpen = useRef(false);
   const resultsRef = useRef<HTMLDivElement>(null);
   const listId = useId();
   const navigate = useNavigate();
@@ -88,13 +89,16 @@ export const GlobalSearch = () => {
     const handler = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        setOpen(true);
-        inputRef.current?.focus();
+        if (open) inputRef.current?.focus();
+        else {
+          interactedDuringOpen.current = false;
+          setOpen(true);
+        }
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []);
+  }, [open]);
 
   useEffect(() => {
     if (!open || !normalizedQuery) return;
@@ -142,18 +146,24 @@ export const GlobalSearch = () => {
 
   return (
     <>
-      <Button className={classes.trigger} icon={<IconSearch />} onClick={() => setOpen(true)} aria-label="Search resources" size="small">
+      <Button className={classes.trigger} icon={<IconSearch />} onClick={() => {
+        interactedDuringOpen.current = false;
+        setOpen(true);
+      }} aria-label="Search resources" size="small">
         <span className={classes.triggerLabel}>Search resources</span>
         <kbd className={classes.shortcut}>Ctrl / ⌘ K</kbd>
       </Button>
       <Modal className={classes.modal} title="Find resources & go to" open={open} onCancel={close} footer={null} width={680} destroyOnHidden
+        modalRender={(content) => (
+          <div onPointerDownCapture={() => { interactedDuringOpen.current = true; }}
+            onKeyDownCapture={() => { interactedDuringOpen.current = true; }}>
+            {content}
+          </div>
+        )}
         afterOpenChange={(visible) => {
-          if (!visible) return;
-          const dialog = inputRef.current?.input?.closest('[role="dialog"]');
-          const focused = document.activeElement;
-          // Focus the search on open, but preserve a control the user has
-          // already reached while the modal's opening animation runs.
-          if (focused === dialog || !dialog?.contains(focused)) inputRef.current?.focus();
+          // The dialog's focus trap can focus its Close button automatically.
+          // Preserve explicit interaction, rather than that default focus.
+          if (visible && !interactedDuringOpen.current) inputRef.current?.focus();
         }}>
         <div className={classes.inputArea}>
           <Input ref={inputRef} prefix={<IconSearch />} placeholder="Search by name, ID, URI, host or label"
