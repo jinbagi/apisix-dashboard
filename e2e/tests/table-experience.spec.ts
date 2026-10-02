@@ -98,7 +98,7 @@ for (const [path, title, primary] of [
   ['plugin_configs', 'Plugin Configs', 'Name'],
   ['protos', 'Protos', 'Name'],
 ]) {
-  test(`${title} uses the shared table controls and puts identity before RAW`, async ({
+  test(`${title} uses the shared table controls and keeps RAW immediately before resource identity`, async ({
     page,
   }) => {
     await mockAdmin(page);
@@ -114,8 +114,8 @@ for (const [path, title, primary] of [
       table.getByRole('button', { name: 'View', exact: true }),
     ).toBeVisible();
     const headers = await table.getByRole('columnheader').allTextContents();
-    expect(headers.indexOf(primary)).toBeLessThan(headers.indexOf('RAW'));
-    expect(headers.at(-1)).toBe('RAW');
+    expect(headers.indexOf(primary)).toBe(headers.indexOf('RAW') + 1);
+
     await expect(
       table.getByRole('columnheader', { name: 'ID', exact: true }),
     ).toHaveCount(primary === 'Name' || primary === 'Username' ? 0 : 1);
@@ -238,7 +238,9 @@ test('selection has one action region and clears when moving between pages', asy
   await actions.getByRole('button', { name: 'Delete', exact: true }).click();
   const confirmation = page.getByRole('dialog', { name: 'Delete 1 Route(s)' });
   await expect(confirmation).toBeVisible();
-  await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await confirmation
+    .getByRole('button', { name: 'Cancel', exact: true })
+    .click();
   await expect(actions).toBeVisible();
   await page.getByRole('listitem', { name: '2', exact: true }).click();
   await expect(actions).toHaveCount(0);
@@ -307,13 +309,23 @@ test('narrow tables keep controls inside the viewport and allow keyboard horizon
   await page.setViewportSize({ width: 390, height: 844 });
   await mockAdmin(page);
   await page.goto('routes');
+  await expect(page.getByRole('complementary')).toHaveCSS('width', '68px');
   const scroller = page.getByRole('region', { name: /^Routes columns/ });
   await expect(scroller).toHaveAttribute('tabindex', '0');
+  const raw = page
+    .getByRole('row')
+    .filter({ hasText: 'Catalog route 01' })
+    .getByRole('button', { name: 'Raw', exact: true });
+  await expect(raw).toBeInViewport();
+  const rawBefore = await raw.boundingBox();
   await scroller.focus();
   await scroller.press('ArrowRight');
   await expect
     .poll(() => scroller.evaluate((node) => node.scrollLeft))
     .toBeGreaterThan(0);
+  await expect(raw).toBeInViewport();
+  const rawAfter = await raw.boundingBox();
+  expect(rawAfter!.x).toBeCloseTo(rawBefore!.x, 0);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -328,6 +340,32 @@ test('narrow tables keep controls inside the viewport and allow keyboard horizon
   }
   await page.getByRole('button', { name: 'Switch to Dark Mode' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+});
+
+test('row expansion and the prominent RAW action work without changing selection', async ({
+  page,
+}) => {
+  const { writes } = await mockAdmin(page);
+  await page.goto('routes');
+  const row = page.getByRole('row').filter({ hasText: 'Catalog route 01' });
+  await row.getByRole('button', { name: 'Expand row', exact: true }).click();
+  await expect(
+    row.getByRole('button', { name: 'Collapse row', exact: true }),
+  ).toHaveAttribute('aria-expanded', 'true');
+  await expect(row.getByRole('checkbox')).not.toBeChecked();
+  await row.getByRole('button', { name: 'Collapse row', exact: true }).click();
+  await expect(
+    row.getByRole('button', { name: 'Expand row', exact: true }),
+  ).toHaveAttribute('aria-expanded', 'false');
+  await row.getByRole('button', { name: 'Raw', exact: true }).click();
+  const drawer = page.getByRole('dialog', { name: /Route: Catalog route 01/ });
+  await expect(drawer).toContainText('/routes/table-01');
+  await expect(
+    drawer.getByRole('textbox', { name: 'Editor content' }),
+  ).toBeVisible();
+  await drawer.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(drawer).toHaveCount(0);
+  expect(writes).toEqual([]);
 });
 
 test('failed search result pages show an error instead of claiming no matches', async ({

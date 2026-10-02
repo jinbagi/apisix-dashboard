@@ -93,8 +93,25 @@
   border-bottom: 1px solid var(--ant-color-border-secondary);
 }
 .resource-table .ant-table-row-expand-icon {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+}
+.resource-table .ant-table-row-expand-icon::before {
+  top: calc(50% - 0.5px);
+  left: 5px;
+  right: 5px;
+}
+.resource-table .ant-table-row-expand-icon::after {
+  left: calc(50% - 0.5px);
+  top: 5px;
+  bottom: 5px;
+}
+.resource-table-raw .ant-btn {
+  color: var(--ant-color-primary);
+  background: var(--ant-color-primary-bg);
+  border-color: var(--ant-color-primary-border);
+  font-weight: 600;
 }
 .resource-table-identity {
   display: flex;

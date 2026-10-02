@@ -140,6 +140,7 @@ export function ResourceTable<T extends ResourceRecord>({
     .map((column) => String(column.key));
   const visibleKeys = view.columns ?? defaultKeys;
   const requiredKeys = [primaryKey, 'raw', 'option'];
+  const hasRawAction = columns.some((column) => column.key === 'raw');
   const total = pagination
     ? (pagination.total ?? dataSource.length)
     : dataSource.length;
@@ -196,12 +197,14 @@ export function ResourceTable<T extends ResourceRecord>({
         hideInTable: !requiredKeys.includes(key) && !visibleKeys.includes(key),
         filteredValue: filters[key] ?? null,
         fixed:
-          key === primaryKey && screens.md
+          key === 'raw' || (key === primaryKey && screens.md)
             ? 'left'
-            : key === 'raw' && screens.md
-              ? 'right'
-              : undefined,
-        width: column.width ?? (key === primaryKey ? 240 : 170),
+            : undefined,
+        className: key === 'raw' ? 'resource-table-raw' : column.className,
+        width:
+          key === 'raw'
+            ? 80
+            : (column.width ?? (key === primaryKey ? 240 : 170)),
       };
       if (key === primaryKey) {
         next.width = primaryKey === 'name' ? 260 : 220;
@@ -251,7 +254,7 @@ export function ResourceTable<T extends ResourceRecord>({
     })
     .sort((a, b) => {
       const order = (key: unknown) =>
-        key === primaryKey ? -1 : key === 'raw' || key === 'option' ? 1 : 0;
+        key === 'raw' ? -2 : key === primaryKey ? -1 : key === 'option' ? 1 : 0;
       return order(a.key) - order(b.key);
     });
 
@@ -417,12 +420,19 @@ export function ResourceTable<T extends ResourceRecord>({
         size={view.density}
         options={false}
         headerTitle={false}
+        expandable={
+          props.expandable && {
+            ...props.expandable,
+            columnWidth: 44,
+            fixed: hasRawAction || screens.md ? 'left' : undefined,
+          }
+        }
         tableAlertRender={false}
         tableAlertOptionRender={false}
         rowSelection={
           rowSelection && {
             ...rowSelection,
-            fixed: Boolean(screens.md),
+            fixed: hasRawAction || Boolean(screens.md),
             columnWidth: 44,
             getCheckboxProps: (record) => ({
               ...rowSelection.getCheckboxProps?.(record),
