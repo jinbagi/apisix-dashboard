@@ -380,7 +380,8 @@ function ValidationResult({ result }: { result: ConfigValidationResult }) {
       <Alert
         type="success"
         showIcon
-        message="APISIX configuration validation passed"
+        message={result.warnings?.length ? 'Configuration checks passed' : 'APISIX configuration validation passed'}
+        description={result.warnings?.join(' ')}
         style={{ marginTop: 16 }}
       />
     );

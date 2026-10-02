@@ -43,6 +43,8 @@ const UpstreamSchemeL7 = z.union([
   z.literal('https'),
   z.literal('grpc'),
   z.literal('grpcs'),
+  z.literal('ws'),
+  z.literal('wss'),
 ]);
 const UpstreamSchemeMessaging = z.literal('kafka');
 const UpstreamScheme = z.union([
@@ -153,11 +155,20 @@ const UpstreamHealthCheck = z.object({
   passive: UpstreamHealthCheckPassive.optional(),
 });
 
+const UpstreamWarmUp = z.object({
+  slow_start_time_seconds: z.number().int().min(1),
+  min_weight_percent: z.number().int().min(1).max(100),
+  interval: z.number().int().min(1).optional(),
+  aggression: z.number().min(0.01).optional(),
+  startup_grace_period_seconds: z.number().int().min(0).optional(),
+}).strict();
+
 const UpstreamTls = z.object({
   client_cert_id: z.string().optional(),
   client_cert: z.string().optional(),
   client_key: z.string().optional(),
   verify: z.boolean().optional(),
+  ca_certs: z.array(z.string().min(128).max(65536)).min(1).optional(),
 });
 
 const Upstream = APISIXCommon.Basic.merge(APISIXCommon.ID)
@@ -177,6 +188,7 @@ const Upstream = APISIXCommon.Basic.merge(APISIXCommon.ID)
       timeout: UpstreamTimeout.partial().optional(),
       tls: UpstreamTls.optional(),
       keepalive_pool: UpstreamKeepalivePool.optional(),
+      warm_up_conf: UpstreamWarmUp.optional(),
     })
   );
 
@@ -207,4 +219,5 @@ export const APISIXUpstreams = {
   UpstreamHealthCheckPassive,
   UpstreamHealthCheck,
   UpstreamTls,
+  UpstreamWarmUp,
 };

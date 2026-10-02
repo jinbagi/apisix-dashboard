@@ -14,19 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { type TypeOf, z } from 'zod';
 
-import { APISIXCommon } from '@/types/schema/apisix/common';
-import { APISIXStreamRoutes } from '@/types/schema/apisix/stream_routes';
-import { validateStreamRouteMatch } from '@/utils/resourceValidation';
+import { createFileRoute, useParams } from '@tanstack/react-router';
 
-export const StreamRoutePostSchema = APISIXStreamRoutes.StreamRoute.omit({
-  create_time: true,
-  update_time: true,
-}).merge(APISIXCommon.Basic).extend({
-  id: z.string().optional(),
-}).superRefine(validateStreamRouteMatch);
+import { FormTOCBox } from '@/components/form-slice/FormSection';
+import { GraphqlCostDecorationEditor } from '@/components/form-slice/GraphqlCostDecorationEditor';
+import PageHeader from '@/components/page/PageHeader';
 
-export type StreamRoutePostType = TypeOf<typeof StreamRoutePostSchema>;
+function RouteComponent() {
+  const { id } = useParams({ from: '/services/detail/$id/graphql_cost_decorations/add' });
+  return <><PageHeader showBackBtn title="Add GraphQL Cost Decoration" /><FormTOCBox><GraphqlCostDecorationEditor serviceId={id} /></FormTOCBox></>;
+}
 
-export const StreamRoutePutSchema = APISIXStreamRoutes.StreamRoute.superRefine(validateStreamRouteMatch);
+export const Route = createFileRoute('/services/detail/$id/graphql_cost_decorations/add')({ component: RouteComponent });

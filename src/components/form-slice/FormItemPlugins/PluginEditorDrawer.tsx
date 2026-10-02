@@ -44,6 +44,7 @@ import {
   getPluginCompatibilityNotices,
   validatePluginCompatibility,
 } from './pluginCompatibility';
+import { getPluginTemplates } from './pluginTemplates';
 
 export type PluginConfig = { name: string; config: Record<string, unknown> };
 export type PluginEditorDrawerProps = Pick<PluginCardListProps, 'mode'> & {
@@ -226,6 +227,9 @@ export const PluginEditorDrawer = (props: PluginEditorDrawerProps) => {
   ];
   const aiTemplates =
     mode === 'add' ? getAIGatewayTemplates(name) : [];
+  const pluginTemplates = mode === 'add'
+    ? getPluginTemplates(name, schema as JSONSchema | undefined)
+    : [];
   const compatibilityNotices = getPluginCompatibilityNotices(
     name,
     getCurrentConfig()
@@ -435,6 +439,15 @@ export const PluginEditorDrawer = (props: PluginEditorDrawerProps) => {
             }
             style={{ marginBottom: 12 }}
           />
+        )}
+        {pluginTemplates.length > 0 && (
+          <Space wrap style={{ marginBottom: 12 }}>
+            {pluginTemplates.map((template) => (
+              <Button key={template.label} onClick={() => applyTemplate(template.config)}>
+                {template.label}
+              </Button>
+            ))}
+          </Space>
         )}
         {compatibilityNotices.map((notice) => (
           <Alert

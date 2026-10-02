@@ -26,6 +26,8 @@ import { expect } from '@playwright/test';
 
 import { API_PLUGIN_METADATA } from '@/config/constant';
 
+test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
+
 // Helper function to delete plugin metadata
 const deletePluginMetadata = async (req: typeof e2eReq, name: string) => {
   await req.delete(`${API_PLUGIN_METADATA}/${name}`).catch(() => {
@@ -182,13 +184,33 @@ test('should CRUD plugin metadata with all fields', async ({ page }) => {
     await expect(editPluginDialog).toBeVisible();
     await editPluginDialog.getByRole('tab', { name: 'Plugin JSON' }).click();
 
-    const pluginEditor = await uiGetMonacoEditor(page, editPluginDialog, false);
+    await uiGetMonacoEditor(page, editPluginDialog, false);
 
-    await expect(pluginEditor.getByText('"log_format": {')).toBeVisible();
-    await expect(
-      pluginEditor.getByText('"client_ip": "$remote_addr",')
-    ).toBeVisible();
-    await expect(pluginEditor.getByText('"host": "$host"')).toBeVisible();
+    // APISIX may reorder object keys, and Monaco virtualizes rendered lines.
+    // Read the complete production editor value through its user-facing action.
+    await page.evaluate(() => navigator.clipboard.writeText(''));
+    await editPluginDialog
+      .getByRole('button', { name: 'Copy Plugin JSON', exact: true })
+      .click();
+    await expect.poll(async () => {
+      const copied = await page.evaluate(() => navigator.clipboard.readText());
+      try {
+        return JSON.parse(copied) as unknown;
+      } catch {
+        return copied;
+      }
+    }).toEqual({
+      log_format: {
+        host: '$host',
+        client_ip: '$remote_addr',
+        request_method: '$request_method',
+        request_uri: '$request_uri',
+        status: '$status',
+        body_bytes_sent: '$body_bytes_sent',
+        request_time: '$request_time',
+        upstream_response_time: '$upstream_response_time',
+      },
+    });
 
     await editPluginDialog.getByRole('button', { name: 'Cancel' }).click();
     await expect(editPluginDialog).toBeHidden();

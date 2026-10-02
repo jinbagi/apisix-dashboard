@@ -20,6 +20,8 @@ import { useFormContext, useWatch } from 'react-hook-form';
 
 import { FormItemJsonInput } from '@/components/form/JsonInput';
 import { FormItemNumberInput } from '@/components/form/NumberInput';
+import { FormItemSwitch } from '@/components/form/Switch';
+import { FormItemTagsInput } from '@/components/form/TagInput';
 import { FormItemTextInput } from '@/components/form/TextInput';
 
 import { FormPartBasic } from '../FormPartBasic';
@@ -31,16 +33,20 @@ import { FormSection } from '../FormSection';
 import type { StreamRoutePostType } from './schema';
 
 const FormSectionStreamRouteBasic = () => {
-  const { control } = useFormContext<StreamRoutePostType>();
+  const { control, setValue, unregister } = useFormContext<StreamRoutePostType>();
   const serverAddr = useWatch({ control, name: 'server_addr' });
   const serverPort = useWatch({ control, name: 'server_port' });
   const remoteAddr = useWatch({ control, name: 'remote_addr' });
   const sni = useWatch({ control, name: 'sni' });
+  const snis = useWatch({ control, name: 'snis' });
+  const tlsPassthrough = useWatch({ control, name: 'tls_passthrough' });
+  const hasSni = typeof sni === 'string' && sni.trim().length > 0;
+  const hasSnis = Array.isArray(snis) && snis.length > 0;
   const activeMatchers = [
     serverAddr && 'server address',
     serverPort && 'server port',
     remoteAddr && 'remote address',
-    sni && 'SNI',
+    (hasSni || hasSnis) && 'SNI',
   ].filter(Boolean);
 
   return (
@@ -75,12 +81,56 @@ const FormSectionStreamRouteBasic = () => {
         label="Remote Address"
         description="Optional client IP or CIDR condition."
       />
+      {hasSni && hasSnis && (
+        <Alert
+          type="warning"
+          showIcon
+          message="Both SNI and SNIs are set. Clear one before saving."
+          style={{ marginBottom: 12 }}
+        />
+      )}
       <FormItemTextInput
         control={control}
         name="sni"
         label="SNI"
-        description="Optional TLS Server Name condition."
+        disabled={hasSnis && !hasSni}
+        description={hasSnis && !hasSni ? 'Clear SNIs to use one hostname.' : 'Optional TLS Server Name condition. Use SNI or SNIs.'}
       />
+      <FormItemTagsInput
+        control={control}
+        name="snis"
+        label="SNIs"
+        placeholder="api.example.com, *.example.com"
+        splitChars={[',']}
+        allowClear
+        disabled={hasSni && !hasSnis}
+        description={hasSni && !hasSnis ? 'Clear SNI to use multiple hostnames.' : 'Match any listed name. Wildcards such as *.example.com and * are supported.'}
+      />
+      <FormItemSwitch
+        control={control}
+        name="tls_passthrough"
+        label="TLS Passthrough"
+        description="On a mixed TCP listener configured with both tls: true and tls_passthrough: true, forward encrypted TLS to the upstream. Disabled or omitted terminates TLS at APISIX. Dedicated listeners use their listener configuration regardless of this route setting."
+      />
+      <Button
+        type="link"
+        disabled={tlsPassthrough === undefined}
+        onClick={() => {
+          unregister('tls_passthrough');
+          setValue('tls_passthrough', undefined, { shouldDirty: true, shouldValidate: true });
+        }}
+      >
+        Clear TLS passthrough setting
+      </Button>
+      {tlsPassthrough && (
+        <Alert
+          type="info"
+          showIcon
+          message="The upstream terminates the client TLS handshake."
+          description="Use a TCP upstream; scheme tls would start a second TLS handshake and is rejected by APISIX. For a referenced Service or Upstream, check its scheme too. Gateway mTLS and payload-inspecting plugins such as mqtt-proxy, xrpc and redis do not apply to the encrypted stream."
+          style={{ marginTop: 12 }}
+        />
+      )}
     </FormSection>
   );
 };

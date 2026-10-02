@@ -17,7 +17,8 @@
 import type { ZodTypeAny } from 'zod';
 
 import { APISIX } from '@/types/schema/apisix';
-import { validateInlineUpstream, validateRouteMatch, validateSSLCertificates, validateUpstreamTarget } from '@/utils/resourceValidation';
+import { GraphqlCostDecoration } from '@/types/schema/apisix/graphql_cost_decorations';
+import { validateInlineUpstream, validateRouteMatch, validateSSLCertificates, validateStreamRouteMatch, validateUpstreamTarget } from '@/utils/resourceValidation';
 
 export type ConditionalRequirement = {
   fieldGroups: string[][];
@@ -30,10 +31,11 @@ export type ConditionalRequirement = {
 
 export const getAdminResourceSchema = (apiPath: string): ZodTypeAny | null => {
   const normalized = apiPath.toLowerCase();
+  if (normalized.match(/^\/services\/[^/]+\/graphql_cost_decorations(?:\/|$)/)) return GraphqlCostDecoration;
   if (normalized.match(/^\/consumers\/[^/]+\/credentials(?:\/|$)/)) {
     return APISIX.Credential;
   }
-  if (normalized.includes('/stream_routes')) return APISIX.StreamRoute.superRefine(validateInlineUpstream);
+  if (normalized.includes('/stream_routes')) return APISIX.StreamRoute.superRefine(validateStreamRouteMatch);
   if (normalized.includes('/routes')) {
     return APISIX.Route.superRefine(validateRouteMatch);
   }

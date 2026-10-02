@@ -19,6 +19,7 @@ import { getConsumerListReq } from '@/apis/consumers';
 import { getCredentialListReq } from '@/apis/credentials';
 import { fetchAllResources } from '@/apis/fetchAll';
 import { getGlobalRuleListReq } from '@/apis/global_rules';
+import { getGraphqlCostDecorations, graphqlCostDecorationsApi } from '@/apis/graphql_cost_decorations';
 import { getPluginConfigListReq } from '@/apis/plugin_configs';
 import { getProtoListReq } from '@/apis/protos';
 import { getRouteListReq } from '@/apis/routes';
@@ -46,8 +47,9 @@ import {
 } from '@/config/constant';
 import { req } from '@/config/req';
 import type { APISIXType } from '@/types/schema/apisix';
+import { GraphqlCostDecoration } from '@/types/schema/apisix/graphql_cost_decorations';
 
-export const EXPORT_VERSION = 2;
+export const EXPORT_VERSION = 3;
 
 export type ExportData = {
   version: number;
@@ -56,6 +58,7 @@ export type ExportData = {
   resources: {
     upstreams: Record<string, unknown>[];
     services: Record<string, unknown>[];
+    graphqlCostDecorations?: Record<string, unknown>[];
     routes: Record<string, unknown>[];
     streamRoutes: Record<string, unknown>[];
     consumers: Record<string, unknown>[];
@@ -82,11 +85,13 @@ export type ConfigValidationError = {
 export type ConfigValidationResult = {
   valid: boolean;
   errors: ConfigValidationError[];
+  warnings?: string[];
 };
 
 export const RESOURCE_LABELS: Record<ResourceKey, string> = {
   upstreams: 'Upstreams',
   services: 'Services',
+  graphqlCostDecorations: 'GraphQL Cost Decorations',
   routes: 'Routes',
   streamRoutes: 'Stream Routes',
   consumers: 'Consumers',
@@ -104,6 +109,7 @@ export const RESOURCE_LABELS: Record<ResourceKey, string> = {
 export const IMPORT_ORDER: ResourceKey[] = [
   'upstreams',
   'services',
+  'graphqlCostDecorations',
   'consumers',
   'credentials',
   'consumerGroups',
@@ -120,6 +126,7 @@ export const IMPORT_ORDER: ResourceKey[] = [
 const RESOURCE_API_MAP: Record<ResourceKey, string> = {
   upstreams: API_UPSTREAMS,
   services: API_SERVICES,
+  graphqlCostDecorations: '',
   routes: API_ROUTES,
   streamRoutes: API_STREAM_ROUTES,
   consumers: API_CONSUMERS,
@@ -133,9 +140,10 @@ const RESOURCE_API_MAP: Record<ResourceKey, string> = {
   secrets: API_SECRETS,
 };
 
-const VALIDATION_RESOURCE_KEYS: Record<ResourceKey, string> = {
+const VALIDATION_RESOURCE_KEYS: Record<ResourceKey, string | null> = {
   upstreams: 'upstreams',
   services: 'services',
+  graphqlCostDecorations: null,
   routes: 'routes',
   streamRoutes: 'stream_routes',
   consumers: 'consumers',
@@ -170,6 +178,8 @@ export const buildConfigValidationPayload = (
 
   for (const resourceType of selectedResources) {
     const key = VALIDATION_RESOURCE_KEYS[resourceType];
+    // APISIX 3.19's batch validator does not handle this nested resource.
+    if (!key) continue;
     const items = data.resources[resourceType] ?? [];
     const normalizedItems =
       resourceType === 'credentials'
@@ -185,12 +195,20 @@ export async function validateConfiguration(
   data: ExportData,
   selectedResources: ResourceKey[] = IMPORT_ORDER
 ): Promise<ConfigValidationResult> {
+  const decorations = selectedResources.includes('graphqlCostDecorations') ? data.resources.graphqlCostDecorations ?? [] : [];
+  const warnings = decorations.length ? ['GraphQL cost decorations are checked against the 3.19 schema locally. APISIX checks Service ownership and duplicate field paths when they are imported.'] : [];
+  const errors: ConfigValidationError[] = [];
+  for (const [index, item] of decorations.entries()) {
+    const result = GraphqlCostDecoration.required({ id: true, service_id: true }).safeParse(item);
+    if (!result.success) errors.push({ resource_type: 'graphqlCostDecorations', index, error: result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; ') });
+  }
+  if (errors.length) return { valid: false, errors, warnings };
   try {
     await req.post(
       API_CONFIG_VALIDATE,
       buildConfigValidationPayload(data, selectedResources)
     );
-    return { valid: true, errors: [] };
+    return { valid: true, errors: [], warnings };
   } catch (error) {
     const responseData = (
       error as {
@@ -242,6 +260,7 @@ export async function exportAllResources(): Promise<ExportData> {
   const extendedResults = await Promise.allSettled([
     exportCredentials(consumers),
     exportPluginMetadata(),
+    exportGraphqlCostDecorations(v(1)),
   ]);
   if (
     extendedResults[0].status === 'rejected' ||
@@ -259,17 +278,31 @@ export async function exportAllResources(): Promise<ExportData> {
     extendedResults[0].status === 'fulfilled' ? extendedResults[0].value.items : [];
   const pluginMetadata =
     extendedResults[1].status === 'fulfilled' ? extendedResults[1].value.items : [];
+  if (results[1].status === 'rejected' || extendedResults[2].status === 'rejected' || extendedResults[2].value.hadFailures) skipped.push('graphqlCostDecorations');
+  const graphqlCostDecorations = extendedResults[2].status === 'fulfilled' ? extendedResults[2].value.items : [];
 
   return {
     version: EXPORT_VERSION,
     exportedAt: new Date().toISOString(),
     skippedResources: skipped,
     resources: {
-      upstreams: v(0), services: v(1), routes: v(2), streamRoutes: v(3),
+      upstreams: v(0), services: v(1), graphqlCostDecorations, routes: v(2), streamRoutes: v(3),
       consumers, credentials, consumerGroups: v(5), ssls: v(6),
       globalRules: v(7), pluginConfigs: v(8), pluginMetadata, protos: v(9),
       secrets: v(10),
     },
+  };
+}
+
+async function exportGraphqlCostDecorations(services: Record<string, unknown>[]) {
+  const results = await Promise.allSettled(services.map(async (service) => {
+    const serviceId = String(service.id);
+    const response = await getGraphqlCostDecorations(req, serviceId);
+    return response.list.map((item) => ({ ...item.value, service_id: serviceId }));
+  }));
+  return {
+    items: results.flatMap((result) => result.status === 'fulfilled' ? result.value : []),
+    hadFailures: results.some((result) => result.status === 'rejected'),
   };
 }
 
@@ -392,6 +425,13 @@ export function getImportRequest(
     };
   }
 
+  if (resourceType === 'graphqlCostDecorations') {
+    const serviceId = String(item.service_id ?? '');
+    if (!serviceId || !id) throw new Error('GraphQL cost decorations require service_id and id');
+    delete body.service_id;
+    return { url: `${graphqlCostDecorationsApi(serviceId)}/${encodeURIComponent(id)}`, body };
+  }
+
   return {
     url: `${RESOURCE_API_MAP[resourceType]}/${id}`,
     body,
@@ -420,9 +460,8 @@ export async function importResources(
 
     for (const item of items) {
       const id = getResourceId(resourceType, item);
-      const request = getImportRequest(resourceType, item);
-
       try {
+        const request = getImportRequest(resourceType, item);
         // Use PUT with ID to create or update
         await req.put(request.url, request.body);
         result.success++;
