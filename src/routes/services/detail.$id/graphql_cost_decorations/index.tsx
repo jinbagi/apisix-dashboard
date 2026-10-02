@@ -17,12 +17,14 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, useParams } from '@tanstack/react-router';
-import { Alert, Button, Space, Table } from 'antd';
+import { Alert, Button, Space } from 'antd';
 
 import { getGraphqlCostDecorations, graphqlCostDecorationsApi } from '@/apis/graphql_cost_decorations';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
+import { ResourceTable } from '@/components/page/ResourceTable';
 import { req } from '@/config/req';
+import type { GraphqlCostDecorationType } from '@/types/schema/apisix/graphql_cost_decorations';
 
 function RouteComponent() {
   const { id } = useParams({ from: '/services/detail/$id/graphql_cost_decorations/' });
@@ -35,15 +37,18 @@ function RouteComponent() {
     <Alert type="info" showIcon message="APISIX 3.19+ query cost controls" style={{ marginBottom: 16 }}
       description="Configure graphql-limit-count on this Service with cost_strategy complexity or node_quantifier to use these weights. The default depth strategy does not use decorations. Cost = child cost × multiplier + own cost. Configure max_cost in the plugin to reject expensive queries." />
     {error && <Alert type="error" showIcon message="Could not load cost decorations" description={error.message} action={<Button onClick={() => { void refetch(); }}>Retry</Button>} />}
-    <Table dataSource={data?.list ?? []} loading={isFetching} rowKey={(row) => String(row.value.id)} pagination={false}
+    {!error && <ResourceTable<{ value: GraphqlCostDecorationType }> resourceName="Cost decorations" search={false} toolBarRender={false} headerTitle={false}
+      options={{ reload: () => { void refetch(); } }} columnsState={{ persistenceKey: 'graphql-cost-decorations' }}
+      cardProps={{ styles: { body: { padding: 0 } } }} scroll={{ x: 'max-content' }}
+      dataSource={data?.list ?? []} loading={isFetching} rowKey={(row) => String(row.value.id)} pagination={false}
       columns={[
-        { title: 'ID', render: (_, row) => <Link to="/services/detail/$id/graphql_cost_decorations/detail/$decorationId" params={{ id, decorationId: String(row.value.id) }}>{row.value.id}</Link> },
-        { title: 'Field Path', dataIndex: ['value', 'field_path'] },
-        { title: 'Add Value', render: (_, row) => row.value.add_value ?? 1 },
-        { title: 'Multiply Value', render: (_, row) => row.value.mul_value ?? 1 },
-        { title: 'Multiply Arguments', render: (_, row) => row.value.mul_arguments?.join(', ') || '-' },
-        { title: 'Actions', render: (_, row) => <Space><DeleteResourceBtn name="GraphQL cost decoration" target={String(row.value.id)} api={`${graphqlCostDecorationsApi(id)}/${encodeURIComponent(String(row.value.id))}`} onSuccess={async () => { await refetch({ throwOnError: true }); }} /></Space> },
-      ]} />
+        { title: 'ID', key: 'id', render: (_, row) => <Link to="/services/detail/$id/graphql_cost_decorations/detail/$decorationId" params={{ id, decorationId: String(row.value.id) }}>{row.value.id}</Link> },
+        { title: 'Field Path', key: 'field_path', dataIndex: ['value', 'field_path'] },
+        { title: 'Add Value', key: 'add_value', render: (_, row) => row.value.add_value ?? 1 },
+        { title: 'Multiply Value', key: 'mul_value', render: (_, row) => row.value.mul_value ?? 1 },
+        { title: 'Multiply Arguments', key: 'mul_arguments', render: (_, row) => row.value.mul_arguments?.join(', ') || '-' },
+        { title: 'Actions', key: 'option', render: (_, row) => <Space><DeleteResourceBtn name="GraphQL cost decoration" target={String(row.value.id)} api={`${graphqlCostDecorationsApi(id)}/${encodeURIComponent(String(row.value.id))}`} onSuccess={async () => { await refetch({ throwOnError: true }); }} /></Space> },
+      ]} />}
   </>;
 }
 

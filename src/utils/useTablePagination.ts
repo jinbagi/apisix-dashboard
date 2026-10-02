@@ -33,7 +33,8 @@ const PAGE_SIZE_OPTIONS = ['10', '20', '50', '100'];
 const getSavedPageSize = (): number => {
   try {
     const saved = localStorage.getItem(PAGE_SIZE_KEY);
-    if (saved) return Number(saved);
+    const size = Number(saved);
+    if (Number.isInteger(size) && size >= 10 && size <= 500) return size;
   } catch {
     // ignore
   }
@@ -68,12 +69,12 @@ export const useTablePagination = <T, P extends PageSearchType>(
   const page_size = params.page_size || savedPageSize;
 
   const onChange: TablePaginationConfig['onChange'] = useCallback(
-    (page: number, page_size: number) => {
-      savePageSize(page_size);
-      setParams({ page, page_size } as P);
+    (page: number, nextSize: number) => {
+      savePageSize(nextSize);
+      setParams({ page: nextSize === page_size ? page : 1, page_size: nextSize } as P);
       refetch?.();
     },
-    [refetch, setParams]
+    [page_size, refetch, setParams]
   );
 
   const pagination = {
@@ -82,7 +83,7 @@ export const useTablePagination = <T, P extends PageSearchType>(
     total: data.total ?? 0,
     showSizeChanger: true,
     pageSizeOptions: PAGE_SIZE_OPTIONS,
-    showTotal: (total: number) => `Total ${total} items`,
+    showTotal: (total: number, range: [number, number]) => total === 0 ? '0 items' : `${range[0]}–${range[1]} of ${total} items`,
     onChange: onChange,
   } as TablePaginationConfig;
   return pagination;

@@ -74,7 +74,7 @@ for (const entry of cases) {
     await expect(page.getByRole('combobox', { name: entry.label, exact: true }).locator('xpath=ancestor::div[contains(@class,"ant-select")][1]')).toContainText('fresh');
     await page.getByRole('menuitem', { name: entry.menu, exact: true }).click();
     await page.getByRole('dialog', { name: 'Leave without saving?' }).getByRole('button', { name: 'Discard and leave' }).click();
-    await expect(page.getByRole('cell', { name: 'created-resource', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'created-resource', exact: true })).toBeVisible();
     await page.screenshot({ path: test.info().outputPath(`${entry.resource}-fresh-list.png`), animations: 'disabled' });
     // Renaming a verified resource must also update an already warmed selector.
     await page.getByRole('link', { name: 'created-resource', exact: true }).click();
@@ -89,7 +89,7 @@ for (const entry of cases) {
     await expect(page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({ hasText: 'updated-resource' })).toBeVisible();
     await page.keyboard.press('Escape');
     await page.getByRole('menuitem', { name: entry.menu, exact: true }).click();
-    await expect(page.getByRole('cell', { name: 'updated-resource', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'updated-resource', exact: true })).toBeVisible();
   });
 }
 
@@ -105,7 +105,7 @@ for (const resource of ['protos', 'credentials']) {
     });
     await page.goto(resource === 'protos' ? 'protos' : 'consumers/detail/parity/credentials');
     await expect(page.getByRole('columnheader', { name: 'Name', exact: true })).toBeVisible();
-    await expect(page.getByRole('cell', { name: 'Readable resource name', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Readable resource name', exact: true })).toBeVisible();
     await page.screenshot({ path: test.info().outputPath(`${resource}-named-list.png`), animations: 'disabled' });
   });
 }

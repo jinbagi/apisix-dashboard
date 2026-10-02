@@ -23,7 +23,7 @@ export const pageSearchSchema = z
       .union([z.string(), z.number()])
       .optional()
       .default(1)
-      .transform((val) => (val ? Number(val) : 1)),
+      .transform((val) => Number.isInteger(Number(val)) && Number(val) >= 1 ? Number(val) : 1),
     page_size: z
       .union([z.string(), z.number()])
       .optional()

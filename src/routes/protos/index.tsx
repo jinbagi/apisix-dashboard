@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 import type { ProColumns } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Button, Typography } from 'antd';
 import { useMemo, useState } from 'react';
@@ -27,6 +26,7 @@ import { BulkDeleteBar } from '@/components/page/BulkDeleteBar';
 import PageHeader from '@/components/page/PageHeader';
 import { RawDrawer } from '@/components/page/RawDrawer';
 import { ResourceSortSelect } from '@/components/page/ResourceSortSelect';
+import { ResourceTable } from '@/components/page/ResourceTable';
 import { SearchInput } from '@/components/page/SearchInput';
 import { ToAddPageBtn } from '@/components/page/ToAddPageBtn';
 import { AntdConfigProvider } from '@/config/antdConfigProvider';
@@ -88,7 +88,7 @@ function RouteComponent() {
         key: 'name',
         render: (_, record) => (
           <Link to="/protos/detail/$id" params={{ id: record.value.id }}>
-            {record.value.name || '-'}
+            {record.value.name || record.value.id}
           </Link>
         ),
       },
@@ -135,12 +135,18 @@ function RouteComponent() {
         extra={<ToAddPageBtn label="Add Proto" to="/protos/add" />}
       />
       <AntdConfigProvider>
-        <BulkDeleteBar
-          {...bulkBarProps}
-          resourceName="Proto"
-          apiBase={API_PROTOS}
-        />
-        <ProTable
+        <ResourceTable
+        resourceName="Protos"
+        query={params.q ?? params.name ?? params.uri ?? ''}
+        label={params.label ?? ''}
+        onClearFilters={() => setParams({ q: undefined, name: undefined, uri: undefined, label: undefined, page: 1 })}
+        selectionActions={
+          <BulkDeleteBar
+              {...bulkBarProps}
+              resourceName="Proto"
+              apiBase={API_PROTOS}
+          />
+        }
           columns={columns}
           dataSource={data?.list || []}
           rowKey={(record) => record.value.id}

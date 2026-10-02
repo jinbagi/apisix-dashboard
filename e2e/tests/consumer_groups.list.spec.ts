@@ -67,7 +67,7 @@ test.describe('page and page_size should work correctly', () => {
     // filter the item which not in the current page
     // it should be random, so we need get all items in the table
     const itemsInPage = await page
-      .getByRole('cell', { name: /test-consumer-group-/ })
+      .getByRole('link', { name: /test-consumer-group-/ })
       .all();
     const ids = await Promise.all(itemsInPage.map((v) => v.textContent()));
     return consumerGroups.filter((d) => !ids.includes(d.id));

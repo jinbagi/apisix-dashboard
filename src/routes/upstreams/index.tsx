@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 import type { ProColumns } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Button, Tag, Tooltip, Typography } from 'antd';
 import { useMemo, useState } from 'react';
@@ -29,6 +28,7 @@ import { LabelSearchInput } from '@/components/page/LabelSearchInput';
 import PageHeader from '@/components/page/PageHeader';
 import { RawDrawer } from '@/components/page/RawDrawer';
 import { ResourceSortSelect } from '@/components/page/ResourceSortSelect';
+import { ResourceTable } from '@/components/page/ResourceTable';
 import { SearchInput } from '@/components/page/SearchInput';
 import { ToAddPageBtn } from '@/components/page/ToAddPageBtn';
 import { AntdConfigProvider } from '@/config/antdConfigProvider';
@@ -81,7 +81,7 @@ function RouteComponent() {
         key: 'name',
         render: (_, record) => (
           <Link to="/upstreams/detail/$id" params={{ id: record.value.id }}>
-            <Typography.Text strong>{record.value.name || '-'}</Typography.Text>
+            <Typography.Text strong>{record.value.name || record.value.id}</Typography.Text>
           </Link>
         ),
       },
@@ -182,12 +182,18 @@ function RouteComponent() {
         extra={<ToAddPageBtn label="Add Upstream" to="/upstreams/add" />}
       />
       <AntdConfigProvider>
-        <BulkDeleteBar
-          {...bulkBarProps}
-          resourceName="Upstream"
-          apiBase={API_UPSTREAMS}
-        />
-        <ProTable
+        <ResourceTable
+        resourceName="Upstreams"
+        query={params.q ?? params.name ?? params.uri ?? ''}
+        label={params.label ?? ''}
+        onClearFilters={() => setParams({ q: undefined, name: undefined, uri: undefined, label: undefined, page: 1 })}
+        selectionActions={
+          <BulkDeleteBar
+              {...bulkBarProps}
+              resourceName="Upstream"
+              apiBase={API_UPSTREAMS}
+          />
+        }
           columns={columns}
           dataSource={data?.list}
           rowKey={(record) => record.value.id}

@@ -37,7 +37,7 @@ test('should navigate to protos page', async ({ page }) => {
     // list table exists
     const table = page.getByRole('table');
     await expect(table).toBeVisible();
-    await expect(table.getByRole('columnheader', { name: 'ID' })).toBeVisible();
+    await expect(table.getByRole('columnheader', { name: 'ID', exact: true })).toBeHidden();
     await expect(table.getByRole('columnheader', { name: 'RAW' })).toBeVisible();
   });
 });
@@ -82,7 +82,7 @@ test.describe('page and page_size should work correctly', () => {
     // filter the item which not in the current page
     // it should be random, so we need get all items in the table
     const itemsInPage = await page
-      .getByRole('cell', { name: /proto_id_/ })
+      .getByRole('link', { name: /proto_id_/ })
       .all();
     const ids = await Promise.all(itemsInPage.map((v) => v.textContent()));
     return protos.filter((d) => !ids.includes(d.id));
