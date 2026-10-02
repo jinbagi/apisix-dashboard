@@ -88,14 +88,14 @@ test('explains when global search cannot reach any resource collection', async (
   await page.goto('dashboard');
   await expect(page.getByText('Partial gateway data')).toBeVisible();
 
-  await page.getByRole('textbox', { name: 'Search resources' }).click();
+  await page.getByRole('button', { name: 'Search resources' }).click();
   await page
-    .getByPlaceholder('Search all resources by name...')
+    .getByRole('combobox', { name: 'Search all resources' })
     .fill('example');
 
   await expect(page.getByText('Search unavailable')).toBeVisible();
   await expect(
-    page.getByText('Resource collections could not be loaded.')
+    page.getByText('Could not completely search:', { exact: false })
   ).toBeVisible();
   await expect(page.getByText('No results found')).toHaveCount(0);
   await expect(page.locator('.ant-notification-notice')).toHaveCount(0);
