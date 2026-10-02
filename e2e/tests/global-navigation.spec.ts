@@ -23,7 +23,7 @@ const catalog = Array.from({ length: 25 }, (_, index) => ({
   labels: { env: 'prod' }, plugins: {}, create_time: 1, update_time: 2,
 }));
 
-async function mockAdmin(page: Page, options: { failPage?: boolean; failAll?: boolean } = {}) {
+async function mockAdmin(page: Page, options: { failPage?: boolean; failAll?: boolean; pauseSearch?: Promise<void> } = {}) {
   const reads: string[] = [];
   const writes: string[] = [];
   await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('test-admin-key')));
@@ -34,6 +34,7 @@ async function mockAdmin(page: Page, options: { failPage?: boolean; failAll?: bo
     if (request.method() !== 'GET') writes.push(path);
     const isSearch = url.searchParams.get('page_size') === '500';
     if (isSearch) reads.push(path + url.search);
+    if (isSearch && path === '/routes' && options.pauseSearch) await options.pauseSearch;
     if (isSearch && (options.failAll || (options.failPage && path === '/routes' && url.searchParams.get('page') === '2'))) {
       return route.fulfill({ status: 503, json: { error_msg: 'Search page unavailable' } });
     }
@@ -132,6 +133,20 @@ test('opens an exact resource match with Enter', async ({ page }) => {
   await expect(page.getByRole('option', { name: /Catalog 25/ })).toBeVisible();
   await input.press('Enter');
   await expect(page).toHaveURL(/\/routes\/detail\/catalog-25$/);
+});
+
+test('finishes an in-flight search when only query case or surrounding whitespace changes', async ({ page }) => {
+  let releaseSearch!: () => void;
+  const pauseSearch = new Promise<void>((resolve) => { releaseSearch = resolve; });
+  const state = await mockAdmin(page, { pauseSearch });
+  await page.goto('routes');
+  const input = await openSearch(page);
+  await input.fill('catalog');
+  await expect.poll(() => state.reads.length).toBe(12);
+  await input.fill(' CATALOG ');
+  releaseSearch();
+  await expect(page.getByRole('dialog').getByRole('status')).toContainText('26 results');
+  expect(state.reads.filter((path) => path.startsWith('/routes?'))).toHaveLength(1);
 });
 
 test('cannot open a previous result after the search input changes', async ({ page }) => {

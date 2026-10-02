@@ -152,7 +152,12 @@ export const GlobalSearch = () => {
           <Input ref={inputRef} prefix={<IconSearch />} placeholder="Search by name, ID, URI, host or label"
             aria-label="Search all resources" role="combobox" aria-autocomplete="list" aria-expanded={open}
             aria-controls={listId} aria-activedescendant={choices.length ? `${listId}-${selected}` : undefined}
-            value={query} onChange={(event) => { abort.current?.abort(); setQuery(event.target.value); resetSelection(); }}
+            value={query} onChange={(event) => {
+              const value = event.target.value;
+              if (value.trim().toLowerCase() !== normalizedQuery) abort.current?.abort();
+              setQuery(value);
+              resetSelection();
+            }}
             onKeyDown={handleKeyDown} allowClear size="large" />
           <Select aria-label="Resource type" value={scope} className={classes.scope}
             options={[{ value: 'all', label: 'All resources' }, ...RESOURCES.map((r) => ({ value: r.key, label: RESOURCE_LABELS[r.key] }))]}
