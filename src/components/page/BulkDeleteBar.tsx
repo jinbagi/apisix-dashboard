@@ -201,7 +201,7 @@ export const BulkDeleteBar = ({
   };
 
   return (
-    <div className="bulk-delete-bar-floating">
+    <div className="bulk-delete-bar-inline" role="region" aria-label="Selected resource actions">
       <Typography.Text>
         Selected{' '}
         <Typography.Text

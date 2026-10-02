@@ -142,7 +142,7 @@ const fetchClientFilteredList = async <P extends PageSearchType, R>(
   const totalPages = Math.ceil((first.total ?? 0) / PAGE_SIZE_MAX);
 
   if (totalPages > 1) {
-    const rest = await Promise.allSettled(
+    const rest = await Promise.all(
       Array.from({ length: totalPages - 1 }, (_, index) =>
         listReq(req, {
           ...baseParams,
@@ -151,11 +151,7 @@ const fetchClientFilteredList = async <P extends PageSearchType, R>(
         } as P)
       )
     );
-    rest.forEach((page) => {
-      if (page.status === 'fulfilled') {
-        all.push(...page.value.list);
-      }
-    });
+    rest.forEach((page) => all.push(...page.list));
   }
 
   const filtered = all.filter((item) => listItemMatchesQuery(item, query));

@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 import type { ProColumns } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Button, Typography } from 'antd';
 import { useMemo, useState } from 'react';
@@ -29,6 +28,7 @@ import { LabelSearchInput } from '@/components/page/LabelSearchInput';
 import PageHeader from '@/components/page/PageHeader';
 import { RawDrawer } from '@/components/page/RawDrawer';
 import { ResourceSortSelect } from '@/components/page/ResourceSortSelect';
+import { ResourceTable } from '@/components/page/ResourceTable';
 import { SearchInput } from '@/components/page/SearchInput';
 import { ToAddPageBtn } from '@/components/page/ToAddPageBtn';
 import { AntdConfigProvider } from '@/config/antdConfigProvider';
@@ -131,12 +131,18 @@ function PluginConfigsList() {
 
   return (
     <AntdConfigProvider>
-      <BulkDeleteBar
-        {...bulkBarProps}
-        resourceName="Plugin Config"
-        apiBase={API_PLUGIN_CONFIGS}
-      />
-      <ProTable
+      <ResourceTable
+        resourceName="Plugin Configs"
+        query={params.q ?? params.name ?? params.uri ?? ''}
+        label={params.label ?? ''}
+        onClearFilters={() => setParams({ q: undefined, name: undefined, uri: undefined, label: undefined, page: 1 })}
+        selectionActions={
+          <BulkDeleteBar
+            {...bulkBarProps}
+            resourceName="Plugin Config"
+            apiBase={API_PLUGIN_CONFIGS}
+          />
+        }
         columns={columns}
         dataSource={data?.list}
         rowKey={(record) => record.value.id}

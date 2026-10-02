@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 import type { ProColumns } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Button } from 'antd';
 import { useMemo, useState } from 'react';
@@ -28,6 +27,8 @@ import { GlobalRuleExpandedRow } from '@/components/page/ExpandedRowComponents';
 import PageHeader from '@/components/page/PageHeader';
 import { RawDrawer } from '@/components/page/RawDrawer';
 import { ResourceSortSelect } from '@/components/page/ResourceSortSelect';
+import { ResourceTable } from '@/components/page/ResourceTable';
+import { SearchInput } from '@/components/page/SearchInput';
 import { ToAddPageBtn } from '@/components/page/ToAddPageBtn';
 import { AntdConfigProvider } from '@/config/antdConfigProvider';
 import { API_GLOBAL_RULES } from '@/config/constant';
@@ -38,7 +39,7 @@ import { getPluginFilterOptions, hasPluginName, renderPluginCount, renderUnixDat
 import { useBulkActions } from '@/utils/useBulkActions';
 
 function GlobalRulesList() {
-  const { data, isFetching, refetch, pagination, sortBy, sortOrder, setSort } = useGlobalRuleList();
+  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort } = useGlobalRuleList();
   const { rowSelection, bulkBarProps } = useBulkActions(
     refetch,
     data?.list?.map((record) => record.value.id)
@@ -116,12 +117,18 @@ function GlobalRulesList() {
 
   return (
     <AntdConfigProvider>
-      <BulkDeleteBar
-        {...bulkBarProps}
-        resourceName="Global Rule"
-        apiBase={API_GLOBAL_RULES}
-      />
-      <ProTable
+      <ResourceTable
+        resourceName="Global Rules"
+        query={params.q ?? params.name ?? params.uri ?? ''}
+        label={params.label ?? ''}
+        onClearFilters={() => setParams({ q: undefined, name: undefined, uri: undefined, label: undefined, page: 1 })}
+        selectionActions={
+          <BulkDeleteBar
+            {...bulkBarProps}
+            resourceName="Global Rule"
+            apiBase={API_GLOBAL_RULES}
+          />
+        }
         columns={columns}
         dataSource={data?.list}
         rowKey={(record) => record.value.id}
@@ -143,6 +150,7 @@ function GlobalRulesList() {
           rowExpandable: () => true,
         }}
         toolBarRender={() => [
+          <SearchInput key="search" defaultValue={params.q ?? ''} placeholder="Search global rules..." onSearch={(q) => setParams({ q, page: 1 })} />,
           <ResourceSortSelect
             key="sort"
             sortBy={sortBy}
