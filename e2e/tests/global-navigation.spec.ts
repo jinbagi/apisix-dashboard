@@ -237,13 +237,20 @@ for (const theme of ['light', 'dark']) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('routes');
     const input = await openSearch(page);
+    await expect(input).toBeFocused();
     await input.fill('catalog');
     await expect(page.getByRole('dialog').getByRole('status')).toContainText('26 results');
     const dialog = page.getByRole('dialog');
-    const bounds = await dialog.boundingBox();
-    expect(bounds?.x).toBeGreaterThanOrEqual(0);
-    expect((bounds?.x ?? 0) + (bounds?.width ?? 0)).toBeLessThanOrEqual(390);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-    await page.screenshot({ path: testInfo.outputPath(`search-narrow-${theme}.png`) });
+    for (const height of [844, 640]) {
+      await page.setViewportSize({ width: 390, height });
+      const bounds = await dialog.boundingBox();
+      expect(bounds).not.toBeNull();
+      expect(bounds!.x).toBeGreaterThanOrEqual(0);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+      expect(bounds!.y).toBeGreaterThanOrEqual(0);
+      expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(height);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+      await page.screenshot({ path: testInfo.outputPath(`search-narrow-${theme}-${height}.png`) });
+    }
   });
 }

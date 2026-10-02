@@ -92,6 +92,15 @@
 
 @media (width <= 1100px) { .shortcut { display: none; } }
 @media (width <= 640px) {
+  .modal { top: 24px; padding-bottom: 24px; }
+  .modal :global(.ant-modal-container) {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 48px);
+  }
+  .modal :global(.ant-modal-body) { display: flex; flex-direction: column; min-height: 0; }
+  .inputArea, .summary, .searchAlert, .footer { flex-shrink: 0; }
+  .results { flex: 1 1 auto; min-height: 0; }
   .trigger { width: 32px; padding-inline: 0; justify-content: center; }
   .triggerLabel { display: none; }
   .inputArea { flex-direction: column; }

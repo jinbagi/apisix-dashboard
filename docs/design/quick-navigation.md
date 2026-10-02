@@ -6,7 +6,10 @@ This change improves the header search as a gateway navigation surface, using
 existing Ant Design components, theme tokens and resource route wrappers.
 The review was grounded in the current source and existing interaction patterns.
 Local cloud-browser navigation was blocked (`ERR_BLOCKED_BY_CLIENT`), so this is
-not presented as a screenshot-based UX audit or a completed manual visual review.
+not presented as a screenshot-based UX audit or a completed live interaction
+review. CI result-list and narrow light/dark captures were inspected; that review
+identified a mobile dialog height issue, now covered at both 844 px and 640 px
+viewport heights.
 
 ## Behavior
 
@@ -41,9 +44,11 @@ fresh reads so previous cached search data does not survive resource edits.
   focus return, context and additional results, scoped requests/session caching,
   exact resource navigation, previous-result suppression, unsaved editor drafts,
   partial/unavailable search and retry, manager identity and empty queries.
-- Separate 390 px light/dark cases assert dialog/document bounds and capture
-  screenshots. The result-list case also captures a screenshot. Captures are in
-  the E2E `test-results` artifact; they require human visual review.
+- Separate 390 px light/dark cases assert horizontal and vertical dialog bounds
+  at 844 px and 640 px viewport heights and capture screenshots. The result-list
+  case also captures a screenshot. Captures are in the E2E `test-results`
+  artifact. CI capture inspection supplements automated checks; live manual
+  interaction review is still outstanding.
 - Existing gateway failure tests use the new semantic button/input controls.
 
 This work does not change APISIX writes, resource schemas, authentication,
