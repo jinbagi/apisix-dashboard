@@ -146,7 +146,15 @@ export const GlobalSearch = () => {
         <span className={classes.triggerLabel}>Search resources</span>
         <kbd className={classes.shortcut}>Ctrl / ⌘ K</kbd>
       </Button>
-      <Modal className={classes.modal} title="Find resources & go to" open={open} onCancel={close} footer={null} width={680} destroyOnHidden>
+      <Modal className={classes.modal} title="Find resources & go to" open={open} onCancel={close} footer={null} width={680} destroyOnHidden
+        afterOpenChange={(visible) => {
+          if (!visible) return;
+          const dialog = inputRef.current?.input?.closest('[role="dialog"]');
+          const focused = document.activeElement;
+          // Focus the search on open, but preserve a control the user has
+          // already reached while the modal's opening animation runs.
+          if (focused === dialog || !dialog?.contains(focused)) inputRef.current?.focus();
+        }}>
         <div className={classes.inputArea}>
           <Input ref={inputRef} prefix={<IconSearch />} placeholder="Search by name, ID, URI, host or label"
             aria-label="Search all resources" role="combobox" aria-autocomplete="list" aria-expanded={open}
