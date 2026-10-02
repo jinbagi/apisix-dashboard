@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Button, Divider } from 'antd';
+import { Alert, Button, Divider, Typography } from 'antd';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
@@ -30,6 +30,7 @@ import { useNamePrefix } from '@/utils/useNamePrefix';
 import { FormPartBasic } from '../FormPartBasic';
 import { FormSection } from '../FormSection';
 import { ResourceHierarchy } from '../ResourceHierarchy';
+import { FormItemCaCertificates } from './FormItemCaCertificates';
 import { FormItemNodes } from './FormItemNodes';
 import { FormSectionChecks } from './FormSectionChecks';
 import { FormSectionDiscovery } from './FormSectionDiscovery';
@@ -49,7 +50,7 @@ const OptionalNestedSection = ({
   legend,
   children,
 }: {
-  name: 'timeout' | 'keepalive_pool' | 'tls';
+  name: 'timeout' | 'keepalive_pool' | 'tls' | 'warm_up_conf';
   legend: string;
   children: ReactNode;
 }) => {
@@ -73,7 +74,7 @@ const OptionalNestedSection = ({
   };
 
   const removeSection = () => {
-    unregister(fieldName);
+    unregister(fieldName, { keepDefaultValue: true });
     setValue(fieldName, undefined, { shouldDirty: true });
     setEnabled(false);
   };
@@ -99,14 +100,27 @@ const OptionalNestedSection = ({
 export const FormSectionTLS = () => {
   const { control } = useFormContext<FormPartUpstreamType>();
   const np = useNamePrefix();
+  const scheme = useWatch({ control, name: np('scheme') });
+  const nativeWebSocket = scheme === 'ws' || scheme === 'wss';
 
   return (
     <FormSection legend="TLS">
+      {nativeWebSocket && (
+        <Alert
+          type="info"
+          showIcon
+          message="Native WebSocket upstreams use the gateway's trusted CA configuration."
+          description="APISIX does not support per-upstream CA certificates with ws or wss. Remove any CA certificates below before saving."
+          style={{ marginBottom: 12 }}
+        />
+      )}
       <FormItemSwitch
         control={control}
         name={np('tls.verify')}
         label="Verify"
+        description="Verify the upstream server certificate. When unset, APISIX uses its gateway configuration."
       />
+      <FormItemCaCertificates disableAdd={nativeWebSocket} />
       <FormSection legend="Client Cert Key Pair">
         <FormItemTextareaWithUpload
           control={control}
@@ -139,6 +153,7 @@ export const FormItemScheme = () => {
       control={control}
       name={np('scheme')}
       label="Scheme"
+      description="ws/wss use APISIX native WebSocket proxying. For HTTP Upgrade tunneling, use http/https and enable WebSocket on the Route or Service."
       data={[
         {
           group: 'L7',
@@ -181,6 +196,67 @@ export const FormSectionLoadbalancing = () => {
         name={np('key')}
         label="Key"
         description="Only used when type is chash. The specific variable/header/cookie name to hash on (e.g., remote_addr, X-Forwarded-For)."
+      />
+    </FormSection>
+  );
+};
+
+export const FormSectionWarmUp = () => {
+  const { control } = useFormContext<FormPartUpstreamType>();
+  const np = useNamePrefix();
+  return (
+    <FormSection legend="Slow Start">
+      <Typography.Paragraph type="secondary">
+        Gradually increase newly observed nodes to their configured weights.
+        Requires roundrobin and the same priority for every node. Applies to HTTP
+        upstreams; stream routes ignore this setting.
+      </Typography.Paragraph>
+      <FormItemNumberInput
+        control={control}
+        name={np('warm_up_conf.slow_start_time_seconds')}
+        label="Slow Start Time"
+        suffix="s"
+        min={1}
+        allowDecimal={false}
+        required
+        description="Seconds for a new node to reach its full configured weight."
+      />
+      <FormItemNumberInput
+        control={control}
+        name={np('warm_up_conf.min_weight_percent')}
+        label="Minimum Weight"
+        suffix="%"
+        min={1}
+        max={100}
+        allowDecimal={false}
+        required
+        description="Starting weight as a percentage of the configured weight (1–100)."
+      />
+      <FormItemNumberInput
+        control={control}
+        name={np('warm_up_conf.interval')}
+        label="Weight Refresh Interval"
+        suffix="s"
+        min={1}
+        allowDecimal={false}
+        description="Defaults to 1 second. Must not exceed the Slow Start Time."
+      />
+      <FormItemNumberInput
+        control={control}
+        name={np('warm_up_conf.aggression')}
+        label="Aggression"
+        min={0.01}
+        step={0.01}
+        description="Defaults to 1 (linear). Higher values ramp faster initially; values below 1 ramp more slowly."
+      />
+      <FormItemNumberInput
+        control={control}
+        name={np('warm_up_conf.startup_grace_period_seconds')}
+        label="Startup Grace Period"
+        suffix="s"
+        min={0}
+        allowDecimal={false}
+        description="Defaults to 0. Nodes first observed during this period after data-plane startup are treated as already warmed up."
       />
     </FormSection>
   );
@@ -322,6 +398,9 @@ export const FormPartUpstream = ({
       <FormSection legend="Connection Configuration" collapsible defaultOpen>
         <FormItemScheme />
         <FormSectionLoadbalancing />
+        <OptionalNestedSection name="warm_up_conf" legend="Slow Start">
+          <FormSectionWarmUp />
+        </OptionalNestedSection>
         <FormSectionPassHost />
         <FormSectionRetry />
         <OptionalNestedSection name="timeout" legend="Timeout">

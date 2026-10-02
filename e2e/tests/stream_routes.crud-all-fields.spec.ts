@@ -133,7 +133,7 @@ test('CRUD stream route with all fields', async ({ page }) => {
     .getByLabel('Server Port', { exact: true })
     .fill(updatedData.server_port.toString());
   await page.getByLabel('Remote Address').fill(updatedData.remote_addr);
-  await page.getByLabel('SNI').fill(updatedData.sni);
+  await page.getByLabel('SNI', { exact: true }).fill(updatedData.sni);
   await page.getByLabel('Description').first().fill(updatedData.desc);
 
   await uiFillStreamRouteRequiredFields(page, {

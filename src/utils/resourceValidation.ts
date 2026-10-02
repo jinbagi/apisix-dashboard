@@ -23,6 +23,10 @@ export const validateUpstreamTarget = (
     discovery_type?: string;
     pass_host?: string;
     upstream_host?: string;
+    scheme?: string;
+    type?: string;
+    tls?: { ca_certs?: string[] };
+    warm_up_conf?: { slow_start_time_seconds: number; interval?: number };
   },
   context: RefinementCtx
 ) => {
@@ -53,6 +57,23 @@ export const validateUpstreamTarget = (
       path: ['upstream_host'],
     });
   }
+  if (data.tls?.ca_certs && (data.scheme === 'ws' || data.scheme === 'wss')) {
+    context.addIssue({ code: 'custom', message: 'WebSocket upstreams use the shared trusted CA configuration; remove per-upstream CA Certificates', path: ['tls', 'ca_certs'] });
+  }
+  if (data.warm_up_conf) {
+    if (data.type && data.type !== 'roundrobin') {
+      context.addIssue({ code: 'custom', message: 'Slow start requires roundrobin load balancing', path: ['type'] });
+    }
+    if ((data.warm_up_conf.interval ?? 1) > data.warm_up_conf.slow_start_time_seconds) {
+      context.addIssue({ code: 'custom', message: 'Interval must not exceed slow start time', path: ['warm_up_conf', 'interval'] });
+    }
+    if (Array.isArray(data.nodes)) {
+      const priorities = new Set(data.nodes.map((node) => (node as { priority?: number }).priority ?? 0));
+      if (priorities.size > 1) {
+        context.addIssue({ code: 'custom', message: 'Slow start requires all nodes to use the same priority', path: ['nodes'] });
+      }
+    }
+  }
 };
 
 export const validateInlineUpstream = (
@@ -78,6 +99,19 @@ export const validateRouteMatch = (
     if (data[single]?.trim() && data[multiple]?.length) {
       context.addIssue({ code: 'custom', message: `Use either ${single} or ${multiple}, not both`, path: [single] });
     }
+  }
+  validateInlineUpstream(data, context);
+};
+
+export const validateStreamRouteMatch = (
+  data: { sni?: string; snis?: string[]; tls_passthrough?: boolean; upstream?: Parameters<typeof validateUpstreamTarget>[0] },
+  context: RefinementCtx
+) => {
+  if (data.sni?.trim() && data.snis !== undefined) {
+    context.addIssue({ code: 'custom', message: 'Use either SNI or SNIs, not both', path: ['sni'] });
+  }
+  if (data.tls_passthrough && data.upstream?.scheme === 'tls') {
+    context.addIssue({ code: 'custom', message: 'TLS passthrough requires a TCP upstream without a second TLS handshake', path: ['upstream', 'scheme'] });
   }
   validateInlineUpstream(data, context);
 };

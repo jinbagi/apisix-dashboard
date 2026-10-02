@@ -40,7 +40,7 @@ export const uiFillStreamRouteRequiredFields = async (
   }
 
   if (data.sni) {
-    await page.getByLabel('SNI').fill(data.sni);
+    await page.getByLabel('SNI', { exact: true }).fill(data.sni);
   }
 
   if (data.desc) {
@@ -78,7 +78,7 @@ export const uiCheckStreamRouteRequiredFields = async (
   }
 
   if (data.sni) {
-    await expect(page.getByLabel('SNI')).toHaveValue(data.sni);
+    await expect(page.getByLabel('SNI', { exact: true })).toHaveValue(data.sni);
   }
 
   if (data.desc) {

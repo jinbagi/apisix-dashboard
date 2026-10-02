@@ -84,6 +84,10 @@ API payloads.
 
 ## Key Features
 
+See the [APISIX 3.19.0 guide](docs/en/apisix-3.19.md) for native WebSocket
+upstreams, TLS trust, slow start, stream TLS passthrough, new plugins and
+service-owned GraphQL query cost controls.
+
 *   **Resource-first UI**: Manage Routes, Stream Routes, Services, Upstreams,
     Consumers, Consumer Groups, SSLs, Global Rules, Plugin Configs, Plugin
     Metadata, Secrets, and Protos from one static console.

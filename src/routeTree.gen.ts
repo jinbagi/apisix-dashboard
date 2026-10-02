@@ -52,12 +52,15 @@ import { Route as ConsumersDetailUsernameIndexRouteImport } from './routes/consu
 import { Route as SecretsDetailManagerIdRouteImport } from './routes/secrets/detail.$manager.$id'
 import { Route as ServicesDetailIdStream_routesIndexRouteImport } from './routes/services/detail.$id/stream_routes/index'
 import { Route as ServicesDetailIdRoutesIndexRouteImport } from './routes/services/detail.$id/routes/index'
+import { Route as ServicesDetailIdGraphql_cost_decorationsIndexRouteImport } from './routes/services/detail.$id/graphql_cost_decorations/index'
 import { Route as ConsumersDetailUsernameCredentialsIndexRouteImport } from './routes/consumers/detail.$username/credentials/index'
 import { Route as ServicesDetailIdStream_routesAddRouteImport } from './routes/services/detail.$id/stream_routes/add'
 import { Route as ServicesDetailIdRoutesAddRouteImport } from './routes/services/detail.$id/routes/add'
+import { Route as ServicesDetailIdGraphql_cost_decorationsAddRouteImport } from './routes/services/detail.$id/graphql_cost_decorations/add'
 import { Route as ConsumersDetailUsernameCredentialsAddRouteImport } from './routes/consumers/detail.$username/credentials/add'
 import { Route as ServicesDetailIdStream_routesDetailRouteIdRouteImport } from './routes/services/detail.$id/stream_routes/detail.$routeId'
 import { Route as ServicesDetailIdRoutesDetailRouteIdRouteImport } from './routes/services/detail.$id/routes/detail.$routeId'
+import { Route as ServicesDetailIdGraphql_cost_decorationsDetailDecorationIdRouteImport } from './routes/services/detail.$id/graphql_cost_decorations/detail.$decorationId'
 import { Route as ConsumersDetailUsernameCredentialsDetailIdRouteImport } from './routes/consumers/detail.$username/credentials/detail.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -278,6 +281,12 @@ const ServicesDetailIdRoutesIndexRoute =
     path: '/routes/',
     getParentRoute: () => ServicesDetailIdRoute,
   } as any)
+const ServicesDetailIdGraphql_cost_decorationsIndexRoute =
+  ServicesDetailIdGraphql_cost_decorationsIndexRouteImport.update({
+    id: '/graphql_cost_decorations/',
+    path: '/graphql_cost_decorations/',
+    getParentRoute: () => ServicesDetailIdRoute,
+  } as any)
 const ConsumersDetailUsernameCredentialsIndexRoute =
   ConsumersDetailUsernameCredentialsIndexRouteImport.update({
     id: '/credentials/',
@@ -296,6 +305,12 @@ const ServicesDetailIdRoutesAddRoute =
     path: '/routes/add',
     getParentRoute: () => ServicesDetailIdRoute,
   } as any)
+const ServicesDetailIdGraphql_cost_decorationsAddRoute =
+  ServicesDetailIdGraphql_cost_decorationsAddRouteImport.update({
+    id: '/graphql_cost_decorations/add',
+    path: '/graphql_cost_decorations/add',
+    getParentRoute: () => ServicesDetailIdRoute,
+  } as any)
 const ConsumersDetailUsernameCredentialsAddRoute =
   ConsumersDetailUsernameCredentialsAddRouteImport.update({
     id: '/credentials/add',
@@ -312,6 +327,12 @@ const ServicesDetailIdRoutesDetailRouteIdRoute =
   ServicesDetailIdRoutesDetailRouteIdRouteImport.update({
     id: '/routes/detail/$routeId',
     path: '/routes/detail/$routeId',
+    getParentRoute: () => ServicesDetailIdRoute,
+  } as any)
+const ServicesDetailIdGraphql_cost_decorationsDetailDecorationIdRoute =
+  ServicesDetailIdGraphql_cost_decorationsDetailDecorationIdRouteImport.update({
+    id: '/graphql_cost_decorations/detail/$decorationId',
+    path: '/graphql_cost_decorations/detail/$decorationId',
     getParentRoute: () => ServicesDetailIdRoute,
   } as any)
 const ConsumersDetailUsernameCredentialsDetailIdRoute =
@@ -364,12 +385,15 @@ export interface FileRoutesByFullPath {
   '/consumers/detail/$username/': typeof ConsumersDetailUsernameIndexRoute
   '/services/detail/$id/': typeof ServicesDetailIdIndexRoute
   '/consumers/detail/$username/credentials/add': typeof ConsumersDetailUsernameCredentialsAddRoute
+  '/services/detail/$id/graphql_cost_decorations/add': typeof ServicesDetailIdGraphql_cost_decorationsAddRoute
   '/services/detail/$id/routes/add': typeof ServicesDetailIdRoutesAddRoute
   '/services/detail/$id/stream_routes/add': typeof ServicesDetailIdStream_routesAddRoute
   '/consumers/detail/$username/credentials/': typeof ConsumersDetailUsernameCredentialsIndexRoute
+  '/services/detail/$id/graphql_cost_decorations/': typeof ServicesDetailIdGraphql_cost_decorationsIndexRoute
   '/services/detail/$id/routes/': typeof ServicesDetailIdRoutesIndexRoute
   '/services/detail/$id/stream_routes/': typeof ServicesDetailIdStream_routesIndexRoute
   '/consumers/detail/$username/credentials/detail/$id': typeof ConsumersDetailUsernameCredentialsDetailIdRoute
+  '/services/detail/$id/graphql_cost_decorations/detail/$decorationId': typeof ServicesDetailIdGraphql_cost_decorationsDetailDecorationIdRoute
   '/services/detail/$id/routes/detail/$routeId': typeof ServicesDetailIdRoutesDetailRouteIdRoute
   '/services/detail/$id/stream_routes/detail/$routeId': typeof ServicesDetailIdStream_routesDetailRouteIdRoute
 }
@@ -414,12 +438,15 @@ export interface FileRoutesByTo {
   '/consumers/detail/$username': typeof ConsumersDetailUsernameIndexRoute
   '/services/detail/$id': typeof ServicesDetailIdIndexRoute
   '/consumers/detail/$username/credentials/add': typeof ConsumersDetailUsernameCredentialsAddRoute
+  '/services/detail/$id/graphql_cost_decorations/add': typeof ServicesDetailIdGraphql_cost_decorationsAddRoute
   '/services/detail/$id/routes/add': typeof ServicesDetailIdRoutesAddRoute
   '/services/detail/$id/stream_routes/add': typeof ServicesDetailIdStream_routesAddRoute
   '/consumers/detail/$username/credentials': typeof ConsumersDetailUsernameCredentialsIndexRoute
+  '/services/detail/$id/graphql_cost_decorations': typeof ServicesDetailIdGraphql_cost_decorationsIndexRoute
   '/services/detail/$id/routes': typeof ServicesDetailIdRoutesIndexRoute
   '/services/detail/$id/stream_routes': typeof ServicesDetailIdStream_routesIndexRoute
   '/consumers/detail/$username/credentials/detail/$id': typeof ConsumersDetailUsernameCredentialsDetailIdRoute
+  '/services/detail/$id/graphql_cost_decorations/detail/$decorationId': typeof ServicesDetailIdGraphql_cost_decorationsDetailDecorationIdRoute
   '/services/detail/$id/routes/detail/$routeId': typeof ServicesDetailIdRoutesDetailRouteIdRoute
   '/services/detail/$id/stream_routes/detail/$routeId': typeof ServicesDetailIdStream_routesDetailRouteIdRoute
 }
@@ -467,12 +494,15 @@ export interface FileRoutesById {
   '/consumers/detail/$username/': typeof ConsumersDetailUsernameIndexRoute
   '/services/detail/$id/': typeof ServicesDetailIdIndexRoute
   '/consumers/detail/$username/credentials/add': typeof ConsumersDetailUsernameCredentialsAddRoute
+  '/services/detail/$id/graphql_cost_decorations/add': typeof ServicesDetailIdGraphql_cost_decorationsAddRoute
   '/services/detail/$id/routes/add': typeof ServicesDetailIdRoutesAddRoute
   '/services/detail/$id/stream_routes/add': typeof ServicesDetailIdStream_routesAddRoute
   '/consumers/detail/$username/credentials/': typeof ConsumersDetailUsernameCredentialsIndexRoute
+  '/services/detail/$id/graphql_cost_decorations/': typeof ServicesDetailIdGraphql_cost_decorationsIndexRoute
   '/services/detail/$id/routes/': typeof ServicesDetailIdRoutesIndexRoute
   '/services/detail/$id/stream_routes/': typeof ServicesDetailIdStream_routesIndexRoute
   '/consumers/detail/$username/credentials/detail/$id': typeof ConsumersDetailUsernameCredentialsDetailIdRoute
+  '/services/detail/$id/graphql_cost_decorations/detail/$decorationId': typeof ServicesDetailIdGraphql_cost_decorationsDetailDecorationIdRoute
   '/services/detail/$id/routes/detail/$routeId': typeof ServicesDetailIdRoutesDetailRouteIdRoute
   '/services/detail/$id/stream_routes/detail/$routeId': typeof ServicesDetailIdStream_routesDetailRouteIdRoute
 }
@@ -521,12 +551,15 @@ export interface FileRouteTypes {
     | '/consumers/detail/$username/'
     | '/services/detail/$id/'
     | '/consumers/detail/$username/credentials/add'
+    | '/services/detail/$id/graphql_cost_decorations/add'
     | '/services/detail/$id/routes/add'
     | '/services/detail/$id/stream_routes/add'
     | '/consumers/detail/$username/credentials/'
+    | '/services/detail/$id/graphql_cost_decorations/'
     | '/services/detail/$id/routes/'
     | '/services/detail/$id/stream_routes/'
     | '/consumers/detail/$username/credentials/detail/$id'
+    | '/services/detail/$id/graphql_cost_decorations/detail/$decorationId'
     | '/services/detail/$id/routes/detail/$routeId'
     | '/services/detail/$id/stream_routes/detail/$routeId'
   fileRoutesByTo: FileRoutesByTo
@@ -571,12 +604,15 @@ export interface FileRouteTypes {
     | '/consumers/detail/$username'
     | '/services/detail/$id'
     | '/consumers/detail/$username/credentials/add'
+    | '/services/detail/$id/graphql_cost_decorations/add'
     | '/services/detail/$id/routes/add'
     | '/services/detail/$id/stream_routes/add'
     | '/consumers/detail/$username/credentials'
+    | '/services/detail/$id/graphql_cost_decorations'
     | '/services/detail/$id/routes'
     | '/services/detail/$id/stream_routes'
     | '/consumers/detail/$username/credentials/detail/$id'
+    | '/services/detail/$id/graphql_cost_decorations/detail/$decorationId'
     | '/services/detail/$id/routes/detail/$routeId'
     | '/services/detail/$id/stream_routes/detail/$routeId'
   id:
@@ -623,12 +659,15 @@ export interface FileRouteTypes {
     | '/consumers/detail/$username/'
     | '/services/detail/$id/'
     | '/consumers/detail/$username/credentials/add'
+    | '/services/detail/$id/graphql_cost_decorations/add'
     | '/services/detail/$id/routes/add'
     | '/services/detail/$id/stream_routes/add'
     | '/consumers/detail/$username/credentials/'
+    | '/services/detail/$id/graphql_cost_decorations/'
     | '/services/detail/$id/routes/'
     | '/services/detail/$id/stream_routes/'
     | '/consumers/detail/$username/credentials/detail/$id'
+    | '/services/detail/$id/graphql_cost_decorations/detail/$decorationId'
     | '/services/detail/$id/routes/detail/$routeId'
     | '/services/detail/$id/stream_routes/detail/$routeId'
   fileRoutesById: FileRoutesById
@@ -978,6 +1017,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesDetailIdRoutesIndexRouteImport
       parentRoute: typeof ServicesDetailIdRoute
     }
+    '/services/detail/$id/graphql_cost_decorations/': {
+      id: '/services/detail/$id/graphql_cost_decorations/'
+      path: '/graphql_cost_decorations'
+      fullPath: '/services/detail/$id/graphql_cost_decorations/'
+      preLoaderRoute: typeof ServicesDetailIdGraphql_cost_decorationsIndexRouteImport
+      parentRoute: typeof ServicesDetailIdRoute
+    }
     '/consumers/detail/$username/credentials/': {
       id: '/consumers/detail/$username/credentials/'
       path: '/credentials'
@@ -999,6 +1045,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesDetailIdRoutesAddRouteImport
       parentRoute: typeof ServicesDetailIdRoute
     }
+    '/services/detail/$id/graphql_cost_decorations/add': {
+      id: '/services/detail/$id/graphql_cost_decorations/add'
+      path: '/graphql_cost_decorations/add'
+      fullPath: '/services/detail/$id/graphql_cost_decorations/add'
+      preLoaderRoute: typeof ServicesDetailIdGraphql_cost_decorationsAddRouteImport
+      parentRoute: typeof ServicesDetailIdRoute
+    }
     '/consumers/detail/$username/credentials/add': {
       id: '/consumers/detail/$username/credentials/add'
       path: '/credentials/add'
@@ -1018,6 +1071,13 @@ declare module '@tanstack/react-router' {
       path: '/routes/detail/$routeId'
       fullPath: '/services/detail/$id/routes/detail/$routeId'
       preLoaderRoute: typeof ServicesDetailIdRoutesDetailRouteIdRouteImport
+      parentRoute: typeof ServicesDetailIdRoute
+    }
+    '/services/detail/$id/graphql_cost_decorations/detail/$decorationId': {
+      id: '/services/detail/$id/graphql_cost_decorations/detail/$decorationId'
+      path: '/graphql_cost_decorations/detail/$decorationId'
+      fullPath: '/services/detail/$id/graphql_cost_decorations/detail/$decorationId'
+      preLoaderRoute: typeof ServicesDetailIdGraphql_cost_decorationsDetailDecorationIdRouteImport
       parentRoute: typeof ServicesDetailIdRoute
     }
     '/consumers/detail/$username/credentials/detail/$id': {
@@ -1055,21 +1115,30 @@ const ConsumersDetailUsernameRouteWithChildren =
 
 interface ServicesDetailIdRouteChildren {
   ServicesDetailIdIndexRoute: typeof ServicesDetailIdIndexRoute
+  ServicesDetailIdGraphql_cost_decorationsAddRoute: typeof ServicesDetailIdGraphql_cost_decorationsAddRoute
   ServicesDetailIdRoutesAddRoute: typeof ServicesDetailIdRoutesAddRoute
   ServicesDetailIdStream_routesAddRoute: typeof ServicesDetailIdStream_routesAddRoute
+  ServicesDetailIdGraphql_cost_decorationsIndexRoute: typeof ServicesDetailIdGraphql_cost_decorationsIndexRoute
   ServicesDetailIdRoutesIndexRoute: typeof ServicesDetailIdRoutesIndexRoute
   ServicesDetailIdStream_routesIndexRoute: typeof ServicesDetailIdStream_routesIndexRoute
+  ServicesDetailIdGraphql_cost_decorationsDetailDecorationIdRoute: typeof ServicesDetailIdGraphql_cost_decorationsDetailDecorationIdRoute
   ServicesDetailIdRoutesDetailRouteIdRoute: typeof ServicesDetailIdRoutesDetailRouteIdRoute
   ServicesDetailIdStream_routesDetailRouteIdRoute: typeof ServicesDetailIdStream_routesDetailRouteIdRoute
 }
 
 const ServicesDetailIdRouteChildren: ServicesDetailIdRouteChildren = {
   ServicesDetailIdIndexRoute: ServicesDetailIdIndexRoute,
+  ServicesDetailIdGraphql_cost_decorationsAddRoute:
+    ServicesDetailIdGraphql_cost_decorationsAddRoute,
   ServicesDetailIdRoutesAddRoute: ServicesDetailIdRoutesAddRoute,
   ServicesDetailIdStream_routesAddRoute: ServicesDetailIdStream_routesAddRoute,
+  ServicesDetailIdGraphql_cost_decorationsIndexRoute:
+    ServicesDetailIdGraphql_cost_decorationsIndexRoute,
   ServicesDetailIdRoutesIndexRoute: ServicesDetailIdRoutesIndexRoute,
   ServicesDetailIdStream_routesIndexRoute:
     ServicesDetailIdStream_routesIndexRoute,
+  ServicesDetailIdGraphql_cost_decorationsDetailDecorationIdRoute:
+    ServicesDetailIdGraphql_cost_decorationsDetailDecorationIdRoute,
   ServicesDetailIdRoutesDetailRouteIdRoute:
     ServicesDetailIdRoutesDetailRouteIdRoute,
   ServicesDetailIdStream_routesDetailRouteIdRoute:

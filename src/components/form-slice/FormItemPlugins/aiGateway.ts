@@ -184,9 +184,16 @@ export const validateAIGatewayConfig = (
   if (name !== 'ai-proxy-multi') return [];
 
   const instances = Array.isArray(config.instances) ? config.instances : [];
-  return instances.flatMap((instance, index) =>
-    isRecord(instance)
-      ? validateInstance(instance, `instances[${index}].`)
-      : [`instances[${index}] must be an object.`]
-  );
+  const names = new Set<string>();
+  return instances.flatMap((instance, index) => {
+    if (!isRecord(instance)) return [`instances[${index}] must be an object.`];
+    const issues = validateInstance(instance, `instances[${index}].`);
+    if (typeof instance.name === 'string') {
+      if (names.has(instance.name)) {
+        issues.push(`instances[${index}].name must be unique within instances.`);
+      }
+      names.add(instance.name);
+    }
+    return issues;
+  });
 };

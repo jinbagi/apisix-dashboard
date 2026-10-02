@@ -48,6 +48,10 @@ export const DetailTabs = () => {
         value: 'stream_routes',
         label: 'Stream Routes',
       },
+      {
+        value: 'graphql_cost_decorations',
+        label: 'GraphQL Cost',
+      },
     ],
     []
   );
