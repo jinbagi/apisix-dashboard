@@ -23,7 +23,7 @@ import { parseBulkPatch } from '@/apis/bulk-patch';
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'Bulk RAW edit', exact: true });
 async function setup(page: Page, resource = 'routes') {
   const values: Record<string, Record<string, unknown>> = Object.fromEntries(['first', 'second'].map((id) => [id, {
-    id, name: id, uri: `/${id}`, desc: 'Before', labels: { env: 'dev', team: id },
+    id, ...(resource === 'consumers' ? { username: id } : {}), name: id, uri: `/${id}`, desc: 'Before', labels: { env: 'dev', team: id },
     methods: ['GET', 'POST'], upstream: { nodes: { '127.0.0.1:1980': 1 } },
     nodes: { '127.0.0.1:1980': 1 }, type: 'roundrobin', plugins: {}, server_port: 9000,
     create_time: 1, update_time: 1, future_field: { preserved: true },
@@ -38,7 +38,11 @@ async function setup(page: Page, resource = 'routes') {
     if (path === `/${resource}`) return route.fulfill({ json: { list: Object.values(values).map((value) => ({ value })), total: 2 } });
     if (path.startsWith(`/${resource}/`)) {
       const id = decodeURIComponent(path.slice(resource.length + 2));
-      if (request.method() === 'PATCH') {
+      if (request.method() === 'PUT') {
+        const body = request.postDataJSON();
+        writes.push({ id, body });
+        values[id] = body;
+      } else if (request.method() === 'PATCH') {
         const body = request.postDataJSON();
         writes.push({ id, body });
         if (controls.holdWrite === id) await new Promise<void>((resolve) => held.set(id, resolve));
@@ -71,7 +75,7 @@ async function preview(page: Page, value: unknown) {
   await uiFillMonacoEditor(page, dialog(page).locator('.monaco-editor'), JSON.stringify(value));
   await dialog(page).getByRole('button', { name: 'Preview changes', exact: true }).click();
 }
-for (const resource of ['routes', 'stream_routes', 'services', 'upstreams', 'plugin_configs']) {
+for (const resource of ['routes', 'stream_routes', 'services', 'upstreams', 'plugin_configs', 'consumer_groups', 'global_rules']) {
   test(`${resource}: preview is read-only and PATCH verifies each selected item`, async ({ page }) => {
     const { values, writes } = await setup(page, resource);
     await preview(page, { desc: 'After' });
@@ -214,4 +218,34 @@ test('navigation cannot abandon a batch while a PATCH is in flight', async ({ pa
   held.get('first')!();
   await leave.getByRole('button', { name: 'Stay in bulk editor' }).click();
   await expect(dialog(page).getByRole('status')).toContainText('2 saved and verified');
+});
+
+
+test('Consumers PUT retains username and latest unrelated fields while stripping system fields', async ({ page }) => {
+  const { values, writes } = await setup(page, 'consumers');
+  await expect(dialog(page)).toContainText('Consumers use PUT');
+  await preview(page, { desc: null, labels: { env: 'prod' } });
+  await expect(dialog(page).getByRole('status')).toContainText('2 ready');
+  values.first.labels = { env: 'dev', team: 'first', concurrent: 'keep' };
+  values.first.plugins = { 'key-auth': { key: 'example-key' } };
+  await page.screenshot({ path: test.info().outputPath('bulk-consumers.png'), animations: 'disabled' });
+  await dialog(page).getByRole('button', { name: 'Apply 2 changes' }).click();
+  await expect(dialog(page).getByRole('status')).toContainText('2 saved and verified');
+  expect(writes).toHaveLength(2);
+  expect(writes[0].body).toMatchObject({ username: 'first', labels: { env: 'prod', team: 'first', concurrent: 'keep' }, plugins: { 'key-auth': { key: 'example-key' } }, future_field: { preserved: true } });
+  for (const { body } of writes) for (const key of ['id', 'create_time', 'update_time', 'desc']) expect(body).not.toHaveProperty(key);
+});
+
+test('Consumer identity and concurrent changed-field guards block PUT', async ({ page }) => {
+  const { values, writes } = await setup(page, 'consumers');
+  await preview(page, { username: 'replacement' });
+  await expect(dialog(page)).toContainText('Read-only fields cannot be patched: username');
+  values.second.username = 'unexpected';
+  await preview(page, { desc: 'After' });
+  await expect(dialog(page).getByRole('status')).toContainText('1 ready');
+  await expect(dialog(page)).toContainText('expected identity');
+  values.first.desc = 'Concurrent change';
+  await dialog(page).getByRole('button', { name: 'Apply 1 changes' }).click();
+  await expect(dialog(page)).toContainText('Changed since preview: desc');
+  expect(writes).toHaveLength(0);
 });

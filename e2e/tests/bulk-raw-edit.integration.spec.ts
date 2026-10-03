@@ -54,3 +54,29 @@ test('bulk RAW PATCH persists merge, deletion and array replacement in APISIX', 
   }
 });
 
+
+
+for (const resource of ['consumers', 'consumer_groups', 'global_rules']) {
+  test(`${resource}: bulk RAW saves and verifies against APISIX`, async ({ page }) => {
+    const id = randomId('bulk_extended');
+    const { adminKey } = await getAPISIXConf();
+    await page.addInitScript((key) => localStorage.setItem('settings:adminKey', JSON.stringify(key)), adminKey);
+    const plugins = { 'response-rewrite': { headers: { 'X-Bulk-Test': 'before' } } };
+    try {
+      await e2eReq.put(`/${resource}/${id}`, { ...(resource === 'consumers' ? { username: id } : {}), plugins });
+      await page.goto(resource);
+      await page.getByRole('row').filter({ hasText: id }).getByRole('checkbox', { name: 'Select row', exact: true }).check();
+      await page.getByRole('button', { name: 'Edit RAW', exact: true }).click();
+      const modal = page.getByRole('dialog', { name: 'Bulk RAW edit', exact: true });
+      await expect(modal.getByRole('textbox', { name: 'Bulk JSON patch' })).toBeVisible();
+      await uiFillMonacoEditor(page, modal.locator('.monaco-editor'), JSON.stringify({ plugins: { 'response-rewrite': { headers: { 'X-Bulk-Test': 'after' } } } }));
+      await modal.getByRole('button', { name: 'Preview changes', exact: true }).click();
+      await expect(modal.getByRole('status')).toContainText('1 ready');
+      await modal.getByRole('button', { name: 'Apply 1 changes' }).click();
+      await expect(modal.getByRole('status')).toContainText('1 saved and verified');
+      const { data } = await e2eReq.get(`/${resource}/${id}`);
+      expect(data.value.plugins['response-rewrite'].headers['X-Bulk-Test']).toBe('after');
+      expect(data.value[resource === 'consumers' ? 'username' : 'id']).toBe(id);
+    } finally { await e2eReq.delete(`/${resource}/${id}`); }
+  });
+}
