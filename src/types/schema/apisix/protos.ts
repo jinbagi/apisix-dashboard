@@ -27,5 +27,7 @@ const Proto = z
 
 export const APISIXProtos = {
   Proto,
-  ProtoPost: Proto.omit({ id: true, create_time: true, update_time: true }),
+  ProtoPost: Proto.omit({ create_time: true, update_time: true }).extend({
+    id: z.string().optional(),
+  }),
 };

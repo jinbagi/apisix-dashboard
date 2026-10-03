@@ -83,9 +83,9 @@ export const FormPartBasic = (props: FormPartBasicProps) => {
         <FormItemTextInput
           name={np('id')}
           label="ID"
-          description="Optional. Auto-generated if not specified."
+          description="Choose your own ID, or leave empty for an auto-generated ID. You can also set id in Payload JSON."
           control={control}
-          placeholder="Leave empty for auto-generated ID"
+          placeholder="Enter a custom ID (optional)"
         />
       )}
       {before}
