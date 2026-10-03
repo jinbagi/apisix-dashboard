@@ -427,6 +427,7 @@ export type ImportResult = {
   resourceType: ResourceKey;
   total: number;
   success: number;
+  skipped?: number;
   errors: Array<{ id: string; error: string }>;
 };
 
@@ -452,16 +453,25 @@ export function getImportRequest(
   resourceType: ResourceKey,
   item: Record<string, unknown>
 ): { url: string; body: Record<string, unknown> } {
+  if (!isRecord(item)) throw new Error('Resource must be a JSON object');
   const id = getResourceId(resourceType, item);
+  if (resourceType === 'graphqlCostDecorations' && (!item.service_id || !id)) {
+    throw new Error('GraphQL cost decorations require service_id and id');
+  }
+  const identifier = resourceType === 'consumers' ? item.username ?? item.id : item.id;
+  if (!['string', 'number'].includes(typeof identifier) || !String(identifier).trim()) throw new Error('Resource requires a valid ID');
+  if (resourceType === 'secrets' && (!id.includes('/') || id.endsWith('/'))) throw new Error('Secrets require manager and id');
   const body = stripTimestamps(item);
   delete body.id;
-  delete body.username;
+  if (resourceType !== 'consumers') delete body.username;
+  else body.username = id;
   delete body.manager;
 
   if (resourceType === 'credentials') {
     const username = String(item.username ?? '');
+    if (!username) throw new Error('Consumer credentials require username');
     return {
-      url: `${API_CONSUMERS}/${username}/credentials/${id}`,
+      url: `${API_CONSUMERS}/${encodeURIComponent(username)}/credentials/${encodeURIComponent(id)}`,
       body,
     };
   }
@@ -474,7 +484,7 @@ export function getImportRequest(
   }
 
   return {
-    url: `${RESOURCE_API_MAP[resourceType]}/${id}`,
+    url: `${RESOURCE_API_MAP[resourceType]}/${resourceType === 'secrets' ? id.split('/').map(encodeURIComponent).join('/') : encodeURIComponent(id)}`,
     body,
   };
 }
@@ -483,6 +493,7 @@ export async function importResources(
   data: ExportData,
   selectedResources: ResourceKey[],
   onProgress?: (result: ImportResult) => void,
+  beforeWrite?: (resourceType: ResourceKey, item: Record<string, unknown>, index: number) => Promise<boolean>,
 ): Promise<ImportResult[]> {
   const results: ImportResult[] = [];
 
@@ -499,10 +510,14 @@ export async function importResources(
 
     const result: ImportResult = { resourceType, total: items.length, success: 0, errors: [] };
 
-    for (const item of items) {
-      const id = getResourceId(resourceType, item);
+    for (const [index, item] of items.entries()) {
+      const id = isRecord(item) ? getResourceId(resourceType, item) : `Item ${index + 1}`;
       try {
         const request = getImportRequest(resourceType, item);
+        if (beforeWrite && !(await beforeWrite(resourceType, item, index))) {
+          result.skipped = (result.skipped ?? 0) + 1;
+          continue;
+        }
         // Use PUT with ID to create or update
         await req.put(request.url, request.body);
         result.success++;

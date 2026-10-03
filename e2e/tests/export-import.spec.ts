@@ -70,6 +70,10 @@ test('imports uploaded resources with sanitized PUT payloads', async ({
 
   await page.route('**/apisix/admin/**', async (route) => {
     const request = route.request();
+    if (request.method() === 'GET' && /\/(consumers\/alice(?:\/credentials\/key-auth-main)?|secrets\/vault\/vault-secret)$/.test(new URL(request.url()).pathname)) {
+      await route.fulfill({ status: 404, json: { error_msg: 'Not found' } });
+      return;
+    }
     if (request.method() === 'PUT') {
       requests.push({
         url: new URL(request.url()).pathname,
@@ -113,7 +117,7 @@ test('imports uploaded resources with sanitized PUT payloads', async ({
   expect(requests).toEqual([
     {
       url: '/apisix/admin/consumers/alice',
-      body: { desc: 'imported consumer' },
+      body: { username: 'alice', desc: 'imported consumer' },
     },
     {
       url: '/apisix/admin/consumers/alice/credentials/key-auth-main',
