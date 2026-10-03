@@ -181,6 +181,7 @@ test('saves and restores session presets without executing them', async ({ page 
 
   await page.getByRole('button', { name: 'Presets (1)' }).click();
   await page.getByRole('button', { name: /Paged routes GET/ }).click();
+  await page.getByRole('dialog', { name: 'Replace request draft?' }).getByRole('button', { name: 'Discard and replace' }).click();
 
   await expect(queryInput).toHaveValue('page=2&page_size=25');
   await expect(page.getByText('/apisix/admin/routes?page=2&page_size=25')).toBeVisible();
@@ -215,6 +216,7 @@ test('restores failed requests for correction and rerun', async ({ page }) => {
 
   await pathInput.fill('edited-away');
   await page.getByRole('button', { name: 'Restore request' }).click();
+  await page.getByRole('dialog', { name: 'Replace request draft?' }).getByRole('button', { name: 'Discard and replace' }).click();
   await expect(pathInput).toHaveValue('retry-console-route');
 
   const retriedResponse = page.waitForResponse((response) =>
@@ -295,6 +297,7 @@ test('keeps blocked request body errors visible with recovery actions', async ({
   expect(blockedRequests).toBe(0);
 
   await requestBodyError.getByRole('button', { name: 'Reset to template' }).click();
+  await page.getByRole('dialog', { name: 'Replace request draft?' }).getByRole('button', { name: 'Discard and replace' }).click();
   await expect(requestBodyError).toBeHidden();
   await expect(requestEditor).toContainText('"uri": "/"');
 });
