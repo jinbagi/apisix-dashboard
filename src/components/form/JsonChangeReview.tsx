@@ -27,19 +27,27 @@ type Props = {
   saving?: boolean;
   onCancel: () => void;
   onSave: () => void | Promise<void>;
+  title?: string;
+  description?: string;
+  confirmText?: string;
 };
 
 /** The same read-only change review for form drafts and direct RAW edits. */
-export const JsonChangeReview = ({ open, original, modified, saving, onCancel, onSave }: Props) => {
+export const JsonChangeReview = ({
+  open, original, modified, saving, onCancel, onSave,
+  title = 'Review Changes Before Saving',
+  description = 'Compare the saved configuration with your changes before applying them.',
+  confirmText = 'Confirm & Save',
+}: Props) => {
   const { mode } = useThemeMode();
   return (
     <Modal
       open={open}
-      title="Review Changes Before Saving"
+      title={title}
       width={1000}
       onCancel={onCancel}
       onOk={onSave}
-      okText="Confirm & Save"
+      okText={confirmText}
       cancelText="Keep editing"
       confirmLoading={saving}
       cancelButtonProps={{ disabled: saving }}
@@ -48,7 +56,7 @@ export const JsonChangeReview = ({ open, original, modified, saving, onCancel, o
       keyboard={!saving}
       destroyOnHidden
     >
-      <p>Compare the saved configuration with your changes before applying them.</p>
+      <p>{description}</p>
       <div style={{ border: '1px solid var(--ant-color-border)', borderRadius: 6, overflow: 'hidden' }}>
         <DiffEditor
           height="min(55vh, 500px)"

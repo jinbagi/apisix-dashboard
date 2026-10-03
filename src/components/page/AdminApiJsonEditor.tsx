@@ -27,6 +27,7 @@ import { req } from '@/config/req';
 import {
   buildPatchPayload,
   getChangedTopLevelReadonlyKeys,
+  getPatchConflictPaths,
   getPatchMismatchPaths,
   isRecord,
   restorePatchReadonlyFields,
@@ -145,6 +146,7 @@ export const AdminApiJsonEditor = ({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [review, setReview] = useState<{ original: string; modified: string } | null>(null);
+  const [conflict, setConflict] = useState<{ latest: Record<string, unknown>; paths: string[]; draft: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saveFeedback, setSaveFeedback] = useState<SaveFeedback | null>(null);
   const [resourceBase, setResourceBase] = useState<Record<string, unknown>>({});
@@ -183,6 +185,7 @@ export const AdminApiJsonEditor = ({
     setValue(json);
     setOriginal(json);
     setError(null);
+    setConflict(null);
     userEditedRef.current = false;
   }, [api]);
 
@@ -340,6 +343,17 @@ export const AdminApiJsonEditor = ({
     setReview(null);
     let patchAccepted = false;
     try {
+      const latestResponse = await req.get(api);
+      const latest = latestResponse.data?.value;
+      if (!isRecord(latest)) {
+        throw new Error('Could not check the latest resource. No changes were sent.');
+      }
+      const normalizedLatest = normalizeApiResource(api, latest);
+      const paths = getPatchConflictPaths(payload, previous, stripPatchReadonlyFields(normalizedLatest));
+      if (paths.length > 0) {
+        setConflict({ latest: normalizedLatest, paths, draft: toJson(editableParsed) });
+        return;
+      }
       try {
         await req.patch(api, payload);
         patchAccepted = true;
@@ -566,6 +580,18 @@ export const AdminApiJsonEditor = ({
           </Space>
         </Space>
       )}
+      <JsonChangeReview
+        open={conflict !== null}
+        title="Resolve concurrent changes"
+        description={`Nothing was saved. These fields changed in APISIX while you were editing: ${conflict?.paths.join(', ') ?? ''}. Compare the latest server value (left) with your draft (right). Keep editing preserves your draft; using the latest value discards it.`}
+        original={conflict ? toJson(stripPatchReadonlyFields(conflict.latest)) : ''}
+        modified={conflict?.draft ?? ''}
+        confirmText="Use latest and discard draft"
+        onCancel={() => setConflict(null)}
+        onSave={() => {
+          if (conflict) loadData(conflict.latest);
+        }}
+      />
       <JsonChangeReview
         open={review !== null}
         original={review?.original ?? ''}
