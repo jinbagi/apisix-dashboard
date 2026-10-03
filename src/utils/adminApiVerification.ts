@@ -57,7 +57,7 @@ const stripVerificationPaths = (
 export const verifyAdminApiResource = async (
   api: string,
   expected: Record<string, unknown>,
-  options: { ignoredPaths?: string[] } = {}
+  options: { ignoredPaths?: string[]; timeoutMs?: number } = {}
 ) => {
   let lastError: unknown;
   const comparableExpected = stripVerificationPaths(
@@ -68,6 +68,7 @@ export const verifyAdminApiResource = async (
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const response = await req.get(api, {
+        timeout: options.timeoutMs,
         headers: {
           [SKIP_INTERCEPTOR_HEADER]: ['404'],
         },

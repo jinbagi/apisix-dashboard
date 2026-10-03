@@ -18,6 +18,7 @@ import { Button, message, Modal, Space, Tooltip, Typography } from 'antd';
 import { useState } from 'react';
 
 import { exportSelectedResources, getExportResourceKey } from '@/apis/export-import';
+import { BulkRawEdit } from '@/components/page/BulkRawEdit';
 import { queryClient } from '@/config/global';
 import { req } from '@/config/req';
 import { verifyAdminApiField } from '@/utils/adminApiVerification';
@@ -239,6 +240,7 @@ export const BulkDeleteBar = ({
             </Button>
           </Tooltip>
         )}
+        <BulkRawEdit apiBase={apiBase} selectedIds={selectedIds} disabled={loading || exporting} onComplete={onComplete} />
         {showStatusActions && (
           <>
             <Button
