@@ -19,6 +19,7 @@ import dayjs from 'dayjs';
 import { useAtomValue } from 'jotai';
 import { useState } from 'react';
 
+import { ResourceHistory } from '@/components/page/ResourceHistory';
 import {
   activityLogAtom,
   type ActivityLogEntry,
@@ -76,6 +77,7 @@ export const ActivityLogButton = () => {
           </Button>
         }
       >
+        <div style={{ marginBottom: 16 }}><ResourceHistory /></div>
         {entries.length === 0 ? (
           <Empty description="No activity yet" />
         ) : (

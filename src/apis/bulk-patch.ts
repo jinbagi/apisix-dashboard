@@ -17,6 +17,7 @@
 
 import { SKIP_INTERCEPTOR_HEADER } from '@/config/constant';
 import { req } from '@/config/req';
+import { recordResourceChange } from '@/stores/resourceHistory';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { buildPatchPayload, getPatchConflictPaths, isRecord, PATCH_READONLY_KEYS } from '@/utils/apisixEditable';
 import { getAdminResourceSchema } from '@/utils/resourceJsonSchema';
@@ -114,6 +115,7 @@ export async function applyBulkPatchRow(row: BulkPatchRow): Promise<BulkPatchRow
     writeAttempted = true;
     await req.patch(row.api, delta, { timeout: 15_000 });
     await verifyAdminApiResource(row.api, delta, { timeoutMs: 15_000 });
+    recordResourceChange(row.api, current, after);
     return { ...row, status: 'Saved', error: undefined };
   } catch (error) {
     // A network error after sending PATCH cannot establish whether the server committed it.
