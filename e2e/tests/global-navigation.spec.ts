@@ -24,6 +24,7 @@ const catalog = Array.from({ length: 25 }, (_, index) => ({
 }));
 
 async function mockAdmin(page: Page, options: { failPage?: boolean; failAll?: boolean; pauseSearch?: Promise<void> } = {}) {
+  // Start search scenarios on Dashboard: resource tables also read 500-item pages.
   const reads: string[] = [];
   const writes: string[] = [];
   await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('test-admin-key')));
@@ -67,21 +68,23 @@ async function chooseScope(page: Page, label: string) {
 
 test('opens useful keyboard navigation without requesting a gateway search', async ({ page }) => {
   const state = await mockAdmin(page);
-  await page.goto('routes');
+  await page.goto('dashboard');
   await page.getByRole('button', { name: 'Search resources' }).press('Control+k');
   const input = page.getByRole('combobox', { name: 'Search all resources' });
   await expect(input).toBeFocused();
   await expect(page.getByRole('option', { name: 'Browse Routes', exact: false })).toBeVisible();
   await input.press('ArrowDown');
+  expect(state.reads).toEqual([]);
   await input.press('Enter');
   await expect(page).toHaveURL(/\/services(?:\?|$)/);
-  expect(state.reads).toEqual([]);
+  expect(state.reads).toHaveLength(1);
+  expect(state.reads[0]).toContain('/services?');
   expect(state.writes).toEqual([]);
 });
 
 test('opens a creation draft without submitting and returns focus on Escape', async ({ page }) => {
   const state = await mockAdmin(page);
-  await page.goto('routes');
+  await page.goto('dashboard');
   await openSearch(page);
   await page.getByRole('option', { name: 'Create Upstream', exact: false }).click();
   await expect(page).toHaveURL(/\/upstreams\/add$/);
@@ -94,7 +97,7 @@ test('opens a creation draft without submitting and returns focus on Escape', as
 
 test('shows result context and reveals every result beyond the first 20', async ({ page }, testInfo) => {
   await mockAdmin(page);
-  await page.goto('routes');
+  await page.goto('dashboard');
   const input = await openSearch(page);
   await input.fill('catalog');
   await expect(page.getByRole('dialog').getByRole('status')).toContainText('26 results');
@@ -109,7 +112,7 @@ test('shows result context and reveals every result beyond the first 20', async 
 
 test('scopes requests and reuses successful collections while refining a query', async ({ page }) => {
   const state = await mockAdmin(page);
-  await page.goto('routes');
+  await page.goto('dashboard');
   const input = await openSearch(page);
   await chooseScope(page, 'Services');
   await input.fill('catalog');
@@ -129,7 +132,7 @@ test('scopes requests and reuses successful collections while refining a query',
 
 test('opens an exact resource match with Enter', async ({ page }) => {
   await mockAdmin(page);
-  await page.goto('routes');
+  await page.goto('dashboard');
   const input = await openSearch(page);
   await input.fill('catalog-25');
   await expect(page.getByRole('option', { name: /Catalog 25/ })).toBeVisible();
@@ -141,7 +144,7 @@ test('finishes an in-flight search when only query case or surrounding whitespac
   let releaseSearch!: () => void;
   const pauseSearch = new Promise<void>((resolve) => { releaseSearch = resolve; });
   const state = await mockAdmin(page, { pauseSearch });
-  await page.goto('routes');
+  await page.goto('dashboard');
   const input = await openSearch(page);
   await input.fill('catalog');
   await expect.poll(() => state.reads.length).toBe(12);
@@ -153,13 +156,13 @@ test('finishes an in-flight search when only query case or surrounding whitespac
 
 test('cannot open a previous result after the search input changes', async ({ page }) => {
   await mockAdmin(page);
-  await page.goto('routes');
+  await page.goto('dashboard');
   const input = await openSearch(page);
   await input.fill('catalog-25');
   await expect(page.getByRole('option', { name: /Catalog 25/ })).toBeVisible();
   await input.fill('missing');
   await input.press('Enter');
-  await expect(page).toHaveURL(/\/routes(?:\?|$)/);
+  await expect(page).toHaveURL(/\/dashboard(?:\?|$)/);
   await expect(page.getByText('No results found', { exact: true })).toBeVisible();
   await expect(page.getByRole('option', { name: /Catalog 25/ })).toHaveCount(0);
 });
@@ -178,7 +181,7 @@ test('preserves an unsaved editor draft when quick navigation is cancelled', asy
 
 test('reports missing result pages and retries without concealing available matches', async ({ page }) => {
   const state = await mockAdmin(page, { failPage: true });
-  await page.goto('routes');
+  await page.goto('dashboard');
   const input = await openSearch(page);
   await chooseScope(page, 'Routes');
   await input.fill('catalog');
@@ -192,7 +195,7 @@ test('reports missing result pages and retries without concealing available matc
 
 test('keeps unavailable search distinct from no matches and lets users clear a search', async ({ page }) => {
   const state = await mockAdmin(page, { failAll: true });
-  await page.goto('routes');
+  await page.goto('dashboard');
   const input = await openSearch(page);
   await input.fill('missing');
   await expect(page.getByText('Search unavailable', { exact: true })).toBeVisible();
@@ -207,7 +210,7 @@ test('keeps unavailable search distinct from no matches and lets users clear a s
 
 test('keeps same-id secrets under separate managers as separate options', async ({ page }) => {
   await mockAdmin(page);
-  await page.goto('routes');
+  await page.goto('dashboard');
   const input = await openSearch(page);
   await chooseScope(page, 'Secrets');
   await input.fill('shared');
@@ -217,7 +220,7 @@ test('keeps same-id secrets under separate managers as separate options', async 
 
 test('handles whitespace and empty keyboard navigation without producing an invalid selection', async ({ page }) => {
   await mockAdmin(page);
-  await page.goto('routes');
+  await page.goto('dashboard');
   const input = await openSearch(page);
   await input.fill('   ');
   await expect(page.getByRole('option', { name: /Browse Routes/ })).toBeVisible();
@@ -235,7 +238,7 @@ for (const theme of ['light', 'dark']) {
     await mockAdmin(page);
     await page.addInitScript((mode) => localStorage.setItem('theme', JSON.stringify(mode)), theme);
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('routes');
+    await page.goto('dashboard');
     const input = await openSearch(page);
     await expect(input).toBeFocused();
     await input.fill('catalog');

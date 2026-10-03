@@ -38,7 +38,7 @@ import { renderUnixDateTime, unixFieldSorter } from '@/utils/columns';
 import { useBulkActions } from '@/utils/useBulkActions';
 
 function SecretList() {
-  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort } = useSecretList();
+  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort, tableState } = useSecretList();
   const { rowSelection, bulkBarProps } = useBulkActions(
     refetch,
     data?.list?.map((record) => `${record.value.manager}/${record.value.id}`)
@@ -120,6 +120,7 @@ function SecretList() {
   return (
     <AntdConfigProvider>
       <ResourceTable
+        tableState={tableState}
         resourceName="Secrets"
         query={params.q ?? params.name ?? params.uri ?? ''}
         label={params.label ?? ''}

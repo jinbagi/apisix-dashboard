@@ -39,7 +39,7 @@ import { getPluginFilterOptions, hasPluginName, renderPluginCount, renderUnixDat
 import { useBulkActions } from '@/utils/useBulkActions';
 
 function GlobalRulesList() {
-  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort } = useGlobalRuleList();
+  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort, tableState } = useGlobalRuleList();
   const { rowSelection, bulkBarProps } = useBulkActions(
     refetch,
     data?.list?.map((record) => record.value.id)
@@ -118,6 +118,7 @@ function GlobalRulesList() {
   return (
     <AntdConfigProvider>
       <ResourceTable
+        tableState={tableState}
         resourceName="Global Rules"
         query={params.q ?? params.name ?? params.uri ?? ''}
         label={params.label ?? ''}

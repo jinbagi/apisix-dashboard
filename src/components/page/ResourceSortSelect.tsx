@@ -74,9 +74,10 @@ export const ResourceSortSelect = ({
 
   return (
     <div className="resource-table-field resource-table-field-sort">
-      <label htmlFor={id}>Sort loaded results</label>
+      <label htmlFor={id}>Sort results</label>
       <Select
         id={id}
+        virtual={false}
         value={selectedValue}
         options={options}
         onChange={(value) => {

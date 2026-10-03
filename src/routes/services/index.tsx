@@ -41,7 +41,7 @@ import { getPluginFilterOptions, hasPluginName, renderPluginCount, renderUnixDat
 import { useBulkActions } from '@/utils/useBulkActions';
 
 const ServiceList = () => {
-  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort } = useServiceList();
+  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort, tableState } = useServiceList();
   const { rowSelection, bulkBarProps } = useBulkActions(
     refetch,
     data?.list?.map((record) => record.value.id)
@@ -150,6 +150,7 @@ const ServiceList = () => {
   return (
     <AntdConfigProvider>
       <ResourceTable
+        tableState={tableState}
         resourceName="Services"
         query={params.q ?? params.name ?? params.uri ?? ''}
         label={params.label ?? ''}

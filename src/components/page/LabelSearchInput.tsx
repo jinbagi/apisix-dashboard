@@ -46,7 +46,7 @@ export const LabelSearchInput = ({
     <div className="resource-table-field resource-table-field-label">
       <label htmlFor={id}>Label</label>
       <Tooltip
-        title="Find resources with a label, for example env:prod"
+        title="Use env to match a label key, or env:prod to match its exact value."
         placement="bottom"
       >
         <Input.Search

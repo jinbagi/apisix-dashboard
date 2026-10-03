@@ -20,6 +20,7 @@ const resources = Array.from({ length: 25 }, (_, index) => ({
   id: `table-${String(index + 1).padStart(2, '0')}`,
   name: `Catalog route ${String(index + 1).padStart(2, '0')}`,
   username: `consumer-${index + 1}`,
+  service_id: index % 2 ? 'service-a' : 'service-b',
   manager: 'vault',
   uri: `/catalog/${index + 1}/*`,
   snis: ['catalog.example.test'],
@@ -39,7 +40,7 @@ const resources = Array.from({ length: 25 }, (_, index) => ({
 
 async function mockAdmin(
   page: Page,
-  options: { empty?: boolean; failSearchPage?: boolean } = {},
+  options: { empty?: boolean; failSearchPage?: boolean; multiplePages?: boolean } = {},
 ) {
   const reads: string[] = [];
   const writes: string[] = [];
@@ -66,10 +67,17 @@ async function mockAdmin(
           json: { error_msg: 'A result page is unavailable' },
         });
       const label = url.searchParams.get('label');
+      const serviceId = new URLSearchParams(url.searchParams.get('filter') ?? '').get('service_id');
+      const collection = options.multiplePages ? Array.from({ length: 525 }, (_, index) => ({
+        ...resources[index % resources.length],
+        id: `large-${index + 1}`,
+        name: `Large route ${index + 1}`,
+        plugins: index === 524 ? { 'limit-count': { count: 10 } } : {},
+      })) : resources;
       const list = options.empty
         ? []
-        : resources.filter(
-            (row) => !label || label === `env:${row.labels.env}`,
+        : collection.filter(
+            (row) => (!label || Object.hasOwn(row.labels, label)) && (!serviceId || row.service_id === serviceId),
           );
       return route.fulfill({
         json: {
@@ -84,6 +92,184 @@ async function mockAdmin(
   });
   return { reads, writes };
 }
+
+async function filterStatus(page: Page, status: 'Enabled' | 'Disabled') {
+  await page.getByRole('columnheader', { name: 'Status filter', exact: true }).getByRole('button', { name: 'filter' }).click();
+  await page.getByRole('menuitem', { name: status, exact: true }).click();
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
+}
+
+test('label key and exact value searches follow APISIX label-key semantics', async ({ page }) => {
+  const { reads } = await mockAdmin(page);
+  await page.goto('routes?label=env');
+  await expect(page.getByText('1–10 of 25 items', { exact: true })).toBeVisible();
+  const before = reads.length;
+  const label = page.getByRole('searchbox', { name: 'Label', exact: true });
+  await label.fill('env:prod');
+  await label.press('Enter');
+  await expect(page.getByText('1–10 of 12 items', { exact: true })).toBeVisible();
+  await label.fill('env:staging');
+  await label.press('Enter');
+  await expect(page.getByText('1–10 of 13 items', { exact: true })).toBeVisible();
+  expect(reads.length).toBe(before);
+  expect(reads.filter((url) => url.startsWith('/apisix/admin/routes?') && url.includes('page_size=500')).every((url) => new URL(url, 'http://localhost').searchParams.get('label') === 'env')).toBe(true);
+});
+
+test('saved service route views retain the current service reference filter', async ({ page }) => {
+  const { reads } = await mockAdmin(page);
+  await page.goto('services/detail/service-a/routes');
+  await expect(page.getByText('1–10 of 12 items', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Save view', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Save table view' });
+  await dialog.getByRole('textbox', { name: 'View name' }).fill('Service routes');
+  await dialog.getByRole('button', { name: 'Save view', exact: true }).click();
+  await page.goto('services/detail/service-b/routes');
+  await page.getByRole('combobox', { name: 'Saved views', exact: true }).click();
+  await page.getByRole('option', { name: 'Service routes', exact: true }).click();
+  await expect(page.getByText('1–10 of 13 items', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Catalog route 02', exact: true })).toHaveCount(0);
+  expect(reads.filter((url) => url.startsWith('/apisix/admin/routes?') && url.includes('page_size=500')).every((url) => new URL(url, 'http://localhost').searchParams.has('filter'))).toBe(true);
+});
+
+test('collections beyond one Admin API page supply complete sort and plugin filter options', async ({ page }) => {
+  const { reads } = await mockAdmin(page, { multiplePages: true });
+  await page.goto('routes?sort_by=name&sort_order=desc');
+  await expect(page.locator('.resource-table-name a').first()).toHaveText('Large route 525');
+  await expect(page.getByText('1–10 of 525 items', { exact: true })).toBeVisible();
+  expect(reads.some((url) => url.includes('page=2') && url.includes('page_size=500'))).toBe(true);
+  await page.getByRole('columnheader', { name: 'Plugins filter', exact: true }).getByRole('button', { name: 'filter' }).click();
+  await page.getByRole('menuitem', { name: 'limit-count', exact: true }).click();
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
+  await expect(page.getByText('1–1 of 1 items', { exact: true })).toBeVisible();
+  await expect(page.locator('.resource-table-name a')).toHaveText(['Large route 525']);
+});
+
+test('unavailable browser storage reports a save failure and leaves the table usable', async ({ page }) => {
+  await mockAdmin(page);
+  await page.addInitScript(() => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(key, value) {
+      if (key.startsWith('resource-table:saved-views:')) throw new DOMException('Storage full', 'QuotaExceededError');
+      original.call(this, key, value);
+    };
+  });
+  await page.goto('routes');
+  await page.getByRole('button', { name: 'Save view', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Save table view' });
+  await dialog.getByRole('textbox', { name: 'View name' }).fill('Unsaved');
+  await dialog.getByRole('button', { name: 'Save view', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Your view could not be saved');
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Catalog route 01', exact: true })).toBeVisible();
+});
+
+test('sorting and column filtering paginate the whole result set and preserve URL history', async ({ page }) => {
+  const { reads, writes } = await mockAdmin(page);
+  await page.goto('routes?page=2&page_size=10');
+  await expect(page.getByRole('link', { name: 'Catalog route 11', exact: true })).toBeVisible();
+  const before = reads.length;
+  await page.getByRole('combobox', { name: 'Sort results', exact: true }).click();
+  await page.getByRole('option', { name: 'Name (Z-A)', exact: true }).click();
+  const names = page.locator('.resource-table-name a');
+  await expect(names.first()).toHaveText('Catalog route 25');
+  await page.getByRole('listitem', { name: '2', exact: true }).click();
+  await expect(names.first()).toHaveText('Catalog route 15');
+  await filterStatus(page, 'Disabled');
+  await expect(names.first()).toHaveText('Catalog route 25');
+  await expect(page.getByText('1–10 of 12 items', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL((url) => url.searchParams.get('page') === '1' && url.searchParams.has('column_filters'));
+  expect(reads.length).toBe(before);
+  expect(reads.every((url) => !url.includes('sort_by') && !url.includes('column_filters'))).toBe(true);
+  await page.getByRole('listitem', { name: '2', exact: true }).click();
+  await expect(names).toHaveText(['Catalog route 05', 'Catalog route 03']);
+  await page.reload();
+  await expect(names).toHaveText(['Catalog route 05', 'Catalog route 03']);
+  await page.getByRole('region', { name: 'Active filters' }).getByRole('button', { name: 'Clear filters' }).click();
+  await expect(page.getByText('1–10 of 25 items', { exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole('region', { name: 'Active filters' })).toContainText('Status: Disabled');
+  await expect(names).toHaveText(['Catalog route 05', 'Catalog route 03']);
+  expect(writes).toEqual([]);
+});
+
+test('named views restore search, labels, sort, filters, page size, columns, and spacing after reload', async ({ page }) => {
+  const { writes } = await mockAdmin(page);
+  await page.goto('routes?q=Catalog&label=env%3Aprod&sort_by=name&sort_order=desc&page_size=20');
+  await filterStatus(page, 'Enabled');
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  const settings = page.getByRole('dialog', { name: 'Table view settings' });
+  await settings.getByRole('checkbox', { name: 'Host', exact: true }).check();
+  await settings.getByText('Compact', { exact: true }).click();
+  await settings.getByRole('checkbox', { name: 'Host', exact: true }).press('Escape');
+  await page.getByRole('button', { name: 'Save view', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Save table view' });
+  await dialog.getByRole('textbox', { name: 'View name' }).fill('Production routes');
+  await dialog.getByRole('button', { name: 'Save view', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  const views = page.getByRole('region', { name: 'Saved table views' });
+  await expect(views.getByText('Modified', { exact: true })).toHaveCount(0);
+  await page.getByRole('region', { name: 'Active filters' }).getByRole('button', { name: 'Clear filters' }).click();
+  await expect(views.getByText('Modified', { exact: true })).toBeVisible();
+  await page.reload();
+  await page.getByRole('combobox', { name: 'Saved views', exact: true }).click();
+  await page.getByRole('option', { name: 'Production routes', exact: true }).click();
+  await expect(page.getByRole('searchbox', { name: 'Search', exact: true })).toHaveValue('Catalog');
+  await expect(page.getByRole('searchbox', { name: 'Label', exact: true })).toHaveValue('env:prod');
+  await expect(page.getByRole('region', { name: 'Active filters' })).toContainText('Status: Enabled');
+  await expect(page.getByText('1–12 of 12 items', { exact: true })).toBeVisible();
+  await expect(page.locator('.resource-table-name a').first()).toHaveText('Catalog route 24');
+  await expect(page.getByRole('columnheader', { name: 'Host', exact: true })).toBeVisible();
+  await expect(page.locator('.ant-table-small')).toBeVisible();
+  await expect(page).toHaveURL((url) => url.searchParams.get('page_size') === '20' && url.searchParams.get('sort_order') === 'desc');
+  await expect(views.getByText('Modified', { exact: true })).toHaveCount(0);
+  await page.getByRole('region', { name: 'Active filters' }).getByRole('button', { name: 'Clear filters' }).click();
+  await views.getByRole('button', { name: 'Restore view' }).click();
+  await expect(page.getByRole('searchbox', { name: 'Label', exact: true })).toHaveValue('env:prod');
+  await views.getByRole('button', { name: 'Save view', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Update view', exact: true }).press('Enter');
+  await expect(dialog).toBeHidden();
+  await views.getByRole('button', { name: 'Delete view', exact: true }).click();
+  await page.getByRole('tooltip').getByRole('button', { name: 'Delete view', exact: true }).click();
+  await expect(page.getByRole('searchbox', { name: 'Label', exact: true })).toHaveValue('env:prod');
+  await page.reload();
+  await page.getByRole('combobox', { name: 'Saved views', exact: true }).click();
+  await expect(page.getByText('No saved views yet', { exact: true })).toBeVisible();
+  expect(writes).toEqual([]);
+});
+
+test('selection clears when sorting or restoring a view, and views stay scoped to their table', async ({ page }) => {
+  await mockAdmin(page);
+  await page.goto('routes');
+  await page.getByRole('button', { name: 'Save view', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Save table view' });
+  await dialog.getByRole('textbox', { name: 'View name' }).fill('Route workspace');
+  await dialog.getByRole('button', { name: 'Save view', exact: true }).click();
+  const firstRow = page.getByRole('row').filter({ hasText: 'Catalog route 01' });
+  await firstRow.getByRole('checkbox').check();
+  const selection = page.getByRole('region', { name: 'Selected resource actions' });
+  await expect(selection).toBeVisible();
+  await page.getByRole('combobox', { name: 'Sort results', exact: true }).click();
+  await page.getByRole('option', { name: 'Name (Z-A)', exact: true }).click();
+  await expect(selection).toHaveCount(0);
+  await page.getByRole('row').filter({ hasText: 'Catalog route 25' }).getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Restore view' }).click();
+  await expect(selection).toHaveCount(0);
+  await page.goto('services');
+  await page.getByRole('combobox', { name: 'Saved views', exact: true }).click();
+  await expect(page.getByText('No saved views yet', { exact: true })).toBeVisible();
+});
+
+test('invalid saved views and malformed filter URLs recover without breaking the table', async ({ page }) => {
+  await mockAdmin(page);
+  await page.addInitScript(() => {
+    localStorage.setItem('resource-table:saved-views:v1:resource-table:v1:table-v6:routes', JSON.stringify([{ name: 'Broken', snapshot: { search: {} } }]));
+  });
+  await page.goto('routes?column_filters=broken&page=999');
+  await expect(page.getByText('21–25 of 25 items', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL((url) => url.searchParams.get('page') === '3');
+  await page.getByRole('combobox', { name: 'Saved views', exact: true }).click();
+  await expect(page.getByText('No saved views yet', { exact: true })).toBeVisible();
+});
 
 for (const [path, title, primary] of [
   ['routes', 'Routes', 'Name'],
@@ -399,7 +585,7 @@ test('status filters include implicitly enabled routes and clear without losing 
     page.getByRole('link', { name: 'Catalog route 03', exact: true }),
   ).toHaveCount(0);
   const filters = page.getByRole('region', { name: 'Active filters' });
-  await expect(filters).toContainText('Status: Enabled (loaded rows)');
+  await expect(filters).toContainText('Status: Enabled');
   await filters.getByRole('button', { name: 'Clear filters' }).click();
   await expect(
     page.getByRole('link', { name: 'Catalog route 03', exact: true }),
