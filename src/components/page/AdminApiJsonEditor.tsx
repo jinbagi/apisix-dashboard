@@ -22,6 +22,7 @@ import type { ZodIssue } from 'zod';
 import { JsonChangeReview } from '@/components/form/JsonChangeReview';
 import { JsonCodeEditor } from '@/components/form/JsonCodeEditor';
 import { JsonSchemaGuide } from '@/components/form/JsonSchemaGuide';
+import { ConfigurationImpact } from '@/components/page/ConfigurationImpact';
 import { LocalRawDraft } from '@/components/page/LocalRawDraft';
 import { queryClient } from '@/config/global';
 import { req } from '@/config/req';
@@ -554,6 +555,7 @@ export const AdminApiJsonEditor = ({
                   : 'No pending changes'}
           </Typography.Text>
           <Space wrap>
+            <ConfigurationImpact api={api} disabled={saving || loading} />
             <LocalRawDraft key={api} api={api} snapshot={{ original, value }} disabled={saving || loading || !original}
               onRestore={(draft, latest) => {
                 setResourceBase(normalizeApiResource(api, latest));
