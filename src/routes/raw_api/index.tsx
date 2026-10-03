@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useBlocker } from '@tanstack/react-router';
 import {
   Alert,
   AutoComplete,
@@ -334,6 +334,16 @@ const stringifyResponseData = (data: unknown) => {
   }
 };
 
+const normalizeDraftBody = (body: string) => {
+  try { return JSON.stringify(sortJsonKeys(JSON.parse(body))); }
+  catch { return body; }
+};
+
+const draftFingerprint = (request: ConsoleRequestSnapshot) => JSON.stringify([
+  request.method, request.resource, request.pathSuffix, request.queryString,
+  request.method === 'GET' || request.method === 'DELETE' ? '' : normalizeDraftBody(request.body),
+]);
+
 const getEditableLoadedBody = (value: unknown) => {
   const sortedRaw = sortJsonKeys(value);
   const rawBody = JSON.stringify(sortedRaw, null, 2);
@@ -445,6 +455,11 @@ function RawApiPage() {
     readRequestPresets
   );
   const [lastRequest, setLastRequest] = useState<ConsoleRequestSnapshot | null>(null);
+  const [baseline, setBaseline] = useState<ConsoleRequestSnapshot>(() => ({
+    method: 'PUT', resource: API_ROUTES, pathSuffix: '', queryString: '',
+    body: stringifyRequiredRequestTemplate(API_ROUTES, 'PUT', ''), endpoint: API_ROUTES,
+  }));
+  const [pendingReplacement, setPendingReplacement] = useState<(() => void) | null>(null);
 
   const { items: existingResources, loading: resourcesLoading } = useExistingResources(resource);
 
@@ -455,6 +470,23 @@ function RawApiPage() {
   const requestUrl = normalizedQueryString
     ? `${endpoint}?${normalizedQueryString}`
     : endpoint;
+  const currentDraft = useMemo<ConsoleRequestSnapshot>(() => ({
+    method, resource, pathSuffix: normalizedPathSuffix, queryString: normalizedQueryString,
+    body, endpoint: requestUrl,
+  }), [body, method, normalizedPathSuffix, normalizedQueryString, requestUrl, resource]);
+  const hasUnsentChanges = draftFingerprint(currentDraft) !== draftFingerprint(baseline);
+  const hasBodyChanges = needsBody && normalizeDraftBody(body) !== normalizeDraftBody(baseline.body);
+  const busy = loading || loadingExisting;
+  const navigationBlocker = useBlocker({
+    shouldBlockFn: ({ current, next }) => current.pathname !== next.pathname && (hasUnsentChanges || busy),
+    enableBeforeUnload: hasUnsentChanges || busy,
+    withResolver: true,
+  });
+  const requestReplacement = useCallback((action: () => void, protect = hasUnsentChanges) => {
+    if (busy) return;
+    if (protect) setPendingReplacement(() => action);
+    else action();
+  }, [busy, hasUnsentChanges]);
   const requestBodySchema = useMemo(
     () => getRequestBodySchema(resource, method, normalizedPathSuffix),
     [method, normalizedPathSuffix, resource]
@@ -473,6 +505,7 @@ function RawApiPage() {
       const value = res.data?.value ?? res.data;
       const editableBody = getEditableLoadedBody(value);
       setBody(editableBody.body);
+      setBaseline({ ...currentDraft, body: editableBody.body });
       setRequestBodyError(null);
       setLoadedBodyNotice(
         editableBody.removedKeys.length > 0
@@ -497,7 +530,7 @@ function RawApiPage() {
     } finally {
       setLoadingExisting(false);
     }
-  }, [normalizedPathSuffix, requestUrl]);
+  }, [currentDraft, normalizedPathSuffix, requestUrl]);
 
   const addHistoryEntry = useCallback((
     status: number,
@@ -513,24 +546,28 @@ function RawApiPage() {
     };
     setRequestHistory((current) => {
       const next = [entry, ...current].slice(0, MAX_REQUEST_HISTORY);
-      sessionStorage.setItem(REQUEST_HISTORY_KEY, JSON.stringify(next));
+      try { sessionStorage.setItem(REQUEST_HISTORY_KEY, JSON.stringify(next)); }
+      catch { /* Keep history in memory when session storage is unavailable. */ }
       return next;
     });
   }, []);
 
   const restoreRequest = useCallback((requestSnapshot: ConsoleRequestSnapshot) => {
-    setMethod(requestSnapshot.method);
-    setResource(requestSnapshot.resource);
-    setPathSuffix(requestSnapshot.pathSuffix);
-    setQueryString(requestSnapshot.queryString);
-    setBody(requestSnapshot.body);
-    setLoadedBodyNotice(null);
-    setRequestBodyError(null);
-    setResponse(null);
-    setResponseError(null);
-    setResponseView('Body');
-    message.success('Request restored. Review it before sending.');
-  }, []);
+    requestReplacement(() => {
+      setMethod(requestSnapshot.method);
+      setResource(requestSnapshot.resource);
+      setPathSuffix(requestSnapshot.pathSuffix);
+      setQueryString(requestSnapshot.queryString);
+      setBody(requestSnapshot.body);
+      setBaseline(requestSnapshot);
+      setLoadedBodyNotice(null);
+      setRequestBodyError(null);
+      setResponse(null);
+      setResponseError(null);
+      setResponseView('Body');
+      message.success('Request restored. Review it before sending.');
+    }, hasUnsentChanges && draftFingerprint(requestSnapshot) !== draftFingerprint(currentDraft));
+  }, [currentDraft, hasUnsentChanges, requestReplacement]);
 
   const doExecute = useCallback(async (requestOverride?: ConsoleRequestSnapshot) => {
     const activeMethod = requestOverride?.method ?? method;
@@ -618,6 +655,7 @@ function RawApiPage() {
         time: elapsed,
       });
       addHistoryEntry(res.status, elapsed, requestSnapshot);
+      setBaseline(requestSnapshot);
     } catch (e) {
       const failure = getErrorResponse(e, Math.round(performance.now() - start));
       setResponseError(failure.error);
@@ -688,12 +726,12 @@ function RawApiPage() {
     const handleShortcut = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
         event.preventDefault();
-        if (!loading && !loadingExisting) handleExecute();
+        if (!loading && !loadingExisting && !pendingReplacement && navigationBlocker.status !== 'blocked') handleExecute();
       }
     };
     window.addEventListener('keydown', handleShortcut);
     return () => window.removeEventListener('keydown', handleShortcut);
-  }, [handleExecute, loading, loadingExisting]);
+  }, [handleExecute, loading, loadingExisting, navigationBlocker.status, pendingReplacement]);
 
   const formatRequestBody = useCallback(() => {
     try {
@@ -710,11 +748,15 @@ function RawApiPage() {
   }, [body]);
 
   const resetRequestBodyTemplate = useCallback(() => {
-    setBody(stringifyRequiredRequestTemplate(resource, method, normalizedPathSuffix));
-    setLoadedBodyNotice(null);
-    setRequestBodyError(null);
-    message.success('Request JSON reset to template');
-  }, [method, normalizedPathSuffix, resource]);
+    requestReplacement(() => {
+      const template = stringifyRequiredRequestTemplate(resource, method, normalizedPathSuffix);
+      setBody(template);
+      setBaseline((current) => ({ ...current, body: template }));
+      setLoadedBodyNotice(null);
+      setRequestBodyError(null);
+      message.success('Request JSON reset to template');
+    }, hasBodyChanges);
+  }, [hasBodyChanges, method, normalizedPathSuffix, requestReplacement, resource]);
 
   const restoreHistoryEntry = useCallback((entry: RequestHistoryEntry) => {
     restoreRequest(entry);
@@ -743,25 +785,31 @@ function RawApiPage() {
       endpoint: requestUrl,
       createdAt: Date.now(),
     };
-    setRequestPresets((current) => {
+    try {
       const next = [
         preset,
-        ...current.filter((item) => item.name.toLowerCase() !== name.toLowerCase()),
+        ...requestPresets.filter((item) => item.name.toLowerCase() !== name.toLowerCase()),
       ].slice(0, MAX_REQUEST_PRESETS);
       sessionStorage.setItem(REQUEST_PRESETS_KEY, JSON.stringify(next));
-      return next;
-    });
+      setRequestPresets(next);
+      setBaseline(currentDraft);
+    } catch {
+      message.error('Could not save the preset. Your request draft is still available.');
+      return;
+    }
     setPresetName('');
     setSavePresetOpen(false);
     message.success(`Saved session preset "${name}"`);
   }, [
     body,
+    currentDraft,
     method,
     needsBody,
     normalizedPathSuffix,
     normalizedQueryString,
     presetName,
     requestUrl,
+    requestPresets,
     resource,
   ]);
 
@@ -797,10 +845,13 @@ function RawApiPage() {
 
   const restoreLoadedRawBody = useCallback(() => {
     if (!loadedBodyNotice) return;
-    setBody(loadedBodyNotice.rawBody);
-    setLoadedBodyNotice(null);
-    message.success('Restored raw response body');
-  }, [loadedBodyNotice]);
+    requestReplacement(() => {
+      setBody(loadedBodyNotice.rawBody);
+      setBaseline((current) => ({ ...current, body: loadedBodyNotice.rawBody }));
+      setLoadedBodyNotice(null);
+      message.success('Restored raw response body');
+    }, hasBodyChanges);
+  }, [hasBodyChanges, loadedBodyNotice, requestReplacement]);
 
   const statusColor = response ? (response.status < 300 ? 'success' : response.status < 400 ? 'warning' : 'error') : undefined;
 
@@ -828,14 +879,14 @@ function RawApiPage() {
         title={
           <div className={classes.cardTitle}>
             <span>Request builder</span>
-            <Typography.Text type="secondary">
-              Configure the method, resource, and target path
+            <Typography.Text type={hasUnsentChanges ? 'warning' : 'secondary'} aria-live="polite">
+              {busy ? 'Request in progress' : hasUnsentChanges ? 'Unsent changes' : 'No unsent changes'}
             </Typography.Text>
           </div>
         }
         extra={
           <Space size={6}>
-            <Button size="small" type="text" onClick={() => setSavePresetOpen(true)}>
+            <Button size="small" type="text" disabled={busy} onClick={() => setSavePresetOpen(true)}>
               Save preset
             </Button>
             <Button size="small" onClick={() => setPresetsOpen(true)}>
@@ -852,7 +903,9 @@ function RawApiPage() {
             <span className={classes.fieldLabel}>Method</span>
             <Select
               value={method}
-              onChange={(value) => {
+              virtual={false}
+              disabled={busy}
+              onChange={(value) => requestReplacement(() => {
                 setMethod(value);
                 setLoadedBodyNotice(null);
                 setRequestBodyError(null);
@@ -863,7 +916,9 @@ function RawApiPage() {
                     normalizedPathSuffix
                   )
                 );
-              }}
+                setBaseline((current) => ({ ...current, method: value,
+                  body: stringifyRequiredRequestTemplate(resource, value, normalizedPathSuffix) }));
+              }, hasBodyChanges)}
               className={classes.methodSelect}
               labelRender={({ value }) => (
                 <span style={{ color: METHOD_COLORS[value as string], fontWeight: 'var(--app-font-weight-heading)' }}>
@@ -878,7 +933,9 @@ function RawApiPage() {
             <span className={classes.fieldLabel}>Resource</span>
             <Select
               value={resource}
-              onChange={(v) => {
+              virtual={false}
+              disabled={busy}
+              onChange={(v) => requestReplacement(() => {
                 setResource(v);
                 setLoadedBodyNotice(null);
                 setRequestBodyError(null);
@@ -887,7 +944,9 @@ function RawApiPage() {
                 setQueryString('');
                 setResponse(null);
                 setResponseError(null);
-              }}
+                setBaseline({ method, resource: v, pathSuffix: '', queryString: '',
+                  body: stringifyRequiredRequestTemplate(v, method, ''), endpoint: v });
+              })}
               options={RESOURCE_OPTIONS}
               className={classes.resourceSelect}
               showSearch
@@ -901,6 +960,7 @@ function RawApiPage() {
               <span aria-hidden="true">/</span>
               <AutoComplete
                 value={pathSuffix}
+                disabled={busy}
                 onChange={(value) => {
                   setPathSuffix(value);
                   setLoadedBodyNotice(null);
@@ -933,6 +993,7 @@ function RawApiPage() {
               <span aria-hidden="true">?</span>
               <Input
                 value={queryString}
+                disabled={busy}
                 onChange={(event) => setQueryString(event.target.value)}
                 placeholder="page=1&page_size=50"
                 className={classes.queryInput}
@@ -958,8 +1019,8 @@ function RawApiPage() {
             </Button>
             <Button
               loading={loadingExisting}
-              disabled={!normalizedPathSuffix}
-              onClick={handleLoadExisting}
+              disabled={!normalizedPathSuffix || loading}
+              onClick={() => requestReplacement(() => { void handleLoadExisting(); }, hasBodyChanges)}
             >
               Load resource
             </Button>
@@ -967,8 +1028,8 @@ function RawApiPage() {
               type="primary"
               loading={loading}
               disabled={
-                METHODS_REQUIRING_RESOURCE_PATH.has(method) &&
-                !normalizedPathSuffix
+                loadingExisting || (METHODS_REQUIRING_RESOURCE_PATH.has(method) &&
+                !normalizedPathSuffix)
               }
               onClick={handleExecute}
               aria-keyshortcuts="Control+Enter Meta+Enter"
@@ -993,7 +1054,7 @@ function RawApiPage() {
               </div>
             }
             extra={
-              <Button size="small" type="text" onClick={formatRequestBody}>
+              <Button size="small" type="text" disabled={busy} onClick={formatRequestBody}>
                 Format Request JSON
               </Button>
             }
@@ -1068,6 +1129,7 @@ function RawApiPage() {
                 <JsonCodeEditor
                   height="100%"
                   value={body}
+                  readOnly={busy}
                   onChange={(nextValue) => {
                     setBody(nextValue ?? '');
                     setLoadedBodyNotice(null);
@@ -1259,6 +1321,31 @@ function RawApiPage() {
         )}
       </Drawer>
 
+      <Modal
+        title="Replace request draft?"
+        open={pendingReplacement !== null}
+        onCancel={() => setPendingReplacement(null)}
+        onOk={() => { pendingReplacement?.(); setPendingReplacement(null); }}
+        okText="Discard and replace"
+        cancelText="Keep editing"
+        okButtonProps={{ danger: true }}
+        cancelButtonProps={{ autoFocus: true }}
+      >
+        This will replace unsent request changes. Keep editing to send the request or save it as a session preset first.
+      </Modal>
+      <Modal
+        title="Leave API Console?"
+        open={navigationBlocker.status === 'blocked'}
+        onCancel={() => navigationBlocker.reset?.()}
+        onOk={() => navigationBlocker.proceed?.()}
+        okText="Discard and leave"
+        cancelText="Keep editing"
+        okButtonProps={{ danger: true, disabled: busy }}
+        cancelButtonProps={{ autoFocus: true }}
+      >
+        {busy ? 'A request is still running. Wait for its response before leaving.'
+          : 'Your unsent request changes will be lost. Keep editing to send the request or save it as a session preset.'}
+      </Modal>
       <Modal
         title="Save session preset"
         open={savePresetOpen}
