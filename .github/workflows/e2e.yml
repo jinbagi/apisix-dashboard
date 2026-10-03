@@ -1,12 +1,11 @@
 name: Frontend e2e test
 
 on:
+  # PRs validate feature branches; pushes validate the merged master once.
   push:
-    branches:
-      - "**"
+    branches: [master]
   pull_request:
-    branches:
-        - "**"
+    branches: [master]
   schedule:
     # Run at 2:00 AM UTC every day
     # This should be later than the update time of `apache/apisix:dev`
@@ -22,8 +21,6 @@ concurrency:
 
 jobs:
   test:
-    # only run when e2e-test scheduled, workflow_dispatch, repository_dispatch
-    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch' }}
     timeout-minutes: 40
     runs-on: ubuntu-latest
     steps:
