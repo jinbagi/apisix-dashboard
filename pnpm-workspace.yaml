@@ -1,6 +1,19 @@
 overrides:
-  lodash: ">=4.17.21"
-  minimatch: ">=3.0.5"
+  "@babel/core@>=7.0.0 <7.29.7": 7.29.7
+  "@humanfs/node@>=0.16.0 <0.16.8": 0.16.8
+  "ajv@>=6.0.0 <6.14.0": 6.14.0
+  "brace-expansion@>=1.0.0 <1.1.21": 1.1.21
+  "browserslist@>=4.0.0 <4.29.3": 4.29.3
+  "baseline-browser-mapping@>=2.0.0 <2.11.27": 2.11.27
+  "diff@>=8.0.0 <8.0.4": 8.0.4
+  "flatted@>=3.0.0 <3.4.4": 3.4.4
+  "js-yaml@>=4.0.0 <4.3.2": 4.3.2
+  "minimatch@>=3.0.0 <3.1.4": 3.1.4
+  "picomatch@>=4.0.0 <4.0.7": 4.0.7
+  "postcss@>=8.0.0 <8.5.28": 8.5.28
+  "rollup@>=4.0.0 <4.59.0": 4.59.0
+  "yaml@>=1.0.0 <1.10.3": 1.10.3
+  lodash: 4.18.1
   "@swc/core": 1.10.0
 
 onlyBuiltDependencies:
