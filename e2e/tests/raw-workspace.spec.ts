@@ -17,6 +17,8 @@
 import { uiFillMonacoEditor } from '@e2e/utils/ui';
 import { expect, type Page, test } from '@playwright/test';
 
+import { getPatchConflictPaths } from '@/utils/apisixEditable';
+
 const original = {
   id: 'workspace', name: 'Workspace route', uri: '/workspace/*', desc: 'Before',
   upstream: { nodes: { '127.0.0.1:1980': 1 } },
@@ -27,7 +29,7 @@ const editable = {
   upstream: original.upstream, future_field: original.future_field,
 };
 
-async function mockApi(page: Page) {
+async function mockApi(page: Page, controls: { latest?: Record<string, unknown>; readStatus?: number } = {}) {
   let value: Record<string, unknown> = { ...original };
   const writes: Record<string, unknown>[] = [];
   await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('test-admin-key')));
@@ -35,6 +37,13 @@ async function mockApi(page: Page) {
     const request = route.request();
     const path = new URL(request.url()).pathname.replace('/apisix/admin', '');
     if (path === '/routes/workspace') {
+      if (request.method() === 'GET') {
+        if (controls.readStatus) return route.fulfill({ status: controls.readStatus, json: { error_msg: 'Unavailable' } });
+        if (controls.latest) {
+          value = controls.latest;
+          controls.latest = undefined;
+        }
+      }
       if (request.method() === 'PATCH') {
         const body = request.postDataJSON();
         writes.push(body);
@@ -167,4 +176,66 @@ test('restored Payload JSON contains initialized resource values and preserves J
   await expect(page.getByLabel('Description').first()).toHaveValue('Draft from JSON');
   await page.getByRole('tab', { name: 'Payload JSON', exact: true }).click();
   await expect.poll(() => page.evaluate(() => JSON.parse(window.__monacoEditor__?.getValue() || '{}'))).toMatchObject({ ...editable, desc: 'Draft from JSON' });
+});
+
+test('RAW blocks a conflicting save and preserves the draft until latest is explicitly chosen', async ({ page }, testInfo) => {
+  const controls: { latest?: Record<string, unknown> } = {};
+  const writes = await mockApi(page, controls);
+  const drawer = await openRaw(page);
+  await uiFillMonacoEditor(page, drawer.locator('.monaco-editor'), JSON.stringify({ ...editable, desc: 'My draft' }));
+  controls.latest = { ...original, desc: 'Changed by another operator' };
+  await drawer.getByRole('button', { name: 'Save Changes', exact: true }).click();
+  const conflict = page.getByRole('dialog', { name: 'Resolve concurrent changes' });
+  await expect(conflict.getByText(/These fields changed in APISIX while you were editing: desc/)).toBeVisible();
+  await expect(conflict.locator('.monaco-diff-editor')).toBeVisible();
+  await expect(conflict).toHaveCSS('transform', 'none');
+  await page.screenshot({ path: testInfo.outputPath('raw-conflict.png'), animations: 'disabled' });
+  expect(writes).toEqual([]);
+  await conflict.getByRole('button', { name: 'Keep editing' }).click();
+  await expect.poll(() => page.evaluate(() => window.__monacoEditor__?.getValue())).toContain('My draft');
+  await drawer.getByRole('button', { name: 'Save Changes', exact: true }).click();
+  await conflict.getByRole('button', { name: 'Use latest and discard draft' }).click();
+  await expect(conflict).toBeHidden();
+  await expect(drawer.getByText('No pending changes')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.__monacoEditor__?.getValue())).toContain('Changed by another operator');
+  expect(writes).toEqual([]);
+});
+
+test('RAW preserves independent concurrent changes and ignores server timestamps', async ({ page }) => {
+  const controls: { latest?: Record<string, unknown> } = {};
+  const writes = await mockApi(page, controls);
+  const drawer = await openRaw(page);
+  await uiFillMonacoEditor(page, drawer.locator('.monaco-editor'), JSON.stringify({ ...editable, desc: 'My draft' }));
+  controls.latest = { ...original, name: 'New server name', update_time: 2 };
+  await drawer.getByRole('button', { name: 'Save Changes', exact: true }).click();
+  await expect(drawer.getByText(/Saved at/)).toBeVisible();
+  expect(writes).toEqual([{ desc: 'My draft' }]);
+  await expect.poll(() => page.evaluate(() => window.__monacoEditor__?.getValue())).toContain('New server name');
+});
+
+test('RAW sends no update when the latest state cannot be checked', async ({ page }) => {
+  const controls: { readStatus?: number } = {};
+  const writes = await mockApi(page, controls);
+  const drawer = await openRaw(page);
+  await uiFillMonacoEditor(page, drawer.locator('.monaco-editor'), JSON.stringify({ ...editable, desc: 'My draft' }));
+  controls.readStatus = 503;
+  await drawer.getByRole('button', { name: 'Save Changes', exact: true }).click();
+  await expect(drawer.getByText(/Save failed:/).first()).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.__monacoEditor__?.getValue())).toContain('My draft');
+  expect(writes).toEqual([]);
+});
+
+test('conflict detection respects nested changes, field removal, arrays, and idempotent updates', () => {
+  expect(getPatchConflictPaths({ plugins: { cors: { max_age: 10 } } },
+    { plugins: { cors: { max_age: 5, allow_origins: '*' } } },
+    { plugins: { cors: { max_age: 5, allow_origins: 'https://example.com' } } })).toEqual([]);
+  expect(getPatchConflictPaths({ plugins: null },
+    { plugins: { cors: { max_age: 5 } } },
+    { plugins: { cors: { max_age: 10 } } })).toEqual(['plugins']);
+  expect(getPatchConflictPaths({ methods: ['POST'] },
+    { methods: ['GET'] }, { methods: ['PUT'] })).toEqual(['methods']);
+  expect(getPatchConflictPaths({ desc: 'same', plugins: null },
+    { desc: 'before', plugins: {} }, { desc: 'same' })).toEqual([]);
+  expect(getPatchConflictPaths({ plugins: { cors: { max_age: 10 } } },
+    { plugins: { cors: { max_age: 5 } } }, {})).toEqual(['plugins']);
 });

@@ -333,3 +333,21 @@ export const getPatchMismatchPaths = (
 
   return mismatches;
 };
+
+/** Detect concurrent edits only where this PATCH will change the latest value. */
+export const getPatchConflictPaths = (
+  patch: Record<string, unknown>,
+  previous: Record<string, unknown>,
+  latest: Record<string, unknown>,
+  prefix = ''
+): string[] => Object.entries(patch).flatMap(([key, expected]) => {
+  const before = previous[key];
+  const now = latest[key];
+  const path = prefix ? `${prefix}.${key}` : key;
+  if (isDeepEqual(before, now) || isDeepEqual(expected, now)) return [];
+  if (expected === null && now === undefined) return [];
+  if (isRecord(expected) && isRecord(now) && (isRecord(before) || before === undefined)) {
+    return getPatchConflictPaths(expected, isRecord(before) ? before : {}, now, path);
+  }
+  return [path];
+});
