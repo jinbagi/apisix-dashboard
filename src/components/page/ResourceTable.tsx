@@ -42,6 +42,7 @@ import {
 } from 'react';
 
 import { CopyableID } from '@/components/CopyableID';
+import IconChevronRight from '~icons/material-symbols/chevron-right';
 import IconRefresh from '~icons/material-symbols/refresh';
 import IconViewColumn from '~icons/material-symbols/view-column-outline';
 
@@ -425,6 +426,22 @@ export function ResourceTable<T extends ResourceRecord>({
             ...props.expandable,
             columnWidth: 44,
             fixed: hasRawAction || screens.md ? 'left' : undefined,
+            expandIcon: ({ expanded, expandable, record, onExpand }) =>
+              expandable ? (
+                <button
+                  type="button"
+                  className="resource-table-expand"
+                  aria-label={expanded ? 'Collapse row' : 'Expand row'}
+                  aria-expanded={expanded}
+                  aria-describedby={identityId(record)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onExpand(record, event);
+                  }}
+                >
+                  <IconChevronRight aria-hidden="true" />
+                </button>
+              ) : null,
           }
         }
         tableAlertRender={false}

@@ -14,10 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Drawer, message, Modal, Typography } from 'antd';
-import { useCallback, useState } from 'react';
+import { Button, Drawer, Grid, message, Modal, Tooltip, Typography } from 'antd';
+import { useCallback, useEffect, useState } from 'react';
 
 import { AdminApiJsonEditor } from '@/components/page/AdminApiJsonEditor';
+import IconFullscreen from '~icons/material-symbols/fullscreen';
+import IconFullscreenExit from '~icons/material-symbols/fullscreen-exit';
+
+import classes from './RawDrawer.module.css';
+
+const WIDTH_KEY = 'raw-workspace:width';
+const MIN_WIDTH = 480;
+const readWidth = () => {
+  try {
+    const width = Number(localStorage.getItem(WIDTH_KEY));
+    if (Number.isFinite(width) && width >= MIN_WIDTH && width <= 3840) return width;
+  } catch { /* Browser storage is optional. */ }
+  return 960;
+};
 
 type RawDrawerProps = {
   open: boolean;
@@ -33,6 +47,35 @@ type RawDrawerProps = {
 export const RawDrawer = ({ open, onClose, onSaved, api, title, initialData }: RawDrawerProps) => {
   const [saving, setSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [preferredWidth, setPreferredWidth] = useState(readWidth);
+  const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
+  const [fullScreen, setFullScreen] = useState(false);
+  const screens = Grid.useBreakpoint();
+  const isFullScreen = fullScreen || !screens.md;
+  const maxWidth = Math.max(MIN_WIDTH, viewportWidth);
+  const width = Math.min(preferredWidth, maxWidth);
+  const resize = (next: number) => setPreferredWidth(Math.round(Math.min(maxWidth, Math.max(MIN_WIDTH, next))));
+
+  useEffect(() => {
+    const handleResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem(WIDTH_KEY, String(preferredWidth)); }
+    catch { /* Browser storage is optional. */ }
+  }, [preferredWidth]);
+
+  useEffect(() => {
+    if (!open || (!isDirty && !saving)) return;
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => window.removeEventListener('beforeunload', beforeUnload);
+  }, [isDirty, open, saving]);
 
   const closeDrawer = useCallback(() => {
     if (saving) {
@@ -60,15 +103,26 @@ export const RawDrawer = ({ open, onClose, onSaved, api, title, initialData }: R
       open={open}
       onClose={closeDrawer}
       title={
-        <div>
+        <div className={classes.title}>
           <div>{title}</div>
           <Typography.Text type="secondary" copyable style={{ fontSize: 'var(--app-font-size-sm)', fontFamily: 'var(--app-font-monospace)' }}>
             {api}
           </Typography.Text>
         </div>
       }
+      extra={screens.md && (
+        <Tooltip title={fullScreen ? 'Restore panel width' : 'Use the full workspace'}>
+          <Button
+            icon={fullScreen ? <IconFullscreenExit /> : <IconFullscreen />}
+            onClick={() => setFullScreen((current) => !current)}
+          >
+            {fullScreen ? 'Exit full screen' : 'Full screen'}
+          </Button>
+        </Tooltip>
+      )}
+      classNames={{ body: classes.body }}
       styles={{
-        wrapper: { width: 700, maxWidth: '100vw' },
+        wrapper: { width: isFullScreen ? '100vw' : width, maxWidth: '100vw' },
         body: {
           display: 'flex',
           flexDirection: 'column',
@@ -79,6 +133,42 @@ export const RawDrawer = ({ open, onClose, onSaved, api, title, initialData }: R
       placement="right"
       destroyOnHidden
     >
+      {!isFullScreen && (
+        <Tooltip title="Drag or use arrow keys to resize" placement="left">
+          <div
+            className={classes.resizeHandle}
+            role="separator"
+            tabIndex={0}
+            aria-label="Resize RAW panel"
+            aria-orientation="vertical"
+            aria-valuemin={MIN_WIDTH}
+            aria-valuemax={maxWidth}
+            aria-valuenow={width}
+            onPointerDown={(event) => {
+              if (event.button !== 0) return;
+              event.preventDefault();
+              event.currentTarget.focus();
+              event.currentTarget.setPointerCapture(event.pointerId);
+            }}
+            onPointerMove={(event) => {
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                resize(window.innerWidth - event.clientX);
+              }
+            }}
+            onPointerUp={(event) => {
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+              }
+            }}
+            onKeyDown={(event) => {
+              const next = { ArrowLeft: width + 32, ArrowRight: width - 32, Home: MIN_WIDTH, End: maxWidth }[event.key];
+              if (next === undefined) return;
+              event.preventDefault();
+              resize(next);
+            }}
+          />
+        </Tooltip>
+      )}
       <AdminApiJsonEditor
         active={open}
         api={api}

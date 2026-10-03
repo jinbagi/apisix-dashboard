@@ -92,20 +92,30 @@
 .resource-table .ant-table-tbody > tr > td {
   border-bottom: 1px solid var(--ant-color-border-secondary);
 }
-.resource-table .ant-table-row-expand-icon {
-  width: 24px;
-  height: 24px;
+.resource-table-expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
   border-radius: 6px;
+  background: transparent;
+  color: var(--ant-color-text-secondary);
+  cursor: pointer;
 }
-.resource-table .ant-table-row-expand-icon::before {
-  top: calc(50% - 0.5px);
-  left: 5px;
-  right: 5px;
+.resource-table-expand:hover {
+  background: var(--ant-color-fill-tertiary);
+  color: var(--ant-color-primary);
 }
-.resource-table .ant-table-row-expand-icon::after {
-  left: calc(50% - 0.5px);
-  top: 5px;
-  bottom: 5px;
+.resource-table-expand svg {
+  width: 20px;
+  height: 20px;
+  transition: transform 120ms ease;
+}
+.resource-table-expand[aria-expanded='true'] svg {
+  transform: rotate(90deg);
 }
 .resource-table-raw .ant-btn {
   color: var(--ant-color-primary);
@@ -131,7 +141,7 @@
   text-decoration: underline;
 }
 .resource-table-identity > .ant-typography {
-  font-size: 11px;
+  font-size: 12px;
 }
 .resource-table-date {
   font-size: 12px;
