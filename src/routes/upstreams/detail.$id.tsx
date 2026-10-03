@@ -38,6 +38,7 @@ import { FormPartUpstreamSchema } from '@/components/form-slice/FormPartUpstream
 import { produceToUpstreamForm } from '@/components/form-slice/FormPartUpstream/util';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
+import { ConfigurationImpact } from '@/components/page/ConfigurationImpact';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
 import { ReverseReferences } from '@/components/page/ReverseReferences';
@@ -138,7 +139,8 @@ function RouteComponent() {
         title={`Upstream: ${upstream.name || id}`}
         desc={`ID: ${id} - Backend selection, load-balancing, connection, and health policy.`}
         extra={(
-          <Space>
+          <Space wrap>
+            <ConfigurationImpact api={`${API_UPSTREAMS}/${id}`} />
             <Link to="/services/add" search={{ upstream_id: id }}>
               <Button size="small">+ Service</Button>
             </Link>

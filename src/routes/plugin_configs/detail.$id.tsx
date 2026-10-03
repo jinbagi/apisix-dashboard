@@ -32,6 +32,7 @@ import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartPluginConfig } from '@/components/form-slice/FormPartPluginConfig';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
+import { ConfigurationImpact } from '@/components/page/ConfigurationImpact';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
 import { API_PLUGIN_CONFIGS } from '@/config/constant';
@@ -110,7 +111,8 @@ function RouteComponent() {
       <PageHeader showBackBtn
         title={`Plugin Config: ${id}`}
         extra={(
-          <Space>
+          <Space wrap>
+            <ConfigurationImpact api={`${API_PLUGIN_CONFIGS}/${id}`} />
             <DeleteResourceBtn
               mode="detail"
               name="Plugin Config"
