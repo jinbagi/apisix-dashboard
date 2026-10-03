@@ -27,19 +27,19 @@ import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import PageHeader from '@/components/page/PageHeader';
 import { API_SECRETS } from '@/config/constant';
-import { queryClient } from '@/config/global';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiExists } from '@/utils/adminApiVerification';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { refreshResourceCaches } from '@/utils/resourceCache';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const SecretAddForm = () => {
   const router = useRouter();
 
   const putSecret = useMutation({
     mutationFn: async (d: APISIXType['Secret']) => {
-      const payload = pipeProduce()(d);
+      const payload = prepareResourceFormPayload(d);
       const response = await putSecretReq(req, payload);
       await verifyAdminApiExists(
         `${API_SECRETS}/${payload.manager}/${payload.id}`
@@ -47,12 +47,12 @@ const SecretAddForm = () => {
       return response;
     },
     async onSuccess() {
+      await refreshResourceCaches('secrets', API_SECRETS);
       showNotification({
         message: 'Secret created and verified',
         type: 'success',
       });
       try {
-        await queryClient.invalidateQueries({ queryKey: ['secrets'] });
         await router.navigate({
           to: '/secrets',
         });
@@ -67,8 +67,8 @@ const SecretAddForm = () => {
   });
 
   const form = useForm({
-    resolver: zodResolver(APISIX.Secret),
-    shouldUnregister: true,
+    resolver: zodResolver(APISIX.Secret, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     defaultValues: {
       id: nanoid(),
@@ -79,7 +79,7 @@ const SecretAddForm = () => {
 
   return (
     <FormProvider {...form}>
-      <FormJsonTabs form={form} onSubmit={(d) => putSecret.mutateAsync(d)} schema={APISIX.Secret} submitLabel="Add">
+      <FormJsonTabs preparePayload={prepareResourceFormPayload} form={form} onSubmit={(d) => putSecret.mutateAsync(d)} schema={APISIX.Secret} submitLabel="Add">
         <FormSectionGeneral />
         <FormPartSecret />
       </FormJsonTabs>

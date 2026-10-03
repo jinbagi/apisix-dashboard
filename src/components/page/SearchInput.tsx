@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 import { Input } from 'antd';
-import { useCallback, useEffect, useState } from 'react';
-
-import IconSearch from '~icons/material-symbols/search';
+import { useCallback, useEffect, useId, useState } from 'react';
 
 type SearchInputProps = {
   onSearch: (value: string) => void;
@@ -31,6 +29,7 @@ export const SearchInput = ({
   defaultValue = '',
 }: SearchInputProps) => {
   const [value, setValue] = useState(defaultValue);
+  const id = useId();
 
   useEffect(() => {
     setValue(defaultValue);
@@ -40,23 +39,24 @@ export const SearchInput = ({
     (val: string) => {
       onSearch(val.trim());
     },
-    [onSearch]
+    [onSearch],
   );
 
   return (
-    <Input
-      prefix={<IconSearch style={{ opacity: 0.45 }} />}
-      placeholder={placeholder}
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      onPressEnter={() => handleSearch(value)}
-      onBlur={() => handleSearch(value)}
-      allowClear
-      onClear={() => {
-        setValue('');
-        handleSearch('');
-      }}
-      style={{ width: 240 }}
-    />
+    <div className="resource-table-field resource-table-field-search">
+      <label htmlFor={id}>Search</label>
+      <Input.Search
+        id={id}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onSearch={handleSearch}
+        allowClear
+        onClear={() => {
+          setValue('');
+          handleSearch('');
+        }}
+      />
+    </div>
   );
 };

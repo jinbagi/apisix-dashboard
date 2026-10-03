@@ -55,6 +55,6 @@ export const Route = createFileRoute('/services/detail/$id/routes/')({
   component: RouteComponent,
   validateSearch: pageSearchSchema,
   loaderDeps: ({ search }) => search,
-  loader: ({ deps }) =>
-    queryClient.ensureQueryData(getRouteListQueryOptions(deps)),
+  loader: ({ deps, params }) =>
+    queryClient.ensureQueryData(getRouteListQueryOptions({ ...deps, filter: { service_id: params.id } })),
 });

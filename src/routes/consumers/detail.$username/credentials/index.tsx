@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 import type { ProColumns } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
 import { createFileRoute, Link, useParams } from '@tanstack/react-router';
 import { Space } from 'antd';
 import dayjs from 'dayjs';
@@ -29,6 +28,7 @@ import { CopyableIDLink } from '@/components/CopyableID';
 import idClasses from '@/components/CopyableID.module.css';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
+import { ResourceTable } from '@/components/page/ResourceTable';
 import { ToAddPageBtn } from '@/components/page/ToAddPageBtn';
 import { AntdConfigProvider } from '@/config/antdConfigProvider';
 import { API_CREDENTIALS } from '@/config/constant';
@@ -68,6 +68,16 @@ function CredentialsList() {
               {record.value.id}
             </Link>
           </CopyableIDLink>
+        ),
+      },
+      {
+        dataIndex: ['value', 'name'],
+        title: 'Name',
+        key: 'name',
+        render: (_, record) => (
+          <Link to="/consumers/detail/$username/credentials/detail/$id" params={{ username, id: record.value.id }}>
+            {record.value.name || '-'}
+          </Link>
         ),
       },
       {
@@ -117,7 +127,7 @@ function CredentialsList() {
 
   return (
     <AntdConfigProvider>
-      <ProTable
+      <ResourceTable resourceName="Credentials" primaryColumn="id"
         columns={columns}
         dataSource={data?.list}
         rowKey={(record) => record.value.id}

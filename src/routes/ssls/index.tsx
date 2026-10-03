@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 import type { ProColumns } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Button, Space, Tag } from 'antd';
 import dayjs from 'dayjs';
@@ -30,6 +29,7 @@ import { LabelSearchInput } from '@/components/page/LabelSearchInput';
 import PageHeader from '@/components/page/PageHeader';
 import { RawDrawer } from '@/components/page/RawDrawer';
 import { ResourceSortSelect } from '@/components/page/ResourceSortSelect';
+import { ResourceTable } from '@/components/page/ResourceTable';
 import { SearchInput } from '@/components/page/SearchInput';
 import { ToAddPageBtn } from '@/components/page/ToAddPageBtn';
 import { StatusSwitch } from '@/components/StatusTag';
@@ -43,7 +43,7 @@ import { renderUnixDateTime, unixFieldSorter } from '@/utils/columns';
 import { useBulkActions } from '@/utils/useBulkActions';
 
 function RouteComponent() {
-  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort } = useSSLList();
+  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort, tableState } = useSSLList();
   const { rowSelection, bulkBarProps } = useBulkActions(
     refetch,
     data?.list?.map((record) => record.value.id)
@@ -184,13 +184,20 @@ function RouteComponent() {
         extra={<ToAddPageBtn label="Add SSL" to="/ssls/add" />}
       />
       <AntdConfigProvider>
-        <BulkDeleteBar
-          {...bulkBarProps}
-          resourceName="SSL"
-          apiBase={API_SSLS}
-          showStatusActions
-        />
-        <ProTable
+        <ResourceTable
+        tableState={tableState}
+        resourceName="SSLs"
+        query={params.q ?? params.name ?? params.uri ?? ''}
+        label={params.label ?? ''}
+        onClearFilters={() => setParams({ q: undefined, name: undefined, uri: undefined, label: undefined, page: 1 })}
+        selectionActions={
+          <BulkDeleteBar
+              {...bulkBarProps}
+              resourceName="SSL"
+              apiBase={API_SSLS}
+              showStatusActions
+          />
+        }
           columns={columns}
           dataSource={data?.list}
           rowKey={(record) => record.value.id}

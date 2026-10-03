@@ -114,7 +114,7 @@
 }
 
 .tocLayoutWithoutNav {
-  grid-template-columns: minmax(0, 900px) 220px;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .tocContent {

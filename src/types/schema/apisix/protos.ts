@@ -22,9 +22,12 @@ const Proto = z
   .object({
     content: z.string().min(1, 'Proto content is required'),
   })
-  .merge(APISIXCommon.Info);
+  .merge(APISIXCommon.Info)
+  .merge(APISIXCommon.Basic.omit({ status: true }));
 
 export const APISIXProtos = {
   Proto,
-  ProtoPost: Proto.omit({ id: true, create_time: true, update_time: true }),
+  ProtoPost: Proto.omit({ create_time: true, update_time: true }).extend({
+    id: z.string().optional(),
+  }),
 };

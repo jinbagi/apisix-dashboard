@@ -17,36 +17,14 @@
 import { z } from 'zod';
 
 import { APISIX } from '@/types/schema/apisix';
-
-const requireRequestUri = <T extends { uri?: string; uris?: string[] }>(
-  data: T
-) =>
-  (typeof data.uri === 'string' && data.uri.trim().length > 0) ||
-  (Array.isArray(data.uris) && data.uris.some((uri) => uri.trim().length > 0));
+import { validateRouteMatch } from '@/utils/resourceValidation';
 
 export const RoutePostSchema = APISIX.Route.omit({
   create_time: true,
   update_time: true,
-})
-  .extend({
-    id: z.string().optional(),
-    // the FormItemEditor (monaco) is for editing text,
-    // and passing the original schema of `vars` for validation
-    // is not in line with this usage.
-    vars: z.string().optional(),
-  })
-  .refine(requireRequestUri, {
-    message: 'At least one request URI is required (uri or uris)',
-    path: ['uri'],
-  });
+}).extend({ id: z.string().optional() }).superRefine(validateRouteMatch);
 
 export type RoutePostType = z.infer<typeof RoutePostSchema>;
 
-export const RoutePutSchema = APISIX.Route.extend({
-  vars: z.string().optional(),
-}).refine(requireRequestUri, {
-  message: 'At least one request URI is required (uri or uris)',
-  path: ['uri'],
-});
-
+export const RoutePutSchema = APISIX.Route.superRefine(validateRouteMatch);
 export type RoutePutType = z.infer<typeof RoutePutSchema>;

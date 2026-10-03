@@ -30,17 +30,19 @@ import { getServiceQueryOptions } from '@/apis/hooks';
 import { putServiceReq } from '@/apis/services';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartService } from '@/components/form-slice/FormPartService';
+import { ServicePutSchema } from '@/components/form-slice/FormPartService/schema';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
+import { ConfigurationImpact } from '@/components/page/ConfigurationImpact';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
 import { ReverseReferences } from '@/components/page/ReverseReferences';
 import { API_SERVICES } from '@/config/constant';
 import { req } from '@/config/req';
-import { APISIX, type APISIXType } from '@/types/schema/apisix';
-import { produceRmUpstreamWhenHas } from '@/utils/form-producer';
+import type { APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { refreshResourceCaches } from '@/utils/resourceCache';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const ServiceDetailForm = () => {
   const { id } = useParams({ from: '/services/detail/$id' });
@@ -49,7 +51,7 @@ const ServiceDetailForm = () => {
   const { data: serviceData, isLoading, refetch } = serviceQuery;
 
   const form = useForm({
-    resolver: zodResolver(APISIX.Service),
+    resolver: zodResolver(ServicePutSchema, undefined, { raw: true }),
     shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
@@ -65,10 +67,11 @@ const ServiceDetailForm = () => {
     mutationFn: (d: APISIXType['Service']) =>
       putServiceReq(
         req,
-        pipeProduce(produceRmUpstreamWhenHas('upstream_id'))(d)
+        prepareResourceFormPayload(d)
       ),
     async onSuccess() {
       await refetch({ throwOnError: true });
+      await refreshResourceCaches('services', API_SERVICES);
       showNotification({
         message: 'Service saved and reloaded from APISIX',
         type: 'success',
@@ -83,6 +86,7 @@ const ServiceDetailForm = () => {
   return (
     <FormProvider {...form}>
       <FormJsonTabs
+        preparePayload={prepareResourceFormPayload}
         form={form}
         onSubmit={(d) => putService.mutateAsync(d)}
         submitLabel="Save"
@@ -115,7 +119,8 @@ function RouteComponent() {
         title={`Service: ${serviceData.value.name || id}`}
         desc={`ID: ${id} - Reusable policy layer between Routes and the downstream Upstream.`}
         extra={(
-          <Space>
+          <Space wrap>
+            <ConfigurationImpact api={`${API_SERVICES}/${id}`} />
             <Link to="/routes/add" search={{ service_id: id }}>
               <Button size="small">+ Route</Button>
             </Link>

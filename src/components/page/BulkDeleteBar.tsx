@@ -14,13 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Button, Modal, Space, Typography } from 'antd';
+import { Button, message, Modal, Space, Tooltip, Typography } from 'antd';
 import { useState } from 'react';
 
+import { exportSelectedResources, getExportResourceKey } from '@/apis/export-import';
+import { BulkRawEdit } from '@/components/page/BulkRawEdit';
+import { DependencyExport } from '@/components/page/DependencyExport';
 import { queryClient } from '@/config/global';
 import { req } from '@/config/req';
 import { verifyAdminApiField } from '@/utils/adminApiVerification';
 import { checkDependenciesForIds } from '@/utils/checkDependencies';
+import { downloadJson } from '@/utils/downloadJson';
 import { showNotification } from '@/utils/notification';
 
 type BulkDeleteBarProps = {
@@ -43,8 +47,22 @@ export const BulkDeleteBar = ({
   showStatusActions = false,
 }: BulkDeleteBarProps) => {
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   if (selectedCount === 0) return null;
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const data = await exportSelectedResources(apiBase, selectedIds);
+      downloadJson(data, `apisix-${getExportResourceKey(apiBase)}-selected-${new Date().toISOString().slice(0, 10)}.json`);
+      message.success(`Exported ${selectedIds.length} selected ${resourceName}(s)`);
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : 'Export failed. No file was downloaded.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const verifyDeleteDependencies = async () => {
     if (resourceName !== 'Upstream' && resourceName !== 'Service') return true;
@@ -201,7 +219,7 @@ export const BulkDeleteBar = ({
   };
 
   return (
-    <div className="bulk-delete-bar-floating">
+    <div className="bulk-delete-bar-inline" role="region" aria-label="Selected resource actions">
       <Typography.Text>
         Selected{' '}
         <Typography.Text
@@ -213,14 +231,24 @@ export const BulkDeleteBar = ({
         item(s)
       </Typography.Text>
       <Space size="middle">
-        <Button size="middle" disabled={loading} onClick={onClear}>
+        <Button size="middle" disabled={loading || exporting} onClick={onClear}>
           Clear
         </Button>
+        {getExportResourceKey(apiBase) && (
+          <Tooltip title="Download selected resources as importable JSON. Referenced resources and child collections are not included.">
+            <Button loading={exporting} disabled={loading} onClick={handleExport}>
+              Export selected
+            </Button>
+          </Tooltip>
+        )}
+        <BulkRawEdit apiBase={apiBase} selectedIds={selectedIds} disabled={loading || exporting} onComplete={onComplete} />
+        <DependencyExport apiBase={apiBase} selectedIds={selectedIds} disabled={loading || exporting} />
         {showStatusActions && (
           <>
             <Button
               size="middle"
               loading={loading}
+              disabled={exporting}
               onClick={() => handleBulkStatus(1)}
             >
               Enable
@@ -228,6 +256,7 @@ export const BulkDeleteBar = ({
             <Button
               size="middle"
               loading={loading}
+              disabled={exporting}
               onClick={() => handleBulkStatus(0)}
             >
               Disable
@@ -239,6 +268,7 @@ export const BulkDeleteBar = ({
           danger
           type="primary"
           loading={loading}
+          disabled={exporting}
           onClick={handleBulkDelete}
         >
           Delete

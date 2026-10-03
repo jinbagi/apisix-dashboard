@@ -21,7 +21,7 @@ import { FormSection } from './FormSection';
 export const FormPartCredential = () => {
   return (
     <>
-      <FormPartBasic showID={false} showName={false} />
+      <FormPartBasic showID={false} />
       <FormSection legend="Plugins" collapsible defaultOpen={true}>
         <div
           role="note"

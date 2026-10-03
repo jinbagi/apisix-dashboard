@@ -1,76 +1,59 @@
 .trigger {
-  width: 210px;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding-inline: 10px;
+  color: var(--ant-color-text-secondary);
   background: var(--ant-color-fill-quaternary);
-  border-color: transparent;
-  transition:
-    background-color 160ms ease,
-    border-color 160ms ease;
+  border-color: var(--ant-color-border-secondary);
 }
 
-.trigger:hover {
-  background: var(--ant-color-bg-container);
-  border-color: var(--ant-color-border);
-}
-
-.trigger :global(.ant-input-prefix) {
-  color: var(--ant-color-text-tertiary);
-}
+.triggerLabel { font-size: var(--app-font-size-sm); }
 
 .shortcut,
 .footer kbd {
-  min-width: 24px;
   padding: 1px 5px;
-  color: var(--ant-color-text-tertiary);
+  color: var(--ant-color-text-secondary);
   font: var(--app-font-weight-label) var(--app-font-size-2xs)/18px var(--app-font-family);
-  text-align: center;
   background: var(--ant-color-bg-container);
   border: 1px solid var(--ant-color-border-secondary);
-  border-radius: 5px;
-  box-shadow: 0 1px 0 var(--ant-color-border-secondary);
+  border-radius: 4px;
+  white-space: nowrap;
 }
 
-.modal :global(.ant-modal-content) {
-  padding: 0;
-  overflow: hidden;
-  border: 1px solid var(--ant-color-border-secondary);
-  border-radius: 14px;
-  box-shadow: 0 18px 48px rgb(0 0 0 / 18%);
+.modal :global(.ant-modal-container) { padding: 20px; }
+.modal :global(.ant-modal-title) { font-size: var(--app-font-size-base); }
+
+.inputArea { display: flex; gap: 10px; margin-top: 18px; }
+.inputArea :global(.ant-input-affix-wrapper) { flex: 1; min-width: 0; }
+.scope { width: 172px; flex-shrink: 0; align-self: center; }
+
+.summary {
+  padding-block: 12px;
+  color: var(--ant-color-text-secondary);
+  font-size: var(--app-font-size-xs);
+  line-height: var(--app-line-height-relaxed);
 }
 
-.inputArea {
-  padding: 14px;
-  border-bottom: 1px solid var(--ant-color-border-secondary);
-}
-
-.inputArea :global(.ant-input-affix-wrapper) {
-  border-color: transparent;
-  box-shadow: none;
-}
-
-.results {
-  max-height: 400px;
-  padding: 6px;
-  overflow-y: auto;
-}
-
-.emptyState {
-  padding: 32px 24px;
-  text-align: center;
-}
-
-.searchAlert {
-  margin: 4px 4px 8px;
+.results { max-height: min(480px, 55vh); overflow-y: auto; overscroll-behavior: contain; }
+.groupLabel {
+  padding: 10px 10px 6px;
+  color: var(--ant-color-text-secondary);
+  font-size: var(--app-font-size-2xs);
+  font-weight: var(--app-font-weight-strong);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .result {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
   width: 100%;
-  min-height: 44px;
-  padding: 6px 10px;
-  color: inherit;
+  min-height: 60px;
+  padding: 10px 12px;
+  color: var(--ant-color-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -79,68 +62,50 @@
   border-radius: 8px;
 }
 
-.result:hover,
-.selected {
-  background: var(--ant-color-fill-quaternary);
-}
-
-.selected {
-  border-color: var(--ant-color-border-secondary);
-}
-
-.result:focus-visible {
-  outline: 2px solid var(--ant-color-primary-border);
-  outline-offset: -2px;
-}
-
-.resourceTag {
-  min-width: 76px;
-  margin: 0;
-  overflow: hidden;
-  font-size: var(--app-font-size-2xs);
-  font-weight: var(--app-font-weight-strong);
-  text-align: center;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-}
-
-.resultName {
-  flex: 1;
-  min-width: 0;
-}
-
-.resultId {
-  max-width: 180px;
-  overflow: hidden;
-  font-family: var(--app-font-monospace);
-  font-size: var(--app-font-size-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+.result:hover, .selected { background: var(--ant-color-primary-bg); }
+.selected { border-color: var(--ant-color-primary-border); }
+.result:focus-visible { outline: 2px solid var(--ant-color-primary); outline-offset: -2px; }
+.resultCopy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 4px; }
+.resultName { font-size: var(--app-font-size-sm); font-weight: var(--app-font-weight-strong); }
+.resultName, .resultContext { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.resultContext { color: var(--ant-color-text-secondary); font-size: var(--app-font-size-xs); }
+.resourceTag { margin: 0; font-size: var(--app-font-size-2xs); flex-shrink: 0; }
+.resultArrow { flex-shrink: 0; color: var(--ant-color-text-tertiary); }
+.searchAlert { margin-bottom: 8px; }
+.showMore { margin-top: 8px; }
+.emptyState { padding: 30px 14px; text-align: center; }
+.emptyState p { color: var(--ant-color-text-secondary); font-size: var(--app-font-size-sm); }
 
 .footer {
   display: flex;
-  gap: 18px;
+  flex-wrap: wrap;
+  gap: 12px;
   align-items: center;
-  min-height: 38px;
-  padding: 8px 14px;
-  color: var(--ant-color-text-tertiary);
-  font-size: var(--app-font-size-xs);
+  margin-top: 14px;
+  padding-top: 12px;
+  color: var(--ant-color-text-secondary);
+  font-size: var(--app-font-size-2xs);
   border-top: 1px solid var(--ant-color-border-secondary);
 }
+.footer span { display: flex; align-items: center; gap: 4px; }
+.footerHint { margin-left: auto; }
 
-.footer span {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-}
-
-@media (width <= 800px) {
-  .trigger {
-    width: 150px;
+@media (width <= 1100px) { .shortcut { display: none; } }
+@media (width <= 640px) {
+  .modal:global(.ant-modal) { top: 16px; margin-block: 0; padding-bottom: 0; }
+  .modal :global(.ant-modal-container) {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 32px);
   }
-
-  .shortcut {
-    display: none;
-  }
+  .modal :global(.ant-modal-body) { display: flex; flex-direction: column; min-height: 0; }
+  .inputArea, .summary, .searchAlert, .footer { flex-shrink: 0; }
+  .results { flex: 1 1 auto; min-height: 0; }
+  .trigger { width: 32px; padding-inline: 0; justify-content: center; }
+  .triggerLabel { display: none; }
+  .inputArea { flex-direction: column; }
+  .scope { width: 100%; }
+  .resourceTag { max-width: 95px; overflow: hidden; text-overflow: ellipsis; }
+  .result { padding-inline: 8px; gap: 6px; }
+  .footerHint { width: 100%; margin-left: 0; }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 import { Alert, Button, Collapse, Divider, Segmented } from 'antd';
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import { FormItemEditor } from '@/components/form/Editor';
@@ -30,7 +30,7 @@ import { APISIX } from '@/types/schema/apisix';
 import { NamePrefixProvider } from '@/utils/useNamePrefix';
 import { zGetDefault } from '@/utils/zod';
 
-import { useFormReadOnlyFields } from '../../../utils/form-context';
+import { FormDraftRevisionContext, useFormReadOnlyFields } from '../../../utils/form-context';
 import { FormItemPlugins } from '../FormItemPlugins';
 import { FormPartBasic } from '../FormPartBasic';
 import { FormPartUpstream, FormSectionTimeout } from '../FormPartUpstream';
@@ -40,6 +40,7 @@ import {
   ResourceHierarchy,
 } from '../ResourceHierarchy';
 import { FormItemVars } from './FormItemVars';
+import { MatchField } from './MatchField';
 import type { RoutePostType } from './schema';
 
 const FormPartBasicWithPriority = ({ showID }: { showID: boolean }) => {
@@ -57,21 +58,13 @@ const FormPartBasicWithPriority = ({ showID }: { showID: boolean }) => {
 };
 
 const FormSectionMatchRules = () => {
-  const { control } = useFormContext<RoutePostType>();
-  const uri = useWatch({ control, name: 'uri' });
-  const uris = useWatch({ control, name: 'uris' });
-  const host = useWatch({ control, name: 'host' });
-  const hosts = useWatch({ control, name: 'hosts' });
-  const remoteAddr = useWatch({ control, name: 'remote_addr' });
-  const remoteAddrs = useWatch({ control, name: 'remote_addrs' });
-
-  const hasUri = !!uri;
-  const hasUris = Array.isArray(uris) && uris.length > 0;
-  const hasHost = !!host;
-  const hasHosts = Array.isArray(hosts) && hosts.length > 0;
-  const hasRemoteAddr = !!remoteAddr;
-  const hasRemoteAddrs = Array.isArray(remoteAddrs) && remoteAddrs.length > 0;
-
+  const { control, formState } = useFormContext<RoutePostType>();
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const vars = useWatch({ control, name: 'vars' });
+  const filterFunc = useWatch({ control, name: 'filter_func' });
+  useEffect(() => {
+    if (vars?.length || filterFunc || formState.errors.vars || formState.errors.filter_func) setAdvancedOpen(true);
+  }, [vars, filterFunc, formState.errors.vars, formState.errors.filter_func]);
   return (
     <FormSection legend="Match Rules" collapsible defaultOpen={true}>
       <FormItemTagsInput
@@ -81,23 +74,15 @@ const FormSectionMatchRules = () => {
         data={APISIX.HttpMethod.options.map((v) => v.value)}
         searchValue=""
       />
-      <FormItemTextInput
-        control={control}
-        name="uri"
-        label="URI"
-        description="Single URI path. Disabled when URIs is set."
-        required={!hasUris}
-        disabled={hasUris}
-      />
-      <FormItemTagsInput
-        control={control}
-        name="uris"
-        label="URIs"
-        description="Multiple URI paths. Disabled when URI is set."
-        required={!hasUri}
-        disabled={hasUri}
-      />
+      <MatchField single="uri" multiple="uris" label="URI" pluralLabel="URIs" placeholder="/api/*" help="Match the request path. Choose Single or Multiple; at least one path is required." required />
+      <MatchField single="host" multiple="hosts" label="Host" pluralLabel="Hosts" placeholder="api.example.com" help="Leave empty to match any hostname." />
+      <MatchField single="remote_addr" multiple="remote_addrs" label="Remote Address" pluralLabel="Remote Addresses" placeholder="192.0.2.0/24" help="Optional client IP or CIDR. Leave empty to match any client." />
+      <InputWrapper label="Enable WebSocket">
+        <FormItemSwitch control={control} name="enable_websocket" aria-label="Enable WebSocket" />
+      </InputWrapper>
       <Collapse
+        activeKey={advancedOpen ? ['advanced-match'] : []}
+        onChange={(keys) => setAdvancedOpen(keys.includes('advanced-match'))}
         ghost
         items={[
           {
@@ -106,41 +91,6 @@ const FormSectionMatchRules = () => {
             forceRender: true,
             children: (
               <>
-                <InputWrapper label="Enable WebSocket">
-                  <FormItemSwitch
-                    control={control}
-                    name="enable_websocket"
-                    aria-label="Enable WebSocket"
-                  />
-                </InputWrapper>
-                <FormItemTextInput
-                  control={control}
-                  name="host"
-                  label="Host"
-                  description="Single hostname. Disabled when Hosts is set."
-                  disabled={hasHosts}
-                />
-                <FormItemTagsInput
-                  control={control}
-                  name="hosts"
-                  label="Hosts"
-                  description="Multiple hostnames. Disabled when Host is set."
-                  disabled={hasHost}
-                />
-                <FormItemTextInput
-                  control={control}
-                  name="remote_addr"
-                  label="Remote Address"
-                  description="Single IP/CIDR. Disabled when Remote Addresses is set."
-                  disabled={hasRemoteAddrs}
-                />
-                <FormItemTagsInput
-                  control={control}
-                  name="remote_addrs"
-                  label="Remote Addresses"
-                  description="Multiple IPs/CIDRs. Disabled when Remote Address is set."
-                  disabled={hasRemoteAddr}
-                />
                 <FormItemVars />
                 <FormItemEditor
                   control={control}
@@ -163,7 +113,10 @@ export const FormSectionUpstream = ({
 }: {
   owner?: 'route' | 'service';
 }) => {
-  const { control, setValue } = useFormContext<RoutePostType>();
+  const { control, setValue, getValues, formState } = useFormContext<RoutePostType>();
+  const draftRevision = useContext(FormDraftRevisionContext);
+  const targetDrafts = useRef<Partial<RoutePostType>>({});
+  useEffect(() => { targetDrafts.current = {}; }, [draftRevision, formState.defaultValues]);
   const readOnlyFields = useFormReadOnlyFields();
   const serviceId = useWatch({ control, name: 'service_id' });
   const upstreamId = useWatch({ control, name: 'upstream_id' });
@@ -203,6 +156,13 @@ export const FormSectionUpstream = ({
   }, [hasInlineUpstream, serviceId, upstreamId]);
 
   const selectTargetMode = (next: TargetMode) => {
+    if (next === targetMode) return;
+    const current = getValues();
+    // Store only in memory; inactive alternatives never enter the API payload.
+    for (const key of ['service_id', 'upstream_id', 'upstream'] as const) {
+      if (current[key] !== undefined) Object.assign(targetDrafts.current, { [key]: structuredClone(current[key]) });
+    }
+    const selectedKey = next === 'service' ? 'service_id' : next === 'upstream' ? 'upstream_id' : 'upstream';
     setTargetMode(next);
     if (next === 'service') {
       setValue('upstream_id', undefined, { shouldDirty: true });
@@ -214,6 +174,7 @@ export const FormSectionUpstream = ({
       setValue('service_id', undefined, { shouldDirty: true });
       setValue('upstream_id', undefined, { shouldDirty: true });
     }
+    setValue(selectedKey, structuredClone(targetDrafts.current[selectedKey]), { shouldDirty: true, shouldValidate: true });
   };
 
   const targetOptions = owner === 'route'
@@ -235,7 +196,6 @@ export const FormSectionUpstream = ({
       />
       <InputWrapper
         label="Target type"
-        description="Choose one traffic target. Only the selected configuration is submitted."
       >
         <Segmented
           block
@@ -244,12 +204,15 @@ export const FormSectionUpstream = ({
           onChange={(value) => selectTargetMode(value as TargetMode)}
         />
       </InputWrapper>
+      <p style={{ color: 'var(--ant-color-text-secondary)', marginTop: -8, marginBottom: 16 }}>
+        Switch targets without losing your work. Alternatives are kept until you save, revert, or apply JSON; only the selected target is submitted.
+      </p>
       {serviceId && (
         <Alert
           type="info"
           showIcon
           message="Traffic resolves through the selected Service."
-          description="The Service owns downstream Upstream selection. Route-level Upstream settings are not submitted while Service ID is set."
+          description="Existing Route-level Upstream overrides are preserved on save. Use Admin API JSON to inspect or edit combined configurations."
           style={{ marginBottom: 12 }}
         />
       )}
@@ -257,7 +220,7 @@ export const FormSectionUpstream = ({
         <Alert
           type="info"
           showIcon
-          message="Upstream ID is set. Inline upstream settings below are kept visible for reference, but they are not submitted unless Upstream ID is cleared."
+          message="Upstream ID is set. Any existing inline configuration is preserved until you change the target."
           style={{ marginBottom: 12 }}
         />
       )}
@@ -277,7 +240,7 @@ export const FormSectionUpstream = ({
                   resourceApi={API_SERVICES}
                   resourceLabel="Service"
                   disabled={readOnlyFields.includes('service_id')}
-                  description="Highest-precedence target. Selecting a Service disables Route-level Upstream configuration."
+                  description="Select the shared Service for this Route."
                 />
               </DependencyChoice>
             </div>

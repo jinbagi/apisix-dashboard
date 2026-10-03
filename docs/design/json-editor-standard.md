@@ -18,7 +18,9 @@ These contexts have different actions, but they share one editing standard.
 - Use `JsonSchemaGuide` when a dashboard schema is available.
 - Render field names as inline code and distinguish resource identity,
   unconditional requirements, and conditional requirements.
-- Keep resource-specific conditional rules in `resourceJsonSchema.ts`.
+- Keep shared resource validation rules in `resourceValidation.ts`, used by both
+  form schemas and `resourceJsonSchema.ts`. Keep JSON guidance in
+  `resourceJsonSchema.ts`.
 
 ## Contextual Actions
 
@@ -37,3 +39,15 @@ These contexts have different actions, but they share one editing standard.
 
 Do not add a new standalone Monaco JSON configuration when one of these shared
 surfaces can be used.
+
+## Form and JSON parity
+
+- Route forms use native `vars` arrays. The condition builder handles simple
+  string comparisons; complex expressions stay editable as JSON without coercion.
+- Preserve fields that the visual Route form does not represent and existing
+  combined traffic targets. Only explicit target changes clear prior selections.
+- Show common matching fields (hosts, remote addresses, WebSocket) directly.
+- Validate URI/host/address conflicts consistently in both editors. Do not
+  silently choose a field or discard an invalid expression during serialization.
+- Route form updates verify changed and removed fields after the Admin API write,
+  using the same mismatch rules as Admin API JSON.

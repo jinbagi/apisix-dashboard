@@ -28,3 +28,8 @@ export const useFormReadOnlyFields = () => {
   const { readOnlyFields } = use(CommonFormContext);
   return readOnlyFields || [];
 };
+
+// Reset transient alternatives whenever the shared form draft is replaced.
+export const FormDraftRevisionContext = createContext(0);
+
+export const FormTOCCtx = createContext<{ refreshTOC: () => void }>({ refreshTOC: () => {} });

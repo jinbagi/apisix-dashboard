@@ -58,7 +58,7 @@ const readSavedSort = (key: string) => {
     const raw = localStorage.getItem(`${SORT_KEY_PREFIX}${key}`);
     if (!raw) return undefined;
     const parsed = JSON.parse(raw) as { sort_by?: string; sort_order?: 'asc' | 'desc' };
-    if (!parsed.sort_by || !parsed.sort_order) return undefined;
+    if (typeof parsed?.sort_by !== 'string' || !parsed.sort_by || (parsed.sort_order !== 'asc' && parsed.sort_order !== 'desc')) return undefined;
     return parsed;
   } catch {
     return undefined;
@@ -121,16 +121,37 @@ const listItemMatchesQuery = <R,>(item: R, query: string) => {
   return haystack.includes(query);
 };
 
+const parseLabelQuery = (label = '') => {
+  const separator = label.indexOf(':');
+  return {
+    key: (separator === -1 ? label : label.slice(0, separator)).trim(),
+    value: separator === -1 ? undefined : label.slice(separator + 1).trim(),
+  };
+};
+
+const listItemMatchesLabel = <R,>(item: R, label?: string) => {
+  if (!label) return true;
+  const { key, value } = parseLabelQuery(label);
+  const labels = (item as { value?: { labels?: Record<string, unknown> } }).value?.labels;
+  return Boolean(labels && Object.hasOwn(labels, key) && (value === undefined || labels[key] === value));
+};
+
 const stripClientListParams = <P extends PageSearchType>(props: P): P => {
   const rest = { ...props };
   delete rest.q;
+  rest.page = 1;
+  delete rest.page_size;
+  delete rest.sort_by;
+  delete rest.sort_order;
+  delete rest.column_filters;
+  // APISIX filters by label key; the optional exact value is matched locally.
+  if (rest.label) rest.label = parseLabelQuery(rest.label).key;
   return rest;
 };
 
-const fetchClientFilteredList = async <P extends PageSearchType, R>(
+const fetchCompleteList = async <P extends PageSearchType, R>(
   listReq: (req: AxiosInstance, props: P) => Promise<APISIXListResponse<R>>,
-  props: P,
-  query: string
+  props: P
 ) => {
   const baseParams = stripClientListParams(props);
   const first = await listReq(req, {
@@ -141,28 +162,24 @@ const fetchClientFilteredList = async <P extends PageSearchType, R>(
   const all = [...first.list];
   const totalPages = Math.ceil((first.total ?? 0) / PAGE_SIZE_MAX);
 
-  if (totalPages > 1) {
-    const rest = await Promise.allSettled(
-      Array.from({ length: totalPages - 1 }, (_, index) =>
+  // Bound concurrent reads. A failed page rejects the whole collection.
+  for (let start = 2; start <= totalPages; start += 4) {
+    const rest = await Promise.all(
+      Array.from({ length: Math.min(4, totalPages - start + 1) }, (_, index) =>
         listReq(req, {
           ...baseParams,
-          page: index + 2,
+          page: start + index,
           page_size: PAGE_SIZE_MAX,
         } as P)
       )
     );
-    rest.forEach((page) => {
-      if (page.status === 'fulfilled') {
-        all.push(...page.value.list);
-      }
-    });
+    rest.forEach((page) => all.push(...page.list));
   }
 
-  const filtered = all.filter((item) => listItemMatchesQuery(item, query));
   return {
     ...first,
-    total: filtered.length,
-    list: filtered,
+    total: all.length,
+    list: all,
   };
 };
 
@@ -187,13 +204,10 @@ const genListQueryOptions =
     listReq: (req: AxiosInstance, props: P) => Promise<APISIXListResponse<R>>
   ) =>
   (props: P) => {
+    const serverParams = stripClientListParams(props);
     return queryOptions({
-      queryKey: [key, props],
-      queryFn: () => {
-        const query = normalizeSearch(props.q);
-        if (query) return fetchClientFilteredList(listReq, props, query);
-        return listReq(req, stripClientListParams(props));
-      },
+      queryKey: [key, serverParams],
+      queryFn: () => fetchCompleteList(listReq, serverParams),
     });
   };
 
@@ -213,7 +227,7 @@ export const genUseList = <
     const savedSort = useMemo(() => readSavedSort(key), [key]);
 
     const listQuery = useSuspenseQuery(
-      listQueryOptions({ ...defaultParams, ...params })
+      listQueryOptions({ ...params, ...defaultParams })
     );
     const { data, isFetching, isLoading, refetch } = listQuery;
     const sortBy = (params as PageSearchType).sort_by
@@ -227,7 +241,10 @@ export const genUseList = <
 
     const sortedData = useMemo(() => {
       if (!Array.isArray(data?.list)) return data;
-      const list = [...data.list];
+      const query = normalizeSearch(params.q);
+      const list = data.list.filter((item) =>
+        (!query || listItemMatchesQuery(item, query)) && listItemMatchesLabel(item, params.label)
+      );
       list.sort((a, b) => {
         const aVal = (a as { value?: Record<string, unknown> })?.value?.[sortBy];
         const bVal = (b as { value?: Record<string, unknown> })?.value?.[sortBy];
@@ -240,8 +257,8 @@ export const genUseList = <
 
         return sortOrder === 'desc' ? -base : base;
       });
-      return { ...data, list };
-    }, [data, sortBy, sortOrder]);
+      return { ...data, list, total: list.length };
+    }, [data, params.q, params.label, sortBy, sortOrder]);
 
     const setSort = (next: { sort_by: string; sort_order: 'asc' | 'desc' }) =>
       {
@@ -262,6 +279,7 @@ export const genUseList = <
       sortBy,
       sortOrder,
       setSort,
+      tableState: { params, setParams, sortBy, sortOrder },
     };
 
   };

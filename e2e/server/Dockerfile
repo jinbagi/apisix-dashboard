@@ -37,5 +37,5 @@ RUN apk add --no-cache git
 RUN corepack enable pnpm && pnpm build
 
 # embed dashboard ui into apisix
-FROM apache/apisix:dev
+FROM apache/apisix:3.19.0-debian
 COPY --from=builder /app/dist /usr/local/apisix/ui/

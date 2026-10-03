@@ -38,7 +38,8 @@ import { API_CONSUMER_GROUPS } from '@/config/constant';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { refreshResourceCaches } from '@/utils/resourceCache';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
   id: string;
@@ -57,6 +58,7 @@ const ConsumerGroupDetailForm = (props: Props) => {
       putConsumerGroupReq(req, d),
     async onSuccess() {
       await consumerGroupQuery.refetch({ throwOnError: true });
+      await refreshResourceCaches('consumer_groups', API_CONSUMER_GROUPS);
       showNotification({
         message: 'Consumer Group saved and reloaded from APISIX',
         type: 'success',
@@ -65,8 +67,8 @@ const ConsumerGroupDetailForm = (props: Props) => {
   });
 
   const form = useForm({
-    resolver: zodResolver(APISIX.ConsumerGroupPut),
-    shouldUnregister: true,
+    resolver: zodResolver(APISIX.ConsumerGroupPut, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
     disabled: readOnly,
@@ -81,15 +83,16 @@ const ConsumerGroupDetailForm = (props: Props) => {
   return (
     <FormProvider {...form}>
       <FormJsonTabs
+        preparePayload={prepareResourceFormPayload}
         form={form}
-        onSubmit={(d) => putConsumerGroup.mutateAsync(pipeProduce()({ ...d, id }))}
+        onSubmit={(d) => putConsumerGroup.mutateAsync(prepareResourceFormPayload({ ...d, id }))}
         submitLabel="Save"
         disabled={readOnly}
         rawData={data?.value}
         adminApi={`${API_CONSUMER_GROUPS}/${id}`}
       >
         <FormSectionGeneral readOnly />
-        <FormPartPluginConfig basicProps={{ showName: false }} />
+        <FormPartPluginConfig basicProps={{}} />
       </FormJsonTabs>
     </FormProvider>
   );

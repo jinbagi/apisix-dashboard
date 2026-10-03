@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 import { Input, Tooltip } from 'antd';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 
 import IconLabel from '~icons/material-symbols/label';
 
@@ -29,6 +29,7 @@ export const LabelSearchInput = ({
   defaultValue = '',
 }: LabelSearchInputProps) => {
   const [value, setValue] = useState(defaultValue);
+  const id = useId();
 
   useEffect(() => {
     setValue(defaultValue);
@@ -38,25 +39,30 @@ export const LabelSearchInput = ({
     (val: string) => {
       onSearch(val.trim());
     },
-    [onSearch]
+    [onSearch],
   );
 
   return (
-    <Tooltip title="Filter by label (format: key:value)" placement="bottom">
-      <Input
-        prefix={<IconLabel style={{ opacity: 0.45 }} />}
-        placeholder="env:prod"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onPressEnter={() => handleSearch(value)}
-        onBlur={() => handleSearch(value)}
-        allowClear
-        onClear={() => {
-          setValue('');
-          handleSearch('');
-        }}
-        style={{ width: 160 }}
-      />
-    </Tooltip>
+    <div className="resource-table-field resource-table-field-label">
+      <label htmlFor={id}>Label</label>
+      <Tooltip
+        title="Use env to match a label key, or env:prod to match its exact value."
+        placement="bottom"
+      >
+        <Input.Search
+          id={id}
+          prefix={<IconLabel style={{ opacity: 0.45 }} />}
+          placeholder="env:prod"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onSearch={handleSearch}
+          allowClear
+          onClear={() => {
+            setValue('');
+            handleSearch('');
+          }}
+        />
+      </Tooltip>
+    </div>
   );
 };

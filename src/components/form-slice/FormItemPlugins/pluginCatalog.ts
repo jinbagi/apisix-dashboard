@@ -32,9 +32,9 @@ const entries: Record<string, PluginCatalogEntry> = {
   },
   'ai-proxy-multi': {
     description:
-      'Balance AI requests across multiple providers with health checks and bounded fallback.',
+      'Balance AI requests across uniquely named providers with health checks and bounded fallback for selected HTTP statuses.',
     category: 'AI Gateway',
-    keywords: ['llm', 'fallback', 'load balancing', 'retry', 'multi provider'],
+    keywords: ['llm', 'fallback', 'load balancing', 'retry', 'multi provider', 'fallback_http_statuses'],
     capabilities: ['Multi-provider', 'Fallback', 'Health checks'],
   },
   'ai-prompt-guard': {
@@ -81,10 +81,10 @@ const entries: Record<string, PluginCatalogEntry> = {
   },
   'batch-requests': {
     description:
-      'Execute bounded internal request pipelines with metadata controls for body size and pipeline item count.',
+      'Execute internal request pipelines with metadata limits for request bodies, item counts, and individual or aggregate response bodies.',
     category: 'Traffic',
-    keywords: ['batch', 'pipeline', 'metadata', 'request limit'],
-    capabilities: ['Request pipeline', 'Pipeline limits'],
+    keywords: ['batch', 'pipeline', 'metadata', 'request limit', 'response size'],
+    capabilities: ['Request pipeline', 'Pipeline limits', 'Response limits'],
   },
   'limit-count': {
     description:
@@ -120,17 +120,17 @@ const entries: Record<string, PluginCatalogEntry> = {
   },
   'graphql-limit-count': {
     description:
-      'Limit GraphQL operation complexity or field counts to protect upstream services.',
+      'Charge GraphQL quotas by depth, complexity, or node quantity, with Service cost decorations and a maximum query cost.',
     category: 'Security',
-    keywords: ['graphql', 'limit', 'complexity', 'dos'],
-    capabilities: ['GraphQL', 'Request limits'],
+    keywords: ['graphql', 'limit', 'complexity', 'node_quantifier', 'cost', 'decorations', 'dos'],
+    capabilities: ['GraphQL', 'Query cost', 'Request limits'],
   },
   'saml-auth': {
     description:
-      'Authenticate users through a SAML 2.0 identity provider and single sign-on flow.',
+      'Authenticate SAML 2.0 logins with issuer, audience, ACS URL, clock skew, and optional assertion replay checks.',
     category: 'Authentication',
-    keywords: ['saml', 'sso', 'identity provider', 'login'],
-    capabilities: ['SAML 2.0', 'SSO'],
+    keywords: ['saml', 'sso', 'identity provider', 'login', 'replay', 'audience', 'acs'],
+    capabilities: ['SAML 2.0', 'SSO', 'Response validation'],
   },
   'feishu-auth': {
     description:
@@ -558,6 +558,20 @@ const entries: Record<string, PluginCatalogEntry> = {
     category: 'AI Gateway',
     keywords: ['mcp', 'sse', 'ai agent', 'stdio'],
     capabilities: ['MCP bridge'],
+  },
+  'openapi-to-mcp': {
+    description:
+      'Expose OpenAPI operations as MCP tools using stateless Streamable HTTP or session-based SSE.',
+    category: 'Transformation',
+    keywords: ['openapi', 'swagger', 'mcp', 'ai agent', 'tools', 'streamable http', 'sse'],
+    capabilities: ['OpenAPI tools', 'MCP server', 'Streamable HTTP'],
+  },
+  'websocket-proxy': {
+    description:
+      'Configure client and upstream WebSocket frame size limits for ws and wss upstreams.',
+    category: 'Traffic',
+    keywords: ['websocket', 'ws', 'wss', 'frame', 'payload', 'message size'],
+    capabilities: ['WebSocket frames', 'Payload limits'],
   },
   degraphql: {
     description:

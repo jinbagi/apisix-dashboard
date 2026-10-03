@@ -39,6 +39,7 @@ import type { APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 
 type Props = {
   navigate: (res: APISIXType['RespRouteDetail']) => Promise<void>;
@@ -62,6 +63,7 @@ export const RouteAddForm = (props: Props) => {
       return response;
     },
     async onSuccess(response) {
+      await refreshResourceCaches('routes', API_ROUTES);
       showNotification({
         message: 'Route created and verified',
         type: 'success',
@@ -78,8 +80,8 @@ export const RouteAddForm = (props: Props) => {
   });
 
   const form = useForm({
-    resolver: zodResolver(RoutePostSchema),
-    shouldUnregister: true,
+    resolver: zodResolver(RoutePostSchema, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
     defaultValues: { ...defaultValues, ...enforcedValues },
@@ -89,9 +91,10 @@ export const RouteAddForm = (props: Props) => {
     <FormProvider {...form}>
       <FormJsonTabs
         form={form}
+        preparePayload={produceRoute}
         onSubmit={(d) => postRoute.mutateAsync(d)}
         schema={RoutePostSchema}
-        createJsonTemplate={ROUTE_REQUIRED_TEMPLATE}
+        createJsonTemplate={defaultValues ? undefined : ROUTE_REQUIRED_TEMPLATE}
         submitLabel="Add"
       >
         <FormPartRoute />

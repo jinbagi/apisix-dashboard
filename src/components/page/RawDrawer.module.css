@@ -1,0 +1,38 @@
+.body {
+  position: relative;
+}
+
+.title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.resizeHandle {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 10px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+.resizeHandle::after {
+  content: '';
+  position: absolute;
+  top: 40%;
+  left: 3px;
+  height: 64px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--ant-color-border);
+}
+
+.resizeHandle:hover::after,
+.resizeHandle:focus-visible::after {
+  background: var(--ant-color-primary);
+}
+
+.resizeHandle:focus-visible {
+  outline: 2px solid var(--ant-color-primary);
+  outline-offset: -2px;
+}

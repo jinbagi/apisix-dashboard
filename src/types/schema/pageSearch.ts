@@ -16,6 +16,10 @@
  */
 import { z } from 'zod';
 
+export const columnFiltersSchema = z.record(
+  z.string(),
+  z.array(z.union([z.string(), z.number(), z.boolean()])).nullable(),
+);
 
 export const pageSearchSchema = z
   .object({
@@ -23,14 +27,14 @@ export const pageSearchSchema = z
       .union([z.string(), z.number()])
       .optional()
       .default(1)
-      .transform((val) => (val ? Number(val) : 1)),
+      .transform((val) => Number.isInteger(Number(val)) && Number(val) >= 1 ? Number(val) : 1),
     page_size: z
       .union([z.string(), z.number()])
       .optional()
       .transform((val) => {
         if (val === undefined || val === null || val === '') return undefined;
         const n = Number(val);
-        if (isNaN(n) || n < 10 || n > 500) return undefined;
+        if (!Number.isInteger(n) || n < 10 || n > 500) return undefined;
         return n;
       }),
     name: z.string().optional(),
@@ -39,6 +43,7 @@ export const pageSearchSchema = z
     label: z.string().optional(),
     sort_by: z.string().optional(),
     sort_order: z.enum(['asc', 'desc']).optional(),
+    column_filters: columnFiltersSchema.optional().catch(undefined),
 
   })
   .passthrough();

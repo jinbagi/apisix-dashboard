@@ -16,146 +16,45 @@
  */
 import { produce } from 'immer';
 
-import { pipeProduce } from '@/utils/producer';
-
 import type { RoutePostType, RoutePutType } from './schema';
 
-const normalizeString = (value: unknown): string | undefined => {
-  if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-};
-
-const compactStringArray = (value: unknown): string[] | undefined => {
-  if (!Array.isArray(value)) return undefined;
-  const compacted = value
-    .filter((item): item is string => typeof item === 'string')
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0);
-  return compacted.length > 0 ? compacted : undefined;
-};
-
-const VALID_VARS_OPERATORS = new Set([
-  '==', '~=', '>', '>=', '<', '<=',
-  '~~', 'in', 'not_in', 'has', 'not_has',
-]);
-
-const normalizeVarsValue = (value: unknown): unknown => {
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : undefined;
-  }
-  if (Array.isArray(value)) {
-    return value.length > 0 ? value : undefined;
-  }
-  if (value === undefined || value === null) {
-    return undefined;
-  }
-  return value;
-};
-export const produceVarsToForm = produce((draft: RoutePostType) => {
-  if (draft.vars && Array.isArray(draft.vars)) {
-    draft.vars = JSON.stringify(draft.vars);
-  }
-}) as (draft: RoutePostType) => RoutePutType;
+// Both editors use the Admin API array representation, including nested expressions.
+export const produceVarsToForm = (data: RoutePostType) => data as RoutePutType;
 
 export const produceVarsToAPI = produce((draft: RoutePostType) => {
-  const d = draft as Record<string, unknown>;
-
-  const optionalStringFields = [
-    'uri',
-    'host',
-    'remote_addr',
-    'service_id',
-    'upstream_id',
-    'plugin_config_id',
-    'filter_func',
-    'script',
-    'script_id',
-    'name',
-    'desc',
-  ];
-
-  optionalStringFields.forEach((field) => {
-    const normalized = normalizeString(d[field]);
-    if (!normalized && d[field] !== undefined) {
-      delete d[field];
-      return;
+  const payload = draft as Record<string, unknown>;
+  for (const field of ['uri', 'host', 'remote_addr', 'service_id', 'upstream_id', 'plugin_config_id', 'filter_func', 'script', 'script_id', 'name', 'desc']) {
+    if (typeof payload[field] === 'string' && !payload[field].trim()) delete payload[field];
+  }
+  for (const field of ['uris', 'hosts', 'remote_addrs', 'methods', 'vars']) {
+    if (Array.isArray(payload[field]) && payload[field].length === 0) delete payload[field];
+  }
+  // Inline Upstream controls also register empty optional strings. Clean only
+  // these known input paths, never arbitrary nested plugin/discovery data.
+  const upstream = draft.upstream;
+  if (upstream) {
+    for (const field of ['name', 'desc', 'service_name', 'discovery_type', 'key', 'upstream_host'] as const) {
+      if (typeof upstream[field] === 'string' && !upstream[field].trim()) delete upstream[field];
     }
-    if (normalized) d[field] = normalized;
-  });
-
-  const optionalArrayFields = ['uris', 'hosts', 'remote_addrs', 'methods'];
-  optionalArrayFields.forEach((field) => {
-    const compacted = compactStringArray(d[field]);
-    if (!compacted) {
-      delete d[field];
-      return;
-    }
-    d[field] = compacted;
-  });
-
-  if (draft.vars && typeof draft.vars === 'string') {
-    try {
-      const parsed = JSON.parse(draft.vars);
-      if (Array.isArray(parsed)) {
-        d.vars = parsed
-          .filter((item): item is [unknown, unknown, unknown] =>
-            Array.isArray(item) && item.length >= 3
-          )
-          .map(([variable, operator, value]) => {
-            const normalizedVariable = normalizeString(variable);
-            const normalizedOperator = normalizeString(operator);
-            const normalizedValue = normalizeVarsValue(value);
-
-            if (!normalizedVariable || !normalizedOperator || normalizedValue === undefined) {
-              return undefined;
-            }
-            if (!VALID_VARS_OPERATORS.has(normalizedOperator)) {
-              return undefined;
-            }
-
-            return [normalizedVariable, normalizedOperator, normalizedValue] as [string, string, unknown];
-          })
-          .filter((item) => item !== undefined) as [string, string, unknown][];
-      } else {
-        delete draft.vars;
+    if (upstream.tls) {
+      for (const field of ['client_cert', 'client_key', 'client_cert_id'] as const) {
+        if (upstream.tls[field] === '') delete upstream.tls[field];
       }
-    } catch {
-      delete draft.vars;
+    }
+    if (upstream.checks?.active) {
+      for (const field of ['host', 'http_path'] as const) {
+        if (upstream.checks.active[field] === '') delete upstream.checks.active[field];
+      }
     }
   }
-  if (draft.vars === '' || draft.vars === undefined) {
-    delete draft.vars;
-  }
-  if (Array.isArray(d.vars) && d.vars.length === 0) {
-    delete d.vars;
-  }
-
-  // Enforce mutual exclusivity: prefer singular over plural if both exist
-  if (d.uri && d.uris) {
-    delete d.uris;
-  }
-  if (d.host && d.hosts) {
-    delete d.hosts;
-  }
-  if (d.remote_addr && d.remote_addrs) {
-    delete d.remote_addrs;
+  // Only top-level UI flags belong to this form. Never recursively clean plugin
+  // configs or vars: empty strings, nulls and nested expressions can be meaningful.
+  for (const field of Object.keys(payload)) {
+    if (field.startsWith('__')) delete payload[field];
   }
 });
 
-const produceRouteTargetPrecedence = produce((draft: RoutePostType) => {
-  if (draft.service_id) {
-    delete draft.upstream_id;
-    delete draft.upstream;
-    return;
-  }
-  if (draft.upstream_id) {
-    delete draft.upstream;
-  }
-});
-
-export const produceRoute = pipeProduce(
-  produceRouteTargetPrecedence,
-  produceVarsToAPI
-);
+// Compare and preview exactly what JSON transport sends. RHF keeps cleared
+// fields as undefined; readback must treat those keys as absent/deleted.
+export const produceRoute = (data: RoutePostType): RoutePostType =>
+  JSON.parse(JSON.stringify(produceVarsToAPI(data)));

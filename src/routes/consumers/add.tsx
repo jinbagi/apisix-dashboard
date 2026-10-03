@@ -30,14 +30,15 @@ import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { refreshResourceCaches } from '@/utils/resourceCache';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const ConsumerAddForm = () => {
   const router = useRouter();
 
   const putConsumer = useMutation({
     mutationFn: async (d: APISIXType['ConsumerPut']) => {
-      const payload = pipeProduce()(d);
+      const payload = prepareResourceFormPayload(d);
       const response = await putConsumerReq(req, payload);
       await verifyAdminApiResource(
         `${API_CONSUMERS}/${payload.username}`,
@@ -46,6 +47,7 @@ const ConsumerAddForm = () => {
       return { response, username: payload.username };
     },
     async onSuccess({ username }) {
+      await refreshResourceCaches('consumers', API_CONSUMERS);
       showNotification({
         message: 'Consumer created and verified',
         type: 'success',
@@ -66,15 +68,15 @@ const ConsumerAddForm = () => {
   });
 
   const form = useForm({
-    resolver: zodResolver(APISIX.ConsumerPut),
-    shouldUnregister: true,
+    resolver: zodResolver(APISIX.ConsumerPut, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
   });
 
   return (
     <FormProvider {...form}>
-      <FormJsonTabs form={form} onSubmit={(d) => putConsumer.mutateAsync(d)} schema={APISIX.ConsumerPut} submitLabel="Add">
+      <FormJsonTabs preparePayload={prepareResourceFormPayload} form={form} onSubmit={(d) => putConsumer.mutateAsync(d)} schema={APISIX.ConsumerPut} submitLabel="Add">
         <FormPartConsumer />
       </FormJsonTabs>
     </FormProvider>

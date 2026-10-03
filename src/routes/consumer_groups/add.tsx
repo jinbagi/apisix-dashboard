@@ -32,14 +32,15 @@ import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { refreshResourceCaches } from '@/utils/resourceCache';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const ConsumerGroupAddForm = () => {
   const router = useRouter();
 
   const putConsumerGroup = useMutation({
     mutationFn: async (d: APISIXType['ConsumerGroupPut']) => {
-      const payload = pipeProduce()(d);
+      const payload = prepareResourceFormPayload(d);
       const response = await putConsumerGroupReq(req, payload);
       await verifyAdminApiResource(
         `${API_CONSUMER_GROUPS}/${payload.id}`,
@@ -48,6 +49,7 @@ const ConsumerGroupAddForm = () => {
       return response;
     },
     async onSuccess(response) {
+      await refreshResourceCaches('consumer_groups', API_CONSUMER_GROUPS);
       showNotification({
         message: 'Consumer Group created and verified',
         type: 'success',
@@ -68,8 +70,8 @@ const ConsumerGroupAddForm = () => {
   });
 
   const form = useForm({
-    resolver: zodResolver(APISIX.ConsumerGroupPut),
-    shouldUnregister: true,
+    resolver: zodResolver(APISIX.ConsumerGroupPut, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
     defaultValues: {
@@ -79,9 +81,9 @@ const ConsumerGroupAddForm = () => {
 
   return (
     <FormProvider {...form}>
-      <FormJsonTabs form={form} onSubmit={(d) => putConsumerGroup.mutateAsync(d)} schema={APISIX.ConsumerGroupPut} submitLabel="Add">
+      <FormJsonTabs preparePayload={prepareResourceFormPayload} form={form} onSubmit={(d) => putConsumerGroup.mutateAsync(d)} schema={APISIX.ConsumerGroupPut} submitLabel="Add">
         <FormSectionGeneral />
-        <FormPartPluginConfig basicProps={{ showName: false }} />
+        <FormPartPluginConfig basicProps={{}} />
       </FormJsonTabs>
     </FormProvider>
   );

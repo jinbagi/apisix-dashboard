@@ -44,7 +44,7 @@ test('should navigate to plugin configs page', async ({ page }) => {
     // list table exists
     const table = page.getByRole('table');
     await expect(table).toBeVisible();
-    await expect(table.getByRole('columnheader', { name: 'ID' })).toBeVisible();
+    await expect(table.getByRole('columnheader', { name: 'ID', exact: true })).toBeHidden();
     await expect(
       table.getByRole('columnheader', { name: 'Name' })
     ).toBeVisible();
@@ -98,7 +98,7 @@ test.describe('page and page_size should work correctly', () => {
     // filter the item which not in the current page
     // it should be random, so we need get all items in the table
     const itemsInPage = await page
-      .getByRole('cell', { name: /plugin_config_name_/ })
+      .getByRole('link', { name: /plugin_config_name_/ })
       .all();
     const names = await Promise.all(itemsInPage.map((v) => v.textContent()));
     return pluginConfigs.filter((d) => !names.includes(d.name));

@@ -16,7 +16,7 @@
  */
 import { Alert, Button, theme, Typography } from 'antd';
 import type { PropsWithChildren, ReactNode } from 'react';
-import { useFieldArray, useFormContext, useFormState } from 'react-hook-form';
+import { useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { FormItemTextareaWithUpload } from '@/components/form/TextareaWithUpload';
 import IconDelete from '~icons/material-symbols/delete-forever-outline';
@@ -76,8 +76,11 @@ const CertKeyPairList = () => {
   const keys = useFieldArray({
     name: 'keys',
   });
-  const pairCount = 1 + certs.fields.length;
-  const hasMismatchedPairs = certs.fields.length !== keys.fields.length;
+  const certValues = useWatch<SSLPostType, 'certs'>({ name: 'certs' });
+  const keyValues = useWatch<SSLPostType, 'keys'>({ name: 'keys' });
+  const additionalCount = Math.max(certValues?.length ?? 0, keyValues?.length ?? 0);
+  const pairCount = 1 + additionalCount;
+  const hasMismatchedPairs = (certValues?.length ?? 0) !== (keyValues?.length ?? 0);
   return (
     <>
       <div style={{ marginBottom: 8 }}>
@@ -90,13 +93,13 @@ const CertKeyPairList = () => {
           type="warning"
           showIcon
           message="Certificate and key arrays are out of sync."
-          description="Each additional certificate must have a private key at the same position. Remove and re-add pairs if the arrays no longer line up."
+          description="Each additional certificate must have a private key at the same position. Fill the missing certificate or key below, or remove the incomplete pair."
           style={{ marginBottom: 12 }}
         />
       )}
-      {certs.fields.map((cert, idx) => (
+      {Array.from({ length: additionalCount }, (_, idx) => (
         <PairWrapper
-          key={cert.id}
+          key={certs.fields[idx]?.id ?? keys.fields[idx]?.id ?? idx}
           description={`Certificate ${idx + 2} is submitted with Private Key ${idx + 2}.`}
           legend={
             !certsState.disabled && (
@@ -115,19 +118,17 @@ const CertKeyPairList = () => {
           }
         >
           <FormItemTextareaWithUpload
-            key={cert.id}
             name={`certs.${idx}`}
             label={`Certificate ${idx + 2}`}
             description={SECRET_REF_HINT}
+            required
           />
-          {keys.fields[idx] && (
-            <FormItemTextareaWithUpload
-              key={keys.fields[idx].id}
-              name={`keys.${idx}`}
-              label={`Private Key ${idx + 2}`}
-              description={SECRET_REF_HINT}
-            />
-          )}
+          <FormItemTextareaWithUpload
+            name={`keys.${idx}`}
+            label={`Private Key ${idx + 2}`}
+            required
+            description={SECRET_REF_HINT}
+          />
         </PairWrapper>
       ))}
       {!certsState.disabled && (

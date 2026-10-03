@@ -28,6 +28,8 @@ import {
   useState,
 } from 'react';
 
+import { FormTOCCtx } from '@/utils/form-context';
+import { revealFormTarget, useRevealFormSection } from '@/utils/formNavigation';
 import { useShallowEffect } from '@/utils/hooks';
 import IconExpandMore from '~icons/material-symbols/expand-more';
 
@@ -40,12 +42,6 @@ const SectionDepthProvider = SectionDepthCtx.Provider;
 const tocSelector = 'form-section';
 const tocValue = 'data-label';
 const tocDepth = 'data-depth';
-
-const FormTOCCtx = createContext<{
-  refreshTOC: () => void;
-}>({
-  refreshTOC: () => {},
-});
 
 type TOCItem = {
   id: string;
@@ -147,6 +143,8 @@ export const FormSection = (props: FormSectionProps) => {
   );
   const [open, setOpen] = useState(defaultOpen ?? true);
 
+  const sectionRef = useRevealFormSection(useCallback(() => setOpen(true), []));
+
   // refresh TOC when children changes
   useShallowEffect(refreshTOC, [children]);
 
@@ -158,6 +156,7 @@ export const FormSection = (props: FormSectionProps) => {
     return (
       <SectionDepthProvider value={depth}>
         <Card
+          ref={sectionRef}
           size="small"
           title={
             <LegendGroup
@@ -179,7 +178,7 @@ export const FormSection = (props: FormSectionProps) => {
           {...(restProps as React.HTMLAttributes<HTMLDivElement>)}
         >
           <div className={clsx(classes.collapsibleContainer, open && classes.collapsibleContainerOpen)}>
-            <div className={classes.collapsibleContent}>
+            <div className={classes.collapsibleContent} inert={!open} aria-hidden={!open}>
               <fieldset disabled={disabled} style={{ minWidth: 0, border: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
                 {children}
               </fieldset>
@@ -232,7 +231,7 @@ export const FormTOCBox = (props: FormTOCBoxProps) => {
         const excludedParent = node.parentElement?.closest(
           '[data-toc-exclude-descendants="true"]'
         );
-        return !collapsedParent && !excludedParent;
+        return !collapsedParent && !excludedParent && !node.closest('.ant-tabs-tabpane-hidden');
       });
       const nextItems = nodes
         .map((node, index) => {
@@ -286,7 +285,11 @@ export const FormTOCBox = (props: FormTOCBoxProps) => {
   }, [items]);
 
   const handleTOCClick = useCallback((id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const target = document.getElementById(id);
+    if (target) {
+      revealFormTarget(target);
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
     setActiveId(id);
   }, []);
 
@@ -307,6 +310,7 @@ export const FormTOCBox = (props: FormTOCBoxProps) => {
                 <button
                   key={item.id}
                   type="button"
+                  aria-current={activeId === item.id ? 'location' : undefined}
                   className={clsx(classes.tocItem, activeId === item.id && classes.tocItemActive)}
                   style={{ paddingInlineStart: 10 + Math.max(item.depth - 1, 0) * 12 }}
                   onClick={() => handleTOCClick(item.id)}

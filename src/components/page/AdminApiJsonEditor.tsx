@@ -19,13 +19,17 @@ import type { editor } from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ZodIssue } from 'zod';
 
+import { JsonChangeReview } from '@/components/form/JsonChangeReview';
 import { JsonCodeEditor } from '@/components/form/JsonCodeEditor';
 import { JsonSchemaGuide } from '@/components/form/JsonSchemaGuide';
+import { ConfigurationImpact } from '@/components/page/ConfigurationImpact';
+import { LocalRawDraft } from '@/components/page/LocalRawDraft';
 import { queryClient } from '@/config/global';
 import { req } from '@/config/req';
 import {
   buildPatchPayload,
   getChangedTopLevelReadonlyKeys,
+  getPatchConflictPaths,
   getPatchMismatchPaths,
   isRecord,
   restorePatchReadonlyFields,
@@ -143,6 +147,8 @@ export const AdminApiJsonEditor = ({
   const [original, setOriginal] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [review, setReview] = useState<{ original: string; modified: string } | null>(null);
+  const [conflict, setConflict] = useState<{ latest: Record<string, unknown>; paths: string[]; draft: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saveFeedback, setSaveFeedback] = useState<SaveFeedback | null>(null);
   const [resourceBase, setResourceBase] = useState<Record<string, unknown>>({});
@@ -181,6 +187,7 @@ export const AdminApiJsonEditor = ({
     setValue(json);
     setOriginal(json);
     setError(null);
+    setConflict(null);
     userEditedRef.current = false;
   }, [api]);
 
@@ -271,7 +278,7 @@ export const AdminApiJsonEditor = ({
   }, [active, api, autoFetch, initialData, loadData]);
 
   const handleSave = useCallback(async () => {
-    if (saving || disabled) return;
+    if (saving || loading || disabled) return;
     setError(null);
     setSaveFeedback(null);
 
@@ -335,8 +342,20 @@ export const AdminApiJsonEditor = ({
     }
 
     setSaving(true);
+    setReview(null);
     let patchAccepted = false;
     try {
+      const latestResponse = await req.get(api);
+      const latest = latestResponse.data?.value;
+      if (!isRecord(latest)) {
+        throw new Error('Could not check the latest resource. No changes were sent.');
+      }
+      const normalizedLatest = normalizeApiResource(api, latest);
+      const paths = getPatchConflictPaths(payload, previous, stripPatchReadonlyFields(normalizedLatest));
+      if (paths.length > 0) {
+        setConflict({ latest: normalizedLatest, paths, draft: toJson(editableParsed) });
+        return;
+      }
       try {
         await req.patch(api, payload);
         patchAccepted = true;
@@ -383,7 +402,17 @@ export const AdminApiJsonEditor = ({
     } finally {
       setSaving(false);
     }
-  }, [api, disabled, loadData, onSaved, original, resourceBase, saving, value]);
+  }, [api, disabled, loadData, loading, onSaved, original, resourceBase, saving, value]);
+
+  const handleReview = () => {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (!isRecord(parsed)) throw new Error('Payload must be a JSON object');
+      setReview({ original, modified: toJson(parsed) });
+    } catch (e) {
+      setError('Cannot review invalid JSON: ' + String(e));
+    }
+  };
 
   const handleFormat = useCallback(() => {
     setError(null);
@@ -478,6 +507,7 @@ export const AdminApiJsonEditor = ({
           value={value}
           title="Required fields and schema validation"
           compact
+          collapsible
           validAlertType="info"
           validMessage={null}
           ignoredPaths={[...identityPaths, 'create_time', 'update_time']}
@@ -524,9 +554,19 @@ export const AdminApiJsonEditor = ({
                   ? `Saved at ${saveFeedback.at}`
                   : 'No pending changes'}
           </Typography.Text>
-          <Space>
+          <Space wrap>
+            <ConfigurationImpact api={api} disabled={saving || loading} />
+            <LocalRawDraft key={api} api={api} snapshot={{ original, value }} disabled={saving || loading || !original}
+              onRestore={(draft, latest) => {
+                setResourceBase(normalizeApiResource(api, latest));
+                setOriginal(draft.original);
+                setValue(draft.value);
+                userEditedRef.current = true;
+                setError(null);
+                setSaveFeedback({ type: 'warning', message: 'Local draft restored. Review and save to apply it to APISIX.', at: new Date().toLocaleTimeString() });
+              }} />
             <Tooltip title="Format Admin API JSON">
-              <Button size="small" onClick={handleFormat}>Format</Button>
+              <Button size="small" onClick={handleFormat} disabled={saving || loading}>Format</Button>
             </Tooltip>
             <Tooltip title="Copy Admin API JSON">
               <Button size="small" onClick={handleCopy}>Copy</Button>
@@ -534,12 +574,16 @@ export const AdminApiJsonEditor = ({
             <Button
               size="small"
               onClick={handleResetDraft}
-              disabled={!isDirty}
+              disabled={!isDirty || saving || loading}
             >
               Reset
             </Button>
+            <Button onClick={handleReview} disabled={!isDirty || saving || loading}>
+              Review changes
+            </Button>
             <Button
               type="primary"
+              aria-label="Save Changes"
               loading={saving}
               onClick={handleSave}
               disabled={!isDirty || loading}
@@ -549,6 +593,29 @@ export const AdminApiJsonEditor = ({
           </Space>
         </Space>
       )}
+      <JsonChangeReview
+        open={conflict !== null}
+        title="Resolve concurrent changes"
+        description={`Nothing was saved. These fields changed in APISIX while you were editing: ${conflict?.paths.join(', ') ?? ''}. Compare the latest server value (left) with your draft (right). Keep editing preserves your draft; using the latest value discards it.`}
+        original={conflict ? toJson(stripPatchReadonlyFields(conflict.latest)) : ''}
+        modified={conflict?.draft ?? ''}
+        confirmText="Use latest and discard draft"
+        onCancel={() => setConflict(null)}
+        onSave={() => {
+          if (conflict) loadData(conflict.latest);
+        }}
+      />
+      <JsonChangeReview
+        open={review !== null}
+        original={review?.original ?? ''}
+        modified={review?.modified ?? ''}
+        saving={saving}
+        onCancel={() => setReview(null)}
+        onSave={async () => {
+          setReview(null);
+          await handleSave();
+        }}
+      />
     </div>
   );
 };

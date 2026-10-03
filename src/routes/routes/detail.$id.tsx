@@ -43,11 +43,15 @@ import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
+import { RouteConfigurationExplanation } from '@/components/page/RouteConfigurationExplanation';
 import { StatusSwitch } from '@/components/StatusTag';
 import { API_ROUTES } from '@/config/constant';
 import { req } from '@/config/req';
 import { type APISIXType } from '@/types/schema/apisix';
+import { verifyAdminApiResource } from '@/utils/adminApiVerification';
+import { buildPatchPayload, stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
+import { refreshResourceCaches } from '@/utils/resourceCache';
 
 type Props = {
   id: string;
@@ -61,8 +65,8 @@ const RouteDetailForm = (props: Props) => {
   const { data: routeData, refetch } = routeQuery;
 
   const form = useForm({
-    resolver: zodResolver(RoutePutSchema),
-    shouldUnregister: true,
+    resolver: zodResolver(RoutePutSchema, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
   });
@@ -83,13 +87,22 @@ const RouteDetailForm = (props: Props) => {
   }, [enforcedValues, routeData, form]);
 
   const putRoute = useMutation({
-    mutationFn: (d: RoutePutType) =>
-      putRouteReq(
-        req,
-        produceRoute({ ...d, ...enforcedValues }) as APISIXType['Route']
-      ),
+    mutationFn: async (d: RoutePutType) => {
+      const payload = produceRoute({ ...d, ...enforcedValues }) as APISIXType['Route'];
+      const response = await putRouteReq(req, payload);
+      await verifyAdminApiResource(
+        `${API_ROUTES}/${id}`,
+        buildPatchPayload(
+          stripSystemReadonlyFields(payload),
+          stripSystemReadonlyFields(routeData.value)
+        ),
+        { ignoredPaths: ['upstream.tls.client_key'] }
+      );
+      return response;
+    },
     async onSuccess() {
       await refetch({ throwOnError: true });
+      await refreshResourceCaches('routes', API_ROUTES);
       showNotification({
         message: 'Route saved and reloaded from APISIX',
         type: 'success',
@@ -102,6 +115,7 @@ const RouteDetailForm = (props: Props) => {
       <FormProvider {...form}>
         <FormJsonTabs
           form={form}
+        preparePayload={produceRoute}
           onSubmit={(d) => putRoute.mutateAsync(d)}
           submitLabel="Save"
           rawData={routeData?.value}
@@ -129,7 +143,8 @@ export const RouteDetail = (props: RouteDetailProps) => {
         title={`Route: ${routeData.value.name || id}`}
         desc={`ID: ${id} - Matches incoming traffic and resolves it through a Service or directly to an Upstream.`}
         extra={(
-          <Space>
+          <Space wrap>
+            <RouteConfigurationExplanation id={id} />
             <StatusSwitch api={`${API_ROUTES}/${id}`} />
             <Link to="/routes/add" search={{ clone_from: id }}>
               <Button size="small">Clone</Button>

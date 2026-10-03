@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 import { theme,Typography } from 'antd';
+import { useEffect } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import { FormItemLabels } from '@/components/form/Labels';
@@ -156,9 +157,16 @@ const FormSectionChecksActive = () => {
 };
 
 const FormItemChecksPassiveEnabled = () => {
-  const { control } = useFormContext<FormPartUpstreamType>();
+  const { control, unregister, setValue } = useFormContext<FormPartUpstreamType>();
+  const np = useNamePrefix();
   return (
     <FormItemSwitch
+      onChange={(enabled) => {
+        if (!enabled) {
+          unregister(np('checks.passive'));
+          setValue(np('checks.passive'), undefined, { shouldDirty: true });
+        }
+      }}
       control={control}
       name="__checksPassiveEnabled"
       data-testid="checksPassiveEnabled"
@@ -255,9 +263,16 @@ const FormSectionChecksPassive = () => {
 };
 
 const FormItemChecksEnabled = () => {
-  const { control } = useFormContext<FormPartUpstreamType>();
+  const { control, unregister, setValue } = useFormContext<FormPartUpstreamType>();
+  const np = useNamePrefix();
   return (
     <FormItemSwitch
+      onChange={(enabled) => {
+        if (!enabled) {
+          unregister(np('checks'));
+          setValue(np('checks'), undefined, { shouldDirty: true });
+        }
+      }}
       control={control}
       name="__checksEnabled"
       data-testid="checksEnabled"
@@ -292,6 +307,15 @@ const FormSectionChecksCore = () => {
 };
 
 export const FormSectionChecks = () => {
+  const { control, setValue } = useFormContext<FormPartUpstreamType>();
+  const np = useNamePrefix();
+  const checks = useWatch({ control, name: np('checks') });
+  const enabled = useWatch({ control, name: '__checksEnabled' });
+  const passiveEnabled = useWatch({ control, name: '__checksPassiveEnabled' });
+  useEffect(() => {
+    if (enabled === undefined) setValue('__checksEnabled', !!checks);
+    if (passiveEnabled === undefined) setValue('__checksPassiveEnabled', !!checks?.passive);
+  }, [checks, enabled, passiveEnabled, setValue]);
   return (
     <FormSection
       legend="Health Checks"

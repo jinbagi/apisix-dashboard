@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { type FieldValues,useFormContext } from 'react-hook-form';
+import { type FieldValues, useFormContext } from 'react-hook-form';
 
 import type { APISIXType } from '@/types/schema/apisix';
 
@@ -22,21 +22,28 @@ import {
   FormItemTextareaWithUpload,
   type FormItemTextareaWithUploadProps,
 } from '../form/TextareaWithUpload';
+import { FormPartBasic } from './FormPartBasic';
 
 const fileTypes = '.proto,.pb';
 export const FormPartProto = <T extends FieldValues>(
-  props: Pick<FormItemTextareaWithUploadProps<T>, 'allowUpload'>
+  { showID = true, ...props }: Pick<
+    FormItemTextareaWithUploadProps<T>,
+    'allowUpload'
+  > & { showID?: boolean }
 ) => {
   const form = useFormContext<APISIXType['ProtoPost']>();
   return (
-    <FormItemTextareaWithUpload
-      name="content"
-      label="Content"
-      placeholder={`Paste or upload ${fileTypes} file`}
-      control={form.control}
-      minRows={10}
-      acceptFileTypes={fileTypes}
-      {...props}
-    />
+    <>
+      <FormPartBasic showID={showID} />
+      <FormItemTextareaWithUpload
+        name="content"
+        label="Content"
+        placeholder={`Paste or upload ${fileTypes} file`}
+        control={form.control}
+        minRows={10}
+        acceptFileTypes={fileTypes}
+        {...props}
+      />
+    </>
   );
 };

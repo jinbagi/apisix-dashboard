@@ -33,18 +33,16 @@ import { req } from '@/config/req';
 import { SERVICE_REQUIRED_TEMPLATE } from '@/config/resourceTemplates';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
-import { produceRmUpstreamWhenHas } from '@/utils/form-producer';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { refreshResourceCaches } from '@/utils/resourceCache';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const ServiceAddForm = ({ defaultValues }: { defaultValues?: ServicePostType }) => {
   const router = useRouter();
 
   const postService = useMutation({
     mutationFn: async (d: ServicePostType) => {
-      const payload = pipeProduce(
-        produceRmUpstreamWhenHas('upstream_id')
-      )(d);
+      const payload = prepareResourceFormPayload(d);
       const response = await postServiceReq(
         req,
         payload
@@ -58,6 +56,7 @@ const ServiceAddForm = ({ defaultValues }: { defaultValues?: ServicePostType }) 
       return response;
     },
     async onSuccess(response) {
+      await refreshResourceCaches('services', API_SERVICES);
       showNotification({
         message: 'Service created and verified',
         type: 'success',
@@ -78,8 +77,8 @@ const ServiceAddForm = ({ defaultValues }: { defaultValues?: ServicePostType }) 
   });
 
   const form = useForm({
-    resolver: zodResolver(ServicePostSchema),
-    shouldUnregister: true,
+    resolver: zodResolver(ServicePostSchema, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
     defaultValues,
@@ -88,6 +87,7 @@ const ServiceAddForm = ({ defaultValues }: { defaultValues?: ServicePostType }) 
   return (
     <FormProvider {...form}>
       <FormJsonTabs
+        preparePayload={prepareResourceFormPayload}
         form={form}
         onSubmit={(d) => postService.mutateAsync(d)}
         schema={ServicePostSchema}

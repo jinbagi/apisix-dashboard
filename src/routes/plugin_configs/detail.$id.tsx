@@ -32,13 +32,15 @@ import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartPluginConfig } from '@/components/form-slice/FormPartPluginConfig';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
+import { ConfigurationImpact } from '@/components/page/ConfigurationImpact';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
 import { API_PLUGIN_CONFIGS } from '@/config/constant';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { refreshResourceCaches } from '@/utils/resourceCache';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
   id: string;
@@ -55,9 +57,10 @@ const PluginConfigDetailForm = (props: Props) => {
 
   const putPluginConfig = useMutation({
     mutationFn: (d: APISIXType['PluginConfigPut']) =>
-      putPluginConfigReq(req, pipeProduce()({ ...d, id })),
+      putPluginConfigReq(req, prepareResourceFormPayload({ ...d, id })),
     async onSuccess() {
       await pluginConfigQuery.refetch({ throwOnError: true });
+      await refreshResourceCaches('plugin_configs', API_PLUGIN_CONFIGS);
       showNotification({
         message: 'Plugin Config saved and reloaded from APISIX',
         type: 'success',
@@ -66,8 +69,8 @@ const PluginConfigDetailForm = (props: Props) => {
   });
 
   const form = useForm({
-    resolver: zodResolver(APISIX.PluginConfigPut),
-    shouldUnregister: true,
+    resolver: zodResolver(APISIX.PluginConfigPut, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
     disabled: readOnly,
@@ -83,6 +86,7 @@ const PluginConfigDetailForm = (props: Props) => {
   return (
     <FormProvider {...form}>
       <FormJsonTabs
+        preparePayload={prepareResourceFormPayload}
         form={form}
         onSubmit={(d) => putPluginConfig.mutateAsync(d)}
         submitLabel="Save"
@@ -107,7 +111,8 @@ function RouteComponent() {
       <PageHeader showBackBtn
         title={`Plugin Config: ${id}`}
         extra={(
-          <Space>
+          <Space wrap>
+            <ConfigurationImpact api={`${API_PLUGIN_CONFIGS}/${id}`} />
             <DeleteResourceBtn
               mode="detail"
               name="Plugin Config"

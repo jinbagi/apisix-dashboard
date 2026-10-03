@@ -21,6 +21,11 @@ import { APISIXPlugins } from './plugins';
 import { APISIXUpstreams } from './upstreams';
 
 const FreeObject = z.record(z.unknown());
+// APISIX 3.19 schema_def.lua host_def_pat, including wildcard SNI patterns.
+const StreamRouteSNI = z.string().regex(
+  /^\*$|^\*?[0-9a-zA-Z._[\]:-]+$/,
+  'Use a valid SNI hostname or wildcard pattern'
+);
 
 const StreamRouteProtocolLoggerItem = z.object({
   name: z.string(),
@@ -40,6 +45,10 @@ const StreamRoute = z
     server_port: z.number().int().gte(1).lte(65535).optional(),
     remote_addr: z.string().optional(),
     sni: z.string().optional(),
+    snis: z.array(StreamRouteSNI).min(1, 'At least one SNI is required')
+      .refine((values) => new Set(values).size === values.length, 'SNIs must be unique')
+      .optional(),
+    tls_passthrough: z.boolean().optional(),
     plugins: APISIXPlugins.Plugins.optional(),
     upstream: APISIXUpstreams.Upstream.omit({ id: true }).optional(),
     upstream_id: z.string().optional(),

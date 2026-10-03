@@ -28,6 +28,15 @@ const AI_BINDING_PLUGINS = new Set([
   'ai-prompt-guard',
 ]);
 
+const REDIS_SERVER_NAME_PLUGINS = new Set([
+  'ai-cache',
+  'ai-rate-limiting',
+  'graphql-limit-count',
+  'limit-count',
+  'limit-conn',
+  'limit-req',
+]);
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
 
@@ -105,6 +114,87 @@ export const getPluginCompatibilityNotices = (
           'Move this value to session.absolute_timeout. APISIX currently maps the legacy field only when absolute_timeout is not configured.',
       });
     }
+  }
+
+  if (name === 'websocket-proxy') {
+    notices.push({
+      key: 'websocket-frame-limits',
+      type: 'info',
+      message: 'Use a ws or wss upstream',
+      description:
+        'These limits apply to ws/wss frame processing, not the enable_websocket relay. Each direction defaults to 65535 bytes. The receive limit bounds each frame; the relay send limit also bounds a complete message assembled from fragments.',
+    });
+  }
+
+  if (name === 'openapi-to-mcp') {
+    notices.push({
+      key: 'mcp-transport',
+      type: 'info',
+      message: 'Choose the MCP transport for your deployment',
+      description:
+        'Streamable HTTP is stateless. SSE sessions stay on one APISIX instance and need session affinity behind a load balancer. Replace the OpenAPI document URL and API base URL before saving.',
+    });
+  }
+
+  if (name === 'graphql-limit-count' && ['complexity', 'node_quantifier'].includes(String(config.cost_strategy))) {
+    notices.push({
+      key: 'graphql-service-cost',
+      type: 'info',
+      message: 'Configure cost decorations on the owning Service',
+      description:
+        'These strategies use Service field decorations and upstream schema introspection. Without decorations, complexity counts nodes and node_quantifier charges 1. Queries above max_cost return 403 after consuming quota.',
+    });
+  }
+
+  if (name === 'ai-proxy-multi' && Array.isArray(config.fallback_http_statuses) && config.fallback_http_statuses.length > 0) {
+    const semantic = isRecord(config.balancer) && config.balancer.algorithm === 'semantic';
+    notices.push({
+      key: 'ai-status-fallback',
+      type: semantic ? 'warning' : 'info',
+      message: semantic ? 'Semantic balancing does not retry HTTP failures' : 'Bound retries for selected HTTP statuses',
+      description:
+        'fallback_http_statuses selects additional 400–599 responses to retry on another instance. max_retries and retry_on_failure_within_ms bound these retries. Semantic balancing does not use this fallback.',
+    });
+  }
+
+  if (name === 'saml-auth' && hasValue(config.replay_dict)) {
+    notices.push({
+      key: 'saml-replay-scope',
+      type: 'info',
+      message: 'Assertion replay records are local to each APISIX node',
+      description:
+        'replay_dict must name a declared shared dictionary. When it fills, assertions are accepted without recording and APISIX logs an error. Use sp_acs_url for the browser-facing callback URL behind a proxy.',
+    });
+  }
+
+  if (name === 'batch-requests') {
+    notices.push({
+      key: 'batch-response-limits',
+      type: 'info',
+      message: 'Response limits are global plugin metadata',
+      description:
+        'APISIX 3.19 limits each subresponse to 1 MiB and combined response bodies to 10 MiB by default. Configure positive max_response_body_size and max_response_body_size_total byte values in Plugin Metadata. Exceeding either limit returns 502.',
+    });
+  }
+
+  if (name === 'chaitin-waf' && isRecord(config.config) && config.config.log_resp === true) {
+    notices.push({
+      key: 'chaitin-response-log',
+      type: 'info',
+      message: 'Response reporting is asynchronous',
+      description:
+        'resp_body_size limits buffered response content in KiB. extra_ignored_content_types excludes additional types. Reporting happens after the client response and does not block or rewrite it.',
+    });
+  }
+
+  if (REDIS_SERVER_NAME_PLUGINS.has(name) && config.policy === 'redis' && config.redis_ssl === true && config.redis_ssl_verify === true) {
+    notices.push({
+      key: 'redis-server-name',
+      type: 'info',
+      message: 'Redis TLS verifies the configured server name',
+      description:
+        'Set redis_server_name to the certificate DNS name when redis_host is an IP address or alias. Otherwise redis_host supplies the name. IP literals do not enable SNI or a hostname check. Cluster and Sentinel use separate settings.',
+    });
   }
 
   return notices;

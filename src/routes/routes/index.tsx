@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 import type { ProColumns } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Button, Space, Tag, Typography } from 'antd';
 import { useMemo, useState } from 'react';
@@ -29,6 +28,7 @@ import { LabelSearchInput } from '@/components/page/LabelSearchInput';
 import PageHeader from '@/components/page/PageHeader';
 import { RawDrawer } from '@/components/page/RawDrawer';
 import { ResourceSortSelect } from '@/components/page/ResourceSortSelect';
+import { ResourceTable } from '@/components/page/ResourceTable';
 import { SearchInput } from '@/components/page/SearchInput';
 import { ToAddPageBtn } from '@/components/page/ToAddPageBtn';
 import { StatusSwitch } from '@/components/StatusTag';
@@ -39,6 +39,7 @@ import { queryClient } from '@/config/global';
 import type { APISIXType } from '@/types/schema/apisix';
 import { pageSearchSchema } from '@/types/schema/pageSearch';
 import { getPluginFilterOptions, hasPluginName, renderPluginCount, renderUnixDateTime, unixFieldSorter } from '@/utils/columns';
+import { formatUpstreamNodeAddress } from '@/utils/upstreamNodes';
 import { useBulkActions } from '@/utils/useBulkActions';
 import type { ListPageKeys } from '@/utils/useTablePagination';
 
@@ -98,7 +99,7 @@ const RouteExpandedRow = ({ route }: { route: APISIXType['Route'] }) => {
             <Typography.Text style={{ fontSize: 'var(--app-font-size-md)' }}>
               <strong>Inline nodes:</strong>{' '}
               {Array.isArray(route.upstream.nodes)
-                ? route.upstream.nodes.map((n) => `${n.host}:${n.port}`).join(', ')
+                ? route.upstream.nodes.map(formatUpstreamNodeAddress).join(', ')
                 : Object.keys(route.upstream.nodes).join(', ')}
             </Typography.Text>
           )}
@@ -146,7 +147,7 @@ const RouteExpandedRow = ({ route }: { route: APISIXType['Route'] }) => {
 
 export const RouteList = (props: RouteListProps) => {
   const { routeKey, detailLink, defaultParams, tablePersistenceKey = 'table-v5:routes' } = props;
-  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort } = useRouteList(
+  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort, tableState } = useRouteList(
     routeKey,
     defaultParams
   );
@@ -293,7 +294,7 @@ export const RouteList = (props: RouteListProps) => {
           { text: 'Enabled', value: 1 },
           { text: 'Disabled', value: 0 },
         ],
-        onFilter: (value, record) => record.value.status === value,
+        onFilter: (value, record) => (record.value.status ?? 1) === value,
         render: (_, record) => (
           <StatusSwitch
             status={record.value.status ?? 1}
@@ -332,13 +333,20 @@ export const RouteList = (props: RouteListProps) => {
 
   return (
     <AntdConfigProvider>
-      <BulkDeleteBar
-        {...bulkBarProps}
-        resourceName="Route"
-        apiBase={API_ROUTES}
-        showStatusActions
-      />
-      <ProTable
+      <ResourceTable
+        tableState={tableState}
+        resourceName="Routes"
+        query={params.q ?? params.name ?? params.uri ?? ''}
+        label={params.label ?? ''}
+        onClearFilters={() => setParams({ q: undefined, name: undefined, uri: undefined, label: undefined, page: 1 })}
+        selectionActions={
+          <BulkDeleteBar
+            {...bulkBarProps}
+            resourceName="Route"
+            apiBase={API_ROUTES}
+            showStatusActions
+          />
+        }
         columns={columns}
         dataSource={data?.list}
         rowKey={(record) => record.value.id}

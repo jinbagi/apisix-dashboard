@@ -35,7 +35,8 @@ import type { APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { refreshResourceCaches } from '@/utils/resourceCache';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
   navigate: (res: APISIXType['RespStreamRouteDetail']) => Promise<void>;
@@ -47,7 +48,7 @@ export const StreamRouteAddForm = (props: Props) => {
 
   const postStreamRoute = useMutation({
     mutationFn: async (d: StreamRoutePostType) => {
-      const payload = pipeProduce()(d);
+      const payload = prepareResourceFormPayload(d);
       const response = await postStreamRouteReq(req, payload);
       const id = response.data.value.id;
       await verifyAdminApiResource(
@@ -57,6 +58,7 @@ export const StreamRouteAddForm = (props: Props) => {
       return response;
     },
     async onSuccess(response) {
+      await refreshResourceCaches('stream_routes', API_STREAM_ROUTES);
       showNotification({
         message: 'Stream Route created and verified',
         type: 'success',
@@ -74,8 +76,8 @@ export const StreamRouteAddForm = (props: Props) => {
   });
 
   const form = useForm({
-    resolver: zodResolver(StreamRoutePostSchema),
-    shouldUnregister: true,
+    resolver: zodResolver(StreamRoutePostSchema, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
     defaultValues,
@@ -83,7 +85,7 @@ export const StreamRouteAddForm = (props: Props) => {
 
   return (
     <FormProvider {...form}>
-      <FormJsonTabs form={form} onSubmit={(d) => postStreamRoute.mutateAsync(d)} schema={StreamRoutePostSchema} submitLabel="Add">
+      <FormJsonTabs preparePayload={prepareResourceFormPayload} form={form} onSubmit={(d) => postStreamRoute.mutateAsync(d)} schema={StreamRoutePostSchema} submitLabel="Add">
         <FormPartStreamRoute />
       </FormJsonTabs>
     </FormProvider>

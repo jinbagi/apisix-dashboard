@@ -35,10 +35,15 @@ const DisplayDate = () => {
   );
 };
 
-const FormItemID = () => {
+const FormItemID = ({ readOnly }: { readOnly: boolean }) => {
   const { control } = useFormContext<APISIXType['Info']>();
   return (
-    <FormItemTextInput control={control} name="id" label="ID" />
+    <FormItemTextInput
+      control={control}
+      name="id"
+      label="ID"
+      description={readOnly ? undefined : 'Use the generated ID or replace it with your own. You can also set id in Payload JSON.'}
+    />
   );
 };
 
@@ -58,7 +63,7 @@ export const FormSectionGeneral = (props: FormSectionGeneralProps) => {
   // Using disable directly on the component will cause rhf to ignore the value
   return (
     <FormSection legend="General" disabled={readOnly}>
-      {showID && <FormItemID />}
+      {showID && <FormItemID readOnly={readOnly} />}
       {showID && showDate && <Divider style={{ margin: '16px 0' }} />}
       <input type="hidden" {...register('create_time')} />
       <input type="hidden" {...register('update_time')} />

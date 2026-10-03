@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Alert, Button, Drawer, message, Space, Tabs, Tooltip, Typography } from 'antd';
+import { Alert, Button, Drawer, message, Modal, Space, Tabs, Tooltip, Typography } from 'antd';
 import { isEmpty, isNil } from 'rambdax';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
@@ -30,6 +30,7 @@ import {
   type JSONSchema,
   validateSchemaValue,
 } from '@/components/schema-form/schemaValidation';
+import { sortJsonKeys } from '@/utils/apisixEditable';
 import IconContentCopy from '~icons/material-symbols/content-copy';
 import IconFormatAlignLeft from '~icons/material-symbols/format-align-left';
 import IconRefresh from '~icons/material-symbols/refresh';
@@ -43,6 +44,7 @@ import {
   getPluginCompatibilityNotices,
   validatePluginCompatibility,
 } from './pluginCompatibility';
+import { getPluginTemplates } from './pluginTemplates';
 
 export type PluginConfig = { name: string; config: Record<string, unknown> };
 export type PluginEditorDrawerProps = Pick<PluginCardListProps, 'mode'> & {
@@ -89,6 +91,7 @@ export const PluginEditorDrawer = (props: PluginEditorDrawerProps) => {
     getEditableConfig(schema, config, mode)
   );
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
 
   const methods = useForm<{ config: string }>({
     criteriaMode: 'all',
@@ -99,12 +102,30 @@ export const PluginEditorDrawer = (props: PluginEditorDrawerProps) => {
     control: methods.control,
     name: 'config',
   });
-  const handleClose = () => {
+  const closeAndReset = () => {
+    setDiscardConfirmOpen(false);
     onClose();
     methods.reset();
     setFormValue(getEditableConfig(schema, config, mode));
     setActiveTab(defaultTab);
     setSaveError(null);
+  };
+
+  const hasDraftChanges = useMemo(() => {
+    if (mode === 'view') return false;
+    try {
+      const draft = activeTab === 'json' ? JSON.parse(jsonConfigText ?? '') : formValue;
+      return JSON.stringify(sortJsonKeys(draft)) !==
+        JSON.stringify(sortJsonKeys(getEditableConfig(schema, config, mode)));
+    } catch {
+      // Incomplete JSON is still valuable work, even though it cannot be saved yet.
+      return true;
+    }
+  }, [activeTab, config, formValue, jsonConfigText, mode, schema]);
+  const handleClose = () => {
+    if (methods.formState.isSubmitting) return;
+    if (hasDraftChanges) setDiscardConfirmOpen(true);
+    else closeAndReset();
   };
 
   useEffect(() => {
@@ -206,6 +227,9 @@ export const PluginEditorDrawer = (props: PluginEditorDrawerProps) => {
   ];
   const aiTemplates =
     mode === 'add' ? getAIGatewayTemplates(name) : [];
+  const pluginTemplates = mode === 'add'
+    ? getPluginTemplates(name, schema as JSONSchema | undefined)
+    : [];
   const compatibilityNotices = getPluginCompatibilityNotices(
     name,
     getCurrentConfig()
@@ -340,7 +364,7 @@ export const PluginEditorDrawer = (props: PluginEditorDrawerProps) => {
       }
       try {
         await onSave({ name, config: cfg });
-        handleClose();
+        closeAndReset();
       } catch (error) {
         setSaveError(
           `Save or verification failed: ${
@@ -373,7 +397,7 @@ export const PluginEditorDrawer = (props: PluginEditorDrawerProps) => {
         title={`${title}: ${name}`}
         footer={
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button onClick={handleClose}>
+            <Button onClick={handleClose} disabled={methods.formState.isSubmitting}>
               {mode === 'view' ? 'Close' : 'Cancel'}
             </Button>
             {mode !== 'view' && (
@@ -415,6 +439,15 @@ export const PluginEditorDrawer = (props: PluginEditorDrawerProps) => {
             }
             style={{ marginBottom: 12 }}
           />
+        )}
+        {pluginTemplates.length > 0 && (
+          <Space wrap style={{ marginBottom: 12 }}>
+            {pluginTemplates.map((template) => (
+              <Button key={template.label} onClick={() => applyTemplate(template.config)}>
+                {template.label}
+              </Button>
+            ))}
+          </Space>
         )}
         {compatibilityNotices.map((notice) => (
           <Alert
@@ -509,6 +542,19 @@ export const PluginEditorDrawer = (props: PluginEditorDrawerProps) => {
           )}
         </form>
       </Drawer>
+      <Modal
+        open={discardConfirmOpen}
+        title="Discard plugin changes?"
+        onCancel={() => setDiscardConfirmOpen(false)}
+        onOk={closeAndReset}
+        okText="Discard changes"
+        cancelText="Keep editing"
+        okButtonProps={{ danger: true }}
+        cancelButtonProps={{ autoFocus: true }}
+      >
+        Changes to {name} have not been applied. Keep editing to finish your
+        configuration, or discard this plugin draft.
+      </Modal>
     </FormProvider>
   );
 };

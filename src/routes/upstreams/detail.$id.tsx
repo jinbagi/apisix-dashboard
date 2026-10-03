@@ -38,6 +38,7 @@ import { FormPartUpstreamSchema } from '@/components/form-slice/FormPartUpstream
 import { produceToUpstreamForm } from '@/components/form-slice/FormPartUpstream/util';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
+import { ConfigurationImpact } from '@/components/page/ConfigurationImpact';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
 import { ReverseReferences } from '@/components/page/ReverseReferences';
@@ -45,7 +46,8 @@ import { API_UPSTREAMS } from '@/config/constant';
 import { req } from '@/config/req';
 import type { APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { refreshResourceCaches } from '@/utils/resourceCache';
+import { prepareUpstreamFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
   readOnly: boolean;
@@ -69,8 +71,8 @@ const UpstreamDetailForm = (
   } = useSuspenseQuery(getUpstreamQueryOptions(id));
 
   const form = useForm({
-    resolver: zodResolver(FormPartUpstreamSchema),
-    shouldUnregister: true,
+    resolver: zodResolver(FormPartUpstreamSchema, undefined, { raw: true }),
+    shouldUnregister: false,
     mode: 'all',
     disabled: readOnly,
   });
@@ -79,6 +81,7 @@ const UpstreamDetailForm = (
     mutationFn: (d: APISIXType['Upstream']) => putUpstreamReq(req, d),
     async onSuccess() {
       await refetch({ throwOnError: true });
+      await refreshResourceCaches('upstreams', API_UPSTREAMS);
       showNotification({
         message: 'Upstream saved and reloaded from APISIX',
         type: 'success',
@@ -99,8 +102,9 @@ const UpstreamDetailForm = (
   return (
     <FormProvider {...form}>
       <FormJsonTabs
+        preparePayload={prepareUpstreamFormPayload}
         form={form}
-        onSubmit={(d) => putUpstream.mutateAsync(pipeProduce()(d))}
+        onSubmit={(d) => putUpstream.mutateAsync(prepareUpstreamFormPayload(d))}
         submitLabel="Save"
         disabled={readOnly}
         rawData={upstreamData}
@@ -135,7 +139,8 @@ function RouteComponent() {
         title={`Upstream: ${upstream.name || id}`}
         desc={`ID: ${id} - Backend selection, load-balancing, connection, and health policy.`}
         extra={(
-          <Space>
+          <Space wrap>
+            <ConfigurationImpact api={`${API_UPSTREAMS}/${id}`} />
             <Link to="/services/add" search={{ upstream_id: id }}>
               <Button size="small">+ Service</Button>
             </Link>

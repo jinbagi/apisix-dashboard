@@ -16,6 +16,7 @@
  */
 import { Alert, Descriptions, theme, Typography } from 'antd';
 import dayjs from 'dayjs';
+import { useEffect } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import { FormItemNumberInput } from '@/components/form/NumberInput';
@@ -32,8 +33,13 @@ import { FormItemCertKeyList } from './FormItemCertKeyList';
 import type { SSLPostType } from './schema';
 
 const FormSectionClient = () => {
-  const { control } = useFormContext<SSLPostType>();
-  const clientEnabled = useWatch({ control, name: '__clientEnabled' });
+  const { control, unregister, setValue } = useFormContext<SSLPostType>();
+  const client = useWatch({ control, name: 'client' });
+  const clientFlag = useWatch({ control, name: '__clientEnabled' });
+  const clientEnabled = clientFlag ?? !!client;
+  useEffect(() => {
+    if (clientFlag === undefined) setValue('__clientEnabled', !!client);
+  }, [clientFlag, client, setValue]);
   const { token } = theme.useToken();
   return (
     <FormSection
@@ -42,6 +48,12 @@ const FormSectionClient = () => {
         <FormItemSwitch
           control={control}
           name="__clientEnabled"
+          onChange={(enabled) => {
+            if (!enabled) {
+              unregister('client');
+              setValue('client', undefined, { shouldDirty: true });
+            }
+          }}
           aria-label="Enable client certificate verification"
         />
       )}
@@ -102,6 +114,8 @@ const FormSSLValidity = () => {
 
 const FormSectionServerNames = () => {
   const { control } = useFormContext<SSLPostType>();
+  const certificateType = useWatch({ control, name: 'type' });
+  const isServer = certificateType !== 'client';
   const sni = useWatch({ control, name: 'sni' });
   const snis = useWatch({ control, name: 'snis' });
   const hasSni = typeof sni === 'string' && sni.trim().length > 0;
@@ -109,7 +123,7 @@ const FormSectionServerNames = () => {
 
   return (
     <FormSection legend="Server Names" collapsible defaultOpen={true}>
-      {hasSni && hasSnis && (
+      {isServer && hasSni && hasSnis && (
         <Alert
           type="warning"
           showIcon
@@ -123,17 +137,17 @@ const FormSectionServerNames = () => {
         label="SNI"
         name="sni"
         placeholder="domain1.com"
-        required={!hasSnis}
-        disabled={hasSnis}
-        description={hasSnis ? 'Disabled because SNIs is set.' : 'Use this for one hostname.'}
+        required={isServer && !hasSnis}
+        disabled={isServer && hasSnis && !hasSni}
+        description={!isServer ? 'Optional for client certificates.' : hasSnis && !hasSni ? 'Disabled because SNIs is set.' : 'Use this for one hostname.'}
       />
       <FormItemTagsInput
         control={control}
         label="SNIs"
         name="snis"
         placeholder="domain1.com, domain2.com"
-        disabled={hasSni}
-        description={hasSni ? 'Disabled because SNI is set.' : 'Use this for multiple hostnames.'}
+        disabled={isServer && hasSni && !hasSnis}
+        description={!isServer ? 'Optional for client certificates.' : hasSni && !hasSnis ? 'Disabled because SNI is set.' : 'Use this for multiple hostnames.'}
       />
     </FormSection>
   );
@@ -146,7 +160,6 @@ export const FormPartSSL = ({ showID = true }: { showID?: boolean } = {}) => {
       <FormPartBasic
         showID={showID}
         showName={false}
-        showDesc={false}
         showStatus
       />
       <FormSSLValidity />

@@ -38,7 +38,8 @@ import { API_SECRETS } from '@/config/constant';
 import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { refreshResourceCaches } from '@/utils/resourceCache';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 type Props = {
   readOnly: boolean;
@@ -58,8 +59,8 @@ const SecretDetailForm = (props: Props) => {
   const { data: secretData, refetch } = secretQuery;
 
   const form = useForm({
-    resolver: zodResolver(APISIX.Secret),
-    shouldUnregister: true,
+    resolver: zodResolver(APISIX.Secret, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
     disabled: readOnly,
@@ -74,9 +75,10 @@ const SecretDetailForm = (props: Props) => {
 
   const putSecret = useMutation({
     mutationFn: (d: APISIXType['Secret']) =>
-      putSecretReq(req, pipeProduce()(d)),
+      putSecretReq(req, prepareResourceFormPayload(d)),
     async onSuccess() {
       await refetch({ throwOnError: true });
+      await refreshResourceCaches('secrets', API_SECRETS);
       showNotification({
         message: 'Secret saved and reloaded from APISIX',
         type: 'success',
@@ -87,6 +89,7 @@ const SecretDetailForm = (props: Props) => {
   return (
     <FormProvider {...form}>
       <FormJsonTabs
+        preparePayload={prepareResourceFormPayload}
         form={form}
         onSubmit={(d) => putSecret.mutateAsync(d)}
         submitLabel="Save"

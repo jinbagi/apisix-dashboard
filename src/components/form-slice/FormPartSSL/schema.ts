@@ -18,6 +18,8 @@ import { produce } from 'immer';
 import { z } from 'zod';
 
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
+import { validateSSLCertificates } from '@/utils/resourceValidation';
 
 const SSLForm = z.object({
   __clientEnabled: z.boolean().optional(),
@@ -28,11 +30,6 @@ const isClientConfigured = (client: APISIXType['SSL']['client']) =>
   (Array.isArray(client?.skip_mtls_uri_regex) &&
     client.skip_mtls_uri_regex.length > 0);
 
-const hasClientCertificate = (data: {
-  __clientEnabled?: boolean;
-  client?: APISIXType['SSL']['client'];
-}) => !data.__clientEnabled || !!data.client?.ca?.trim();
-
 export const SSLPostSchema = APISIX.SSL.omit({
   create_time: true,
   update_time: true,
@@ -41,36 +38,11 @@ export const SSLPostSchema = APISIX.SSL.omit({
     id: z.string().optional(),
   })
   .merge(SSLForm)
-  .refine((data) => data.cert || (data.certs && data.certs.length > 0), {
-    message: 'At least one certificate is required (cert or certs)',
-    path: ['cert'],
-  })
-  .refine((data) => data.key || (data.keys && data.keys.length > 0), {
-    message: 'At least one key is required (key or keys)',
-    path: ['key'],
-  })
-  .refine(hasClientCertificate, {
-    message:
-      'Client CA Certificate is required when client certificate verification is enabled',
-    path: ['client', 'ca'],
-  });
+  .superRefine(validateSSLCertificates);
 
 export type SSLPostType = z.input<typeof SSLPostSchema>;
 
-export const SSLPutSchema = APISIX.SSL.merge(SSLForm)
-  .refine((data) => data.cert || (data.certs && data.certs.length > 0), {
-    message: 'At least one certificate is required (cert or certs)',
-    path: ['cert'],
-  })
-  .refine((data) => data.key || (data.keys && data.keys.length > 0), {
-    message: 'At least one key is required (key or keys)',
-    path: ['key'],
-  })
-  .refine(hasClientCertificate, {
-    message:
-      'Client CA Certificate is required when client certificate verification is enabled',
-    path: ['client', 'ca'],
-  });
+export const SSLPutSchema = APISIX.SSL.merge(SSLForm).superRefine(validateSSLCertificates);
 
 export type SSLPutType = z.infer<typeof SSLPutSchema>;
 
@@ -82,8 +54,11 @@ export const produceToSSLForm = (data: APISIXType['SSL']) =>
     }
   });
 
-export const produceSSLSubmitPayload = produce((draft: SSLPostType) => {
-  if (!draft.__clientEnabled || !draft.client?.ca?.trim()) {
-    delete draft.client;
-  }
-});
+export const produceSSLSubmitPayload = <T extends SSLPostType>(data: T): T => {
+  const payload = prepareResourceFormPayload(data);
+  // The switch removes client explicitly; JSON does not carry UI flags.
+  if (data.__clientEnabled === false) delete payload.client;
+  delete (payload as Record<string, unknown>).validity_start;
+  delete (payload as Record<string, unknown>).validity_end;
+  return payload;
+};

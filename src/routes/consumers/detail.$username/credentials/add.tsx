@@ -32,7 +32,8 @@ import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripPatchReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { refreshResourceCaches } from '@/utils/resourceCache';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const CredentialAddForm = () => {
   const router = useRouter();
@@ -42,7 +43,7 @@ const CredentialAddForm = () => {
 
   const putCredential = useMutation({
     mutationFn: async (d: APISIXType['CredentialPut']) => {
-      const payload = pipeProduce()({ ...d, username });
+      const payload = prepareResourceFormPayload({ ...d, username });
       const response = await putCredentialReq(req, payload);
       const id = payload.id;
       await verifyAdminApiResource(
@@ -52,6 +53,7 @@ const CredentialAddForm = () => {
       return { response, id };
     },
     async onSuccess({ id }) {
+      await refreshResourceCaches(['credentials', username], API_CREDENTIALS(username));
       showNotification({
         message: 'Credential created and verified',
         type: 'success',
@@ -72,8 +74,8 @@ const CredentialAddForm = () => {
   });
 
   const form = useForm({
-    resolver: zodResolver(APISIX.CredentialPut),
-    shouldUnregister: true,
+    resolver: zodResolver(APISIX.CredentialPut, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
     defaultValues: {
@@ -83,7 +85,7 @@ const CredentialAddForm = () => {
 
   return (
     <FormProvider {...form}>
-      <FormJsonTabs form={form} onSubmit={(d) => putCredential.mutateAsync(d)} schema={APISIX.CredentialPut} submitLabel="Add">
+      <FormJsonTabs preparePayload={prepareResourceFormPayload} form={form} onSubmit={(d) => putCredential.mutateAsync(d)} schema={APISIX.CredentialPut} submitLabel="Add">
         <FormSectionGeneral />
         <FormPartCredential />
       </FormJsonTabs>

@@ -21,6 +21,8 @@ import type { APISIXType } from '@/types/schema/apisix';
 import type { PageSearchType } from '@/types/schema/pageSearch';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 
+import { createResourceReq } from './utils';
+
 export const getProtoListReq = (req: AxiosInstance, params: PageSearchType) =>
   req
     .get<unknown, APISIXType['RespProtoList']>(API_PROTOS, {
@@ -44,9 +46,4 @@ export const putProtoReq = (req: AxiosInstance, data: APISIXType['Proto']) => {
 export const postProtoReq = (
   req: AxiosInstance,
   data: APISIXType['ProtoPost']
-) => {
-  return req.post<APISIXType['ProtoPost'], APISIXType['RespProtoDetail']>(
-    API_PROTOS,
-    data
-  );
-};
+) => createResourceReq<APISIXType['RespProtoDetail']>(req, API_PROTOS, data);

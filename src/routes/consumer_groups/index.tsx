@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 import type { ProColumns } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Button } from 'antd';
 import { useMemo, useState } from 'react';
@@ -30,6 +29,7 @@ import { LabelSearchInput } from '@/components/page/LabelSearchInput';
 import PageHeader from '@/components/page/PageHeader';
 import { RawDrawer } from '@/components/page/RawDrawer';
 import { ResourceSortSelect } from '@/components/page/ResourceSortSelect';
+import { ResourceTable } from '@/components/page/ResourceTable';
 import { SearchInput } from '@/components/page/SearchInput';
 import { ToAddPageBtn } from '@/components/page/ToAddPageBtn';
 import { AntdConfigProvider } from '@/config/antdConfigProvider';
@@ -41,7 +41,7 @@ import { getPluginFilterOptions, hasPluginName, renderPluginCount, renderUnixDat
 import { useBulkActions } from '@/utils/useBulkActions';
 
 function ConsumerGroupsList() {
-  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort } = useConsumerGroupList();
+  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort, tableState } = useConsumerGroupList();
   const { rowSelection, bulkBarProps } = useBulkActions(
     refetch,
     data?.list?.map((record) => record.value.id)
@@ -90,6 +90,16 @@ function ConsumerGroupsList() {
         ),
       },
       {
+        dataIndex: ['value', 'name'],
+        title: 'Name',
+        key: 'name',
+        render: (_, record) => (
+          <Link to="/consumer_groups/detail/$id" params={{ id: record.value.id }}>
+            {record.value.name || record.value.id}
+          </Link>
+        ),
+      },
+      {
         dataIndex: ['value', 'desc'],
         title: 'Description',
         key: 'desc',
@@ -132,12 +142,19 @@ function ConsumerGroupsList() {
 
   return (
     <AntdConfigProvider>
-      <BulkDeleteBar
-        {...bulkBarProps}
-        resourceName="Consumer Group"
-        apiBase={API_CONSUMER_GROUPS}
-      />
-      <ProTable
+      <ResourceTable
+        tableState={tableState}
+        resourceName="Consumer Groups"
+        query={params.q ?? params.name ?? params.uri ?? ''}
+        label={params.label ?? ''}
+        onClearFilters={() => setParams({ q: undefined, name: undefined, uri: undefined, label: undefined, page: 1 })}
+        selectionActions={
+          <BulkDeleteBar
+            {...bulkBarProps}
+            resourceName="Consumer Group"
+            apiBase={API_CONSUMER_GROUPS}
+          />
+        }
         columns={columns}
         dataSource={data?.list}
         rowKey={(record) => record.value.id}

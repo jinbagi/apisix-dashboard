@@ -111,6 +111,7 @@ export const FormItemTagsInput = <T extends FieldValues, R>(
         }}
         {...restField}
         {...restProps}
+        style={{ width: '100%', ...restProps.style }}
         aria-label={ariaLabel}
       />
     </InputWrapper>

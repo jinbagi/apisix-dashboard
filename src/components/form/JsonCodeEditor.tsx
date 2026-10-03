@@ -81,7 +81,10 @@ export const JsonCodeEditor = ({
         theme={mode === 'dark' ? 'vs-dark' : 'vs-light'}
         value={value}
         onChange={onChange}
-        onMount={onMount}
+        onMount={(editor, monaco) => {
+          window.__monacoEditor__ = editor;
+          onMount?.(editor, monaco);
+        }}
         onValidate={onValidate}
         beforeMount={(monaco) => {
           monaco.languages.json.jsonDefaults.setDiagnosticsOptions({

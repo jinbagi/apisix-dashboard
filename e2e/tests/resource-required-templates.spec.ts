@@ -24,7 +24,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 const requiredFields = (page: Page) =>
   page.locator('[data-form-field]').evaluateAll((nodes) =>
     nodes
-      .filter((node) => node.querySelector('[class*="asterisk"]'))
+      .filter((node) => node.querySelector('[class*="asterisk"], [aria-required="true"]'))
       .map((node) => node.getAttribute('data-form-field'))
   );
 
@@ -42,8 +42,10 @@ test('create forms show conditional required fields and minimal JSON templates',
   await page.goto('/ui/routes/add');
   await expect(page.getByRole('heading', { name: 'Add Route' })).toBeVisible();
   await expect.poll(() => requiredFields(page)).toEqual(
-    expect.arrayContaining(['uri', 'uris'])
+    expect.arrayContaining(['uri'])
   );
+
+  await expect.poll(() => requiredFields(page)).not.toContain('uris');
 
   await page.getByRole('tab', { name: 'Payload JSON' }).click();
   const routeJsonEditor = page.locator(
@@ -57,6 +59,12 @@ test('create forms show conditional required fields and minimal JSON templates',
   await page.getByRole('tab', { name: 'Visual Editor' }).click();
   await page.locator('input[name="uri"]').fill('/orders');
   await expect.poll(() => requiredFields(page)).not.toContain('uris');
+  const uriMatching = page.getByRole('group', { name: 'URI matching', exact: true });
+  await uriMatching.getByText('Multiple', { exact: true }).click();
+  await expect.poll(() => requiredFields(page)).toContain('uris');
+  await expect.poll(() => requiredFields(page)).not.toContain('uri');
+  await uriMatching.getByText('Single', { exact: true }).click();
+  await expect(page.getByRole('textbox', { name: 'URI', exact: true })).toHaveValue('/orders');
 
   await page.getByRole('tab', { name: 'Payload JSON' }).click();
   await expect.poll(async () => {
@@ -73,6 +81,10 @@ test('create forms show conditional required fields and minimal JSON templates',
   );
   await expect(page.locator('input[name="uri"]')).toHaveValue('/orders');
 
+  await page.getByRole('button', { name: 'Revert changes', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Discard all unsaved changes?' })
+    .getByRole('button', { name: 'Revert', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Revert changes', exact: true })).toBeHidden();
   await page.goto('/ui/services/add');
   await page.getByRole('tab', { name: 'Payload JSON' }).click();
   await expect

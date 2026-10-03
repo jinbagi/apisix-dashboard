@@ -32,14 +32,15 @@ import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
-import { pipeProduce } from '@/utils/producer';
+import { refreshResourceCaches } from '@/utils/resourceCache';
+import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
 
 const PluginConfigAddForm = () => {
   const router = useRouter();
 
   const putPluginConfig = useMutation({
     mutationFn: async (d: APISIXType['PluginConfigPut']) => {
-      const payload = pipeProduce()(d);
+      const payload = prepareResourceFormPayload(d);
       const response = await putPluginConfigReq(req, payload);
       await verifyAdminApiResource(
         `${API_PLUGIN_CONFIGS}/${payload.id}`,
@@ -48,6 +49,7 @@ const PluginConfigAddForm = () => {
       return response;
     },
     async onSuccess(response) {
+      await refreshResourceCaches('plugin_configs', API_PLUGIN_CONFIGS);
       showNotification({
         message: 'Plugin Config created and verified',
         type: 'success',
@@ -68,8 +70,8 @@ const PluginConfigAddForm = () => {
   });
 
   const form = useForm({
-    resolver: zodResolver(APISIX.PluginConfigPut),
-    shouldUnregister: true,
+    resolver: zodResolver(APISIX.PluginConfigPut, undefined, { raw: true }),
+    shouldUnregister: false,
     shouldFocusError: true,
     mode: 'all',
     defaultValues: {
@@ -79,7 +81,7 @@ const PluginConfigAddForm = () => {
 
   return (
     <FormProvider {...form}>
-      <FormJsonTabs form={form} onSubmit={(d) => putPluginConfig.mutateAsync(d)} schema={APISIX.PluginConfigPut} submitLabel="Add">
+      <FormJsonTabs preparePayload={prepareResourceFormPayload} form={form} onSubmit={(d) => putPluginConfig.mutateAsync(d)} schema={APISIX.PluginConfigPut} submitLabel="Add">
         <FormSectionGeneral />
         <FormPartPluginConfig />
       </FormJsonTabs>

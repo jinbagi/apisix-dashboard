@@ -182,7 +182,7 @@ test('should display routes list under service', async ({ page }) => {
   });
 
   await test.step('should have correct table headers', async () => {
-    await expect(page.getByRole('columnheader', { name: 'ID' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'ID', exact: true })).toBeHidden();
     await expect(
       page.getByRole('columnheader', { name: 'Name' })
     ).toBeVisible();
