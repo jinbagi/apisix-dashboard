@@ -22,6 +22,7 @@ import type { ZodIssue } from 'zod';
 import { JsonChangeReview } from '@/components/form/JsonChangeReview';
 import { JsonCodeEditor } from '@/components/form/JsonCodeEditor';
 import { JsonSchemaGuide } from '@/components/form/JsonSchemaGuide';
+import { LocalRawDraft } from '@/components/page/LocalRawDraft';
 import { queryClient } from '@/config/global';
 import { req } from '@/config/req';
 import {
@@ -553,6 +554,15 @@ export const AdminApiJsonEditor = ({
                   : 'No pending changes'}
           </Typography.Text>
           <Space wrap>
+            <LocalRawDraft key={api} api={api} snapshot={{ original, value }} disabled={saving || loading || !original}
+              onRestore={(draft, latest) => {
+                setResourceBase(normalizeApiResource(api, latest));
+                setOriginal(draft.original);
+                setValue(draft.value);
+                userEditedRef.current = true;
+                setError(null);
+                setSaveFeedback({ type: 'warning', message: 'Local draft restored. Review and save to apply it to APISIX.', at: new Date().toLocaleTimeString() });
+              }} />
             <Tooltip title="Format Admin API JSON">
               <Button size="small" onClick={handleFormat} disabled={saving || loading}>Format</Button>
             </Tooltip>
