@@ -39,6 +39,7 @@ import {
   restorePatchReadonlyFields,
   sortJsonKeys,
   stripPatchReadonlyFields,
+  stripSystemReadonlyFields,
 } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
 import {
@@ -349,6 +350,7 @@ export const AdminApiJsonEditor = ({
     setSaving(true);
     setReview(null);
     let patchAccepted = false;
+    const consumerUsername = api.match(/^\/consumers\/([^/]+)$/)?.[1];
     try {
       const latestResponse = await req.get(api);
       const latest = latestResponse.data?.value;
@@ -362,12 +364,18 @@ export const AdminApiJsonEditor = ({
         return;
       }
       try {
-        await req.patch(api, payload);
+        if (consumerUsername) {
+          if (normalizedLatest.username !== decodeURIComponent(consumerUsername)) throw new Error('The latest Consumer has an unexpected username. No changes were sent.');
+          const merged = applyBulkPatch(normalizedLatest, payload);
+          const checked = schema?.safeParse(merged);
+          if (checked && !checked.success) throw new Error('The latest Consumer no longer matches the schema. Reload before saving.');
+          await req.put(api, stripSystemReadonlyFields(merged));
+        } else await req.patch(api, payload);
         patchAccepted = true;
       } catch (e) {
         const status = (e as { response?: { status?: number } }).response?.status;
         if (status === 405 || status === 501) {
-          const unsupportedMsg = 'Direct Admin API PATCH is not supported for this resource.';
+          const unsupportedMsg = `Direct Admin API ${consumerUsername ? 'PUT' : 'PATCH'} is not supported for this resource.`;
           setError(unsupportedMsg);
           setSaveFeedback({
             type: 'error',
@@ -508,6 +516,8 @@ export const AdminApiJsonEditor = ({
           onClose={() => setSaveFeedback(null)}
         />
       )}
+      {/^\/consumers\/[^/]+$/.test(api) && <Alert type="info" showIcon style={{ marginBottom: 12 }}
+        message="Consumers use PUT: changed fields are merged into the latest server value before saving." />}
       {resourceSchema && value && (
         <JsonSchemaGuide
           schema={resourceSchema}

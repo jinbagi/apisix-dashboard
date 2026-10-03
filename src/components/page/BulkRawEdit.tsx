@@ -101,20 +101,22 @@ export const BulkRawEdit = ({ apiBase, selectedIds, disabled, onComplete }: Prop
         <Typography.Text strong>{ids.length} selected resources · {apiBase}</Typography.Text>
         <Typography.Paragraph style={{ margin: 0 }}>
           Change only the fields in this JSON. Objects merge, arrays are replaced, and null removes a field.
-          Each item is checked again before PATCH and verified after saving. Changes are not atomic;
+          Each item is checked again before writing and verified after saving. Changes are not atomic;
           a failed item does not roll back successful items. Concurrent edits after the final check can still occur.
         </Typography.Paragraph>
+        {apiBase === '/consumers' && <Alert type="info" showIcon message="Consumers use PUT"
+          description="The patch is merged into a fresh read, then saved with PUT and the original username. Unrelated fields from that read are preserved." />}
         <JsonCodeEditor height="200px" value={json} readOnly={busy || applied}
           options={{ ariaLabel: 'Bulk JSON patch' }}
           onChange={(value) => { setJson(value ?? ''); setRows([]); setError(''); }} />
-        <Typography.Text type="secondary">Example: {'{"labels":{"env":"staging"}}'}. IDs and timestamps cannot be changed.</Typography.Text>
+        <Typography.Text type="secondary">Example: {'{"labels":{"env":"staging"}}'}. IDs, usernames and timestamps cannot be changed.</Typography.Text>
         <Button aria-label="Preview changes" loading={busy} disabled={busy || applied} onClick={() => void preview()}>Preview changes</Button>
         {error && <Alert type="error" showIcon message="Preview blocked" description={error} />}
         {rows.length > 0 && <>
           <div role="status">{ready.length} ready · {rows.filter((row) => row.status === 'Saved').length} saved and verified · {rows.filter((row) => row.status === 'Unchanged').length} unchanged · {failed.length} need attention</div>
           <Table size="small" rowKey="id" dataSource={rows} pagination={{ pageSize: 6 }} scroll={{ x: 650 }}
             columns={[
-              { title: 'ID', dataIndex: 'id', width: 160 },
+              { title: apiBase === '/consumers' ? 'Username' : 'ID', dataIndex: 'id', width: 160 },
               { title: 'Result', key: 'result', render: (_, row) => <Space direction="vertical">
                 <Tag color={isBulkPatchFailure(row) ? 'red' : row.status === 'Saved' ? 'green' : 'blue'}>{row.status}</Tag>
                 {row.error && <Typography.Text type="danger" style={{ overflowWrap: 'anywhere' }}>{row.error}</Typography.Text>}

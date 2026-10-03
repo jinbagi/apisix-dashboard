@@ -19,11 +19,13 @@ import { SKIP_INTERCEPTOR_HEADER } from '@/config/constant';
 import { req } from '@/config/req';
 import { recordResourceChange } from '@/stores/resourceHistory';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
-import { buildPatchPayload, getPatchConflictPaths, isRecord, PATCH_READONLY_KEYS } from '@/utils/apisixEditable';
+import { buildPatchPayload, getPatchConflictPaths, isRecord, PATCH_READONLY_KEYS, stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { getAdminResourceSchema } from '@/utils/resourceJsonSchema';
 
 export const supportsBulkPatch = (api: string) =>
-  ['/routes', '/stream_routes', '/services', '/upstreams', '/plugin_configs'].includes(api);
+  ['/routes', '/stream_routes', '/services', '/upstreams', '/plugin_configs', '/consumers', '/consumer_groups', '/global_rules'].includes(api);
+
+const isConsumer = (api: string) => /^\/consumers\/[^/]+$/.test(api);
 
 export type BulkPatchRow = {
   id: string;
@@ -69,10 +71,11 @@ export function applyBulkPatch(before: Record<string, unknown>, patch: Record<st
 const message = (error: unknown) => error instanceof Error ? error.message : 'Admin API request failed';
 async function readResource(api: string, id: string): Promise<Record<string, unknown>> {
   const { data } = await req.get(api, { timeout: 15_000, headers: { [SKIP_INTERCEPTOR_HEADER]: ['404'] } });
-  if (!isRecord(data?.value) || String(data.value.id) !== id)
+  const identity = isConsumer(api) ? 'username' : 'id';
+  if (!isRecord(data?.value) || String(data.value[identity]) !== id)
     throw new Error('The selected resource could not be read with its expected identity.');
   rejectUnsafeKeys(data.value);
-  return { ...data.value, id };
+  return { ...data.value, [identity]: id };
 }
 function validate(api: string, value: Record<string, unknown>) {
   const result = getAdminResourceSchema(api)?.safeParse(value);
@@ -113,12 +116,15 @@ export async function applyBulkPatchRow(row: BulkPatchRow): Promise<BulkPatchRow
     const delta = buildPatchPayload(after, current);
     if (!Object.keys(delta).length) return { ...row, status: 'Unchanged', error: undefined };
     writeAttempted = true;
-    await req.patch(row.api, delta, { timeout: 15_000 });
+    if (isConsumer(row.api)) {
+      // Consumers only support PUT. Preserve the latest unrelated fields and required username.
+      await req.put(row.api, stripSystemReadonlyFields(after), { timeout: 15_000 });
+    } else await req.patch(row.api, delta, { timeout: 15_000 });
     await verifyAdminApiResource(row.api, delta, { timeoutMs: 15_000 });
     recordResourceChange(row.api, current, after);
     return { ...row, status: 'Saved', error: undefined };
   } catch (error) {
-    // A network error after sending PATCH cannot establish whether the server committed it.
+    // A network error after sending a write cannot establish whether the server committed it.
     return { ...row, status: writeAttempted ? 'Unverified' : 'Failed',
       error: `${writeAttempted ? 'Write outcome is unverified. ' : ''}${message(error)}` };
   }
