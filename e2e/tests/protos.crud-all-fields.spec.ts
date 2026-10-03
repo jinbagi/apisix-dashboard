@@ -16,6 +16,7 @@
  */
 
 import { protosPom } from '@e2e/pom/protos';
+import { randomId } from '@e2e/utils/common';
 import { e2eReq } from '@e2e/utils/req';
 import { test } from '@e2e/utils/test';
 import { expect } from '@playwright/test';
@@ -33,9 +34,11 @@ message TestMessage {
 }`;
 
 let createdProtoId: string;
+const customProtoId = randomId('custom-proto-with-a-long-id');
 
 test.describe('CRUD proto with all fields', () => {
   test.describe.configure({ mode: 'serial' });
+  test.use({ viewport: { width: 1280, height: 900 } });
 
   test.afterAll(async () => {
     // cleanup: delete the proto
@@ -53,7 +56,8 @@ test.describe('CRUD proto with all fields', () => {
     });
 
     await test.step('fill in all fields', async () => {
-      // Fill Content (ID is auto-generated, proto only has content field)
+      await page.getByLabel('ID', { exact: true }).fill(customProtoId);
+      await page.getByLabel('Name', { exact: true }).fill('Custom ID proto');
       await page.getByLabel('Content').fill(protoContent);
     });
 
@@ -62,7 +66,8 @@ test.describe('CRUD proto with all fields', () => {
 
       await protosPom.isDetailPage(page);
       createdProtoId = new URL(page.url()).pathname.split('/').pop() ?? '';
-      expect(createdProtoId).toBeTruthy();
+      expect(createdProtoId).toBe(customProtoId);
+      await expect(page.getByLabel('ID', { exact: true })).toBeDisabled();
     });
 
     await test.step('verify proto was created via API', async () => {
@@ -97,8 +102,8 @@ test.describe('CRUD proto with all fields', () => {
       await protosPom.isIndexPage(page);
 
       // Find and click the View button for the created proto
-      const row = page.locator('tr').filter({ hasText: createdProtoId });
-      await row.getByRole('link', { name: createdProtoId, exact: true }).click();
+      const row = protosPom.getProtoRow(page, createdProtoId);
+      await row.getByRole('link', { name: 'Custom ID proto', exact: true }).click();
       
       // Verify we're on the detail page
       await protosPom.isDetailPage(page);
@@ -126,8 +131,8 @@ message UpdatedTestMessage {
       await protosPom.toIndex(page);
       await protosPom.isIndexPage(page);
 
-      const row = page.locator('tr').filter({ hasText: createdProtoId });
-      await row.getByRole('link', { name: createdProtoId, exact: true }).click();
+      const row = protosPom.getProtoRow(page, createdProtoId);
+      await row.getByRole('link', { name: 'Custom ID proto', exact: true }).click();
       await protosPom.isDetailPage(page);
     });
 
@@ -188,8 +193,8 @@ message UpdatedTestMessage {
       await protosPom.isIndexPage(page);
 
       // Find and click the View button
-      const row = page.locator('tr').filter({ hasText: createdProtoId });
-      await row.getByRole('link', { name: createdProtoId, exact: true }).click();
+      const row = protosPom.getProtoRow(page, createdProtoId);
+      await row.getByRole('link', { name: 'Custom ID proto', exact: true }).click();
       await protosPom.isDetailPage(page);
 
       // Click Delete button

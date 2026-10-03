@@ -96,7 +96,7 @@ const ProtoDetailForm = ({ id, readOnly }: ProtoFormProps) => {
         adminApi={`${API_PROTOS}/${id}`}
       >
         <FormSectionGeneral readOnly />
-        <FormPartProto allowUpload={!readOnly} />
+        <FormPartProto showID={false} allowUpload={!readOnly} />
       </FormJsonTabs>
     </FormProvider>
   );
