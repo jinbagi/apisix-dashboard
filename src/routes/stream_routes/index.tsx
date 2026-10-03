@@ -55,7 +55,7 @@ export type StreamRouteListProps = {
 
 export const StreamRouteList = (props: StreamRouteListProps) => {
   const { routeKey, detailLink, defaultParams } = props;
-  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort } = useStreamRouteList(
+  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort, tableState } = useStreamRouteList(
     routeKey,
     defaultParams
   );
@@ -189,6 +189,7 @@ export const StreamRouteList = (props: StreamRouteListProps) => {
   return (
     <AntdConfigProvider>
       <ResourceTable
+        tableState={tableState}
         resourceName="Stream Routes"
         query={params.q ?? params.name ?? params.uri ?? ''}
         label={params.label ?? ''}

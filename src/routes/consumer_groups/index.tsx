@@ -41,7 +41,7 @@ import { getPluginFilterOptions, hasPluginName, renderPluginCount, renderUnixDat
 import { useBulkActions } from '@/utils/useBulkActions';
 
 function ConsumerGroupsList() {
-  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort } = useConsumerGroupList();
+  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort, tableState } = useConsumerGroupList();
   const { rowSelection, bulkBarProps } = useBulkActions(
     refetch,
     data?.list?.map((record) => record.value.id)
@@ -143,6 +143,7 @@ function ConsumerGroupsList() {
   return (
     <AntdConfigProvider>
       <ResourceTable
+        tableState={tableState}
         resourceName="Consumer Groups"
         query={params.q ?? params.name ?? params.uri ?? ''}
         label={params.label ?? ''}

@@ -38,7 +38,7 @@ import { renderUnixDateTime, unixFieldSorter } from '@/utils/columns';
 import { useBulkActions } from '@/utils/useBulkActions';
 
 function RouteComponent() {
-  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort } = useProtoList();
+  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort, tableState } = useProtoList();
   const { rowSelection, bulkBarProps } = useBulkActions(
     refetch,
     data?.list?.map((record) => record.value.id)
@@ -136,6 +136,7 @@ function RouteComponent() {
       />
       <AntdConfigProvider>
         <ResourceTable
+        tableState={tableState}
         resourceName="Protos"
         query={params.q ?? params.name ?? params.uri ?? ''}
         label={params.label ?? ''}

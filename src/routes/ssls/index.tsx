@@ -43,7 +43,7 @@ import { renderUnixDateTime, unixFieldSorter } from '@/utils/columns';
 import { useBulkActions } from '@/utils/useBulkActions';
 
 function RouteComponent() {
-  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort } = useSSLList();
+  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort, tableState } = useSSLList();
   const { rowSelection, bulkBarProps } = useBulkActions(
     refetch,
     data?.list?.map((record) => record.value.id)
@@ -185,6 +185,7 @@ function RouteComponent() {
       />
       <AntdConfigProvider>
         <ResourceTable
+        tableState={tableState}
         resourceName="SSLs"
         query={params.q ?? params.name ?? params.uri ?? ''}
         label={params.label ?? ''}

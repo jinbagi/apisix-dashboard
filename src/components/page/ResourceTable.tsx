@@ -42,6 +42,8 @@ import {
 } from 'react';
 
 import { CopyableID } from '@/components/CopyableID';
+import { SavedTableViews, type TableViewSnapshot } from '@/components/page/SavedTableViews';
+import type { PageSearchType } from '@/types/schema/pageSearch';
 import IconChevronRight from '~icons/material-symbols/chevron-right';
 import IconRefresh from '~icons/material-symbols/refresh';
 import IconViewColumn from '~icons/material-symbols/view-column-outline';
@@ -66,6 +68,12 @@ type Props<T extends ResourceRecord> = ProTableProps<
   onClearFilters?: () => void;
   selectionActions?: ReactNode;
   primaryColumn?: string;
+  tableState?: {
+    params: PageSearchType;
+    setParams: (next: Partial<PageSearchType>) => unknown;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
+  };
 };
 
 const readView = (key: string): View => {
@@ -95,6 +103,7 @@ export function ResourceTable<T extends ResourceRecord>({
   onClearFilters,
   selectionActions,
   primaryColumn,
+  tableState,
   ...props
 }: Props<T>) {
   const {
@@ -119,9 +128,8 @@ export function ResourceTable<T extends ResourceRecord>({
     value: View;
   }>();
   const view = changedView?.key === storageKey ? changedView.value : savedView;
-  const [filters, setFilters] = useState<
-    Record<string, (string | number | bigint | boolean)[] | null>
-  >({});
+  const [localFilters, setLocalFilters] = useState<NonNullable<PageSearchType['column_filters']>>({});
+  const filters = tableState ? tableState.params.column_filters ?? {} : localFilters;
   const primaryKey =
     primaryColumn ??
     (columns.some((column) => column.key === 'name')
@@ -142,13 +150,33 @@ export function ResourceTable<T extends ResourceRecord>({
   const visibleKeys = view.columns ?? defaultKeys;
   const requiredKeys = [primaryKey, 'raw', 'option'];
   const hasRawAction = columns.some((column) => column.key === 'raw');
-  const total = pagination
-    ? (pagination.total ?? dataSource.length)
-    : dataSource.length;
   const activeColumnFilters = Object.entries(filters).filter(
-    ([, values]) => values?.length,
+    ([key, values]) => values?.length && columns.some((column) => String(column.key) === key && typeof column.onFilter === 'function'),
   );
+  const filteredData = dataSource.filter((record) => activeColumnFilters.every(([key, values]) => {
+    const predicate = columns.find((column) => String(column.key) === key)?.onFilter;
+    return typeof predicate !== 'function' || values?.some((value) => predicate(value, record));
+  }));
+  const total = tableState || activeColumnFilters.length
+    ? filteredData.length
+    : pagination ? (pagination.total ?? dataSource.length) : dataSource.length;
+  const currentPage = pagination ? Math.min(pagination.current ?? 1, Math.max(1, Math.ceil(total / (pagination.pageSize ?? 10)))) : 1;
   const hasFilters = Boolean(query || label || activeColumnFilters.length);
+  const selectionScope = JSON.stringify([storageKey, query, label, filters, currentPage, pagination && pagination.pageSize, tableState?.sortBy, tableState?.sortOrder]);
+  const previousSelectionScope = useRef(selectionScope);
+
+  useEffect(() => {
+    if (previousSelectionScope.current !== selectionScope) {
+      previousSelectionScope.current = selectionScope;
+      if (rowSelection) rowSelection.onChange?.([], [], { type: 'none' });
+    }
+  }, [rowSelection, selectionScope]);
+
+  useEffect(() => {
+    if (tableState && pagination && pagination.current !== currentPage) {
+      tableState.setParams({ page: currentPage });
+    }
+  }, [currentPage, pagination, tableState]);
 
   useEffect(() => {
     const scroller =
@@ -183,8 +211,22 @@ export function ResourceTable<T extends ResourceRecord>({
     }
   };
   const clearFilters = () => {
-    setFilters({});
-    onClearFilters?.();
+    setLocalFilters({});
+    if (tableState) tableState.setParams({ q: undefined, name: undefined, uri: undefined, label: undefined, column_filters: undefined, page: 1 });
+    else onClearFilters?.();
+  };
+  const snapshot: TableViewSnapshot | undefined = tableState && {
+    search: {
+      q: tableState.params.q || undefined,
+      name: tableState.params.name || undefined,
+      uri: tableState.params.uri || undefined,
+      label: tableState.params.label || undefined,
+      sort_by: tableState.sortBy,
+      sort_order: tableState.sortOrder,
+      page_size: (pagination && pagination.pageSize) || 10,
+      column_filters: Object.fromEntries(activeColumnFilters.sort(([a], [b]) => a.localeCompare(b))),
+    },
+    presentation: { ...view, columns: [...visibleKeys].sort() },
   };
   const tableColumns: ProColumns<T>[] = columns
     .map((column) => {
@@ -197,6 +239,8 @@ export function ResourceTable<T extends ResourceRecord>({
         sortOrder: undefined,
         hideInTable: !requiredKeys.includes(key) && !visibleKeys.includes(key),
         filteredValue: filters[key] ?? null,
+        // Filter the complete collection before paginating and counting it.
+        onFilter: undefined,
         fixed:
           key === 'raw' || (key === primaryKey && screens.md)
             ? 'left'
@@ -335,7 +379,7 @@ export function ResourceTable<T extends ResourceRecord>({
           >
             {total.toLocaleString()}
           </span>
-          {(query || label) && (
+          {hasFilters && (
             <span className="resource-table-muted">Filtered results</span>
           )}
         </div>
@@ -376,6 +420,22 @@ export function ResourceTable<T extends ResourceRecord>({
           </Popover>
         </div>
       </div>
+      {tableState && snapshot && (
+        <SavedTableViews
+          key={storageKey}
+          storageKey={`resource-table:saved-views:v1:${storageKey}`}
+          snapshot={snapshot}
+          onApply={(next) => {
+            if (rowSelection) rowSelection.onChange?.([], [], { type: 'none' });
+            updateView(next.presentation);
+            tableState.setParams({
+              q: undefined, name: undefined, uri: undefined, label: undefined,
+              ...next.search,
+              page: 1,
+            });
+          }}
+        />
+      )}
       {hasFilters && (
         <div
           className="resource-table-filter-summary"
@@ -403,8 +463,7 @@ export function ResourceTable<T extends ResourceRecord>({
                       )
                     : String(value);
                 })
-                .join(', ')}{' '}
-              (loaded rows)
+                .join(', ')}
             </Tag>
           ))}
           <Button type="link" size="small" onClick={clearFilters}>
@@ -415,6 +474,8 @@ export function ResourceTable<T extends ResourceRecord>({
       {selectionActions}
       <ProTable<T, Record<string, unknown>>
         {...props}
+        dataSource={filteredData}
+        pagination={pagination ? { ...pagination, total, current: currentPage } : pagination}
         className="resource-table-grid"
         columns={tableColumns}
         columnsState={undefined}
@@ -459,7 +520,11 @@ export function ResourceTable<T extends ResourceRecord>({
           }
         }
         onChange={(page, nextFilters, sorter, extra) => {
-          setFilters(nextFilters);
+          if (extra.action === 'filter') {
+            const next = Object.fromEntries(Object.entries(nextFilters).filter(([, values]) => values?.length).map(([key, values]) => [key, values?.map((value) => typeof value === 'bigint' ? String(value) : value) ?? null]));
+            if (tableState) tableState.setParams({ column_filters: next, page: 1 });
+            else setLocalFilters(next);
+          }
           if (extra.action !== 'sort' && rowSelection)
             rowSelection.onChange?.([], [], { type: 'none' });
           props.onChange?.(page, nextFilters, sorter, extra);
@@ -490,8 +555,7 @@ export function ResourceTable<T extends ResourceRecord>({
       />
       {onClearFilters && (
         <div className="resource-table-footnote">
-          Search finds resources across pages. Column filters and sorting apply
-          to loaded results.
+          Search, sorting, and column filters apply across all result pages.
         </div>
       )}
     </section>

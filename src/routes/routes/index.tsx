@@ -147,7 +147,7 @@ const RouteExpandedRow = ({ route }: { route: APISIXType['Route'] }) => {
 
 export const RouteList = (props: RouteListProps) => {
   const { routeKey, detailLink, defaultParams, tablePersistenceKey = 'table-v5:routes' } = props;
-  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort } = useRouteList(
+  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort, tableState } = useRouteList(
     routeKey,
     defaultParams
   );
@@ -334,6 +334,7 @@ export const RouteList = (props: RouteListProps) => {
   return (
     <AntdConfigProvider>
       <ResourceTable
+        tableState={tableState}
         resourceName="Routes"
         query={params.q ?? params.name ?? params.uri ?? ''}
         label={params.label ?? ''}

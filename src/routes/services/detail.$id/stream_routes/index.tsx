@@ -65,6 +65,6 @@ export const Route = createFileRoute('/services/detail/$id/stream_routes/')({
   errorComponent: StreamRoutesErrorComponent,
   validateSearch: pageSearchSchema,
   loaderDeps: ({ search }) => search,
-  loader: ({ deps }) =>
-    queryClient.ensureQueryData(getStreamRouteListQueryOptions(deps)),
+  loader: ({ deps, params }) =>
+    queryClient.ensureQueryData(getStreamRouteListQueryOptions({ ...deps, filter: { service_id: params.id } })),
 });

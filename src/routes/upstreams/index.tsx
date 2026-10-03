@@ -41,7 +41,7 @@ import { formatUpstreamNodeAddress } from '@/utils/upstreamNodes';
 import { useBulkActions } from '@/utils/useBulkActions';
 
 function RouteComponent() {
-  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort } = useUpstreamList();
+  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort, tableState } = useUpstreamList();
   const { rowSelection, bulkBarProps } = useBulkActions(
     refetch,
     data?.list?.map((record) => record.value.id)
@@ -183,6 +183,7 @@ function RouteComponent() {
       />
       <AntdConfigProvider>
         <ResourceTable
+        tableState={tableState}
         resourceName="Upstreams"
         query={params.q ?? params.name ?? params.uri ?? ''}
         label={params.label ?? ''}

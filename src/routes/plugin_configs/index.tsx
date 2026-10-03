@@ -40,7 +40,7 @@ import { getPluginFilterOptions, hasPluginName, renderPluginCount, renderUnixDat
 import { useBulkActions } from '@/utils/useBulkActions';
 
 function PluginConfigsList() {
-  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort } = usePluginConfigList();
+  const { data, isFetching, refetch, pagination, params, setParams, sortBy, sortOrder, setSort, tableState } = usePluginConfigList();
   const { rowSelection, bulkBarProps } = useBulkActions(
     refetch,
     data?.list?.map((record) => record.value.id)
@@ -132,6 +132,7 @@ function PluginConfigsList() {
   return (
     <AntdConfigProvider>
       <ResourceTable
+        tableState={tableState}
         resourceName="Plugin Configs"
         query={params.q ?? params.name ?? params.uri ?? ''}
         label={params.label ?? ''}
