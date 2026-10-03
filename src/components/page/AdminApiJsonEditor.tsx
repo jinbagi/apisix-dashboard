@@ -571,6 +571,7 @@ export const AdminApiJsonEditor = ({
             </Button>
             <Button
               type="primary"
+              aria-label="Save Changes"
               loading={saving}
               onClick={handleSave}
               disabled={!isDirty || loading}
