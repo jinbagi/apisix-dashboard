@@ -18,6 +18,8 @@ import { uiGoto } from '@e2e/utils/ui';
 import { expect, type Page } from '@playwright/test';
 
 const locator = {
+  getProtoRow: (page: Page, id: string) =>
+    page.locator(`tr[data-row-key="${id}"]`),
   getProtoNavBtn: (page: Page) =>
     page.getByRole('menuitem', { name: 'Protos' }),
   getAddProtoBtn: (page: Page) =>

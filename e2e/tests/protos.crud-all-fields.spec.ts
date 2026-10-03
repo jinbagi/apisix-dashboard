@@ -34,10 +34,11 @@ message TestMessage {
 }`;
 
 let createdProtoId: string;
-const customProtoId = randomId('custom-proto');
+const customProtoId = randomId('custom-proto-with-a-long-id');
 
 test.describe('CRUD proto with all fields', () => {
   test.describe.configure({ mode: 'serial' });
+  test.use({ viewport: { width: 1280, height: 900 } });
 
   test.afterAll(async () => {
     // cleanup: delete the proto
@@ -101,7 +102,7 @@ test.describe('CRUD proto with all fields', () => {
       await protosPom.isIndexPage(page);
 
       // Find and click the View button for the created proto
-      const row = page.locator('tr').filter({ hasText: createdProtoId });
+      const row = protosPom.getProtoRow(page, createdProtoId);
       await row.getByRole('link', { name: 'Custom ID proto', exact: true }).click();
       
       // Verify we're on the detail page
@@ -130,7 +131,7 @@ message UpdatedTestMessage {
       await protosPom.toIndex(page);
       await protosPom.isIndexPage(page);
 
-      const row = page.locator('tr').filter({ hasText: createdProtoId });
+      const row = protosPom.getProtoRow(page, createdProtoId);
       await row.getByRole('link', { name: 'Custom ID proto', exact: true }).click();
       await protosPom.isDetailPage(page);
     });
@@ -192,7 +193,7 @@ message UpdatedTestMessage {
       await protosPom.isIndexPage(page);
 
       // Find and click the View button
-      const row = page.locator('tr').filter({ hasText: createdProtoId });
+      const row = protosPom.getProtoRow(page, createdProtoId);
       await row.getByRole('link', { name: 'Custom ID proto', exact: true }).click();
       await protosPom.isDetailPage(page);
 
