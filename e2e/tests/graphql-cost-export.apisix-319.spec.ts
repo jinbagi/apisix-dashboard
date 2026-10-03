@@ -41,6 +41,10 @@ async function mockAdmin(page: Page, respond: (path: string, request: Request) =
     const request = route.request();
     const path = new URL(request.url()).pathname.replace('/apisix/admin', '');
     const response = await respond(path, request);
+    if (!response && request.method() === 'GET' && /^\/services\/[^/]+(?:\/graphql_cost_decorations\/[^/]+)?$/.test(path)) {
+      await route.fulfill({ status: 404, json: { error_msg: 'Not found' } });
+      return;
+    }
     await route.fulfill({
       status: response?.status ?? 200,
       contentType: 'application/json',
