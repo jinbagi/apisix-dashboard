@@ -29,7 +29,8 @@ async function setup(page: Page, resource = 'routes') {
     create_time: 1, update_time: 1, future_field: { preserved: true },
   }]));
   const writes: { id: string; body: Record<string, unknown> }[] = [];
-  const controls = { readFail: '', writeFail: '', ignoreWrite: '' };
+  const controls = { readFail: '', writeFail: '', ignoreWrite: '', holdWrite: '' };
+  const held = new Map<string, () => void>();
   await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('test-admin-key')));
   await page.route('**/apisix/admin/**', async (route) => {
     const request = route.request();
@@ -40,6 +41,7 @@ async function setup(page: Page, resource = 'routes') {
       if (request.method() === 'PATCH') {
         const body = request.postDataJSON();
         writes.push({ id, body });
+        if (controls.holdWrite === id) await new Promise<void>((resolve) => held.set(id, resolve));
         if (controls.writeFail === id) return route.fulfill({ status: 503, json: { error_msg: 'Unavailable' } });
         if (controls.ignoreWrite !== id) {
           for (const [key, value] of Object.entries(body)) {
@@ -63,7 +65,7 @@ async function setup(page: Page, resource = 'routes') {
   await page.getByRole('checkbox', { name: 'Select all', exact: true }).check();
   await page.getByRole('button', { name: 'Edit RAW', exact: true }).click();
   await expect(dialog(page).getByRole('textbox', { name: 'Bulk JSON patch' })).toBeVisible();
-  return { values, writes, controls };
+  return { values, writes, controls, held };
 }
 async function preview(page: Page, value: unknown) {
   await uiFillMonacoEditor(page, dialog(page).locator('.monaco-editor'), JSON.stringify(value));
@@ -168,4 +170,48 @@ test('unchanged items do not write; narrow dialog preserves a draft when dismiss
 test('bulk patches reject non-objects, empty objects, readonly fields and prototype keys', () => {
   for (const text of ['[]', '{}', 'null', '{"update_time":3}', '{"plugins":{"__proto__":{"x":1}}}'])
     expect(() => parseBulkPatch(text)).toThrow();
+});
+
+async function reopenWithHistory(page: Page) {
+  await dialog(page).getByRole('button', { name: 'Close bulk editor' }).click();
+  await page.getByRole('menuitem', { name: 'Upstreams', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Upstreams', exact: true })).toBeVisible();
+  await page.getByRole('menuitem', { name: 'Routes', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Select all', exact: true }).check();
+  await page.getByRole('button', { name: 'Edit RAW', exact: true }).click();
+  await expect(dialog(page).getByRole('textbox', { name: 'Bulk JSON patch' })).toBeVisible();
+}
+
+test('browser back retains an incomplete bulk draft unless explicitly discarded', async ({ page }) => {
+  const { writes } = await setup(page);
+  await reopenWithHistory(page);
+  await uiFillMonacoEditor(page, dialog(page).locator('.monaco-editor'), '{"desc":');
+  const draft = await page.evaluate(() => window.__monacoEditor__?.getValue());
+  expect(draft).toContain('"desc":');
+  await page.goBack();
+  const leave = page.getByRole('dialog', { name: 'Leave bulk editor?', exact: true });
+  await expect(leave).toBeVisible();
+  await leave.getByRole('button', { name: 'Stay in bulk editor' }).click();
+  expect(await page.evaluate(() => window.__monacoEditor__?.getValue())).toBe(draft);
+  await page.goBack();
+  await leave.getByRole('button', { name: 'Discard and leave' }).click();
+  await expect(page.getByRole('heading', { name: 'Upstreams', exact: true })).toBeVisible();
+  expect(writes).toEqual([]);
+});
+
+test('navigation cannot abandon a batch while a PATCH is in flight', async ({ page }) => {
+  const { controls, held } = await setup(page);
+  await reopenWithHistory(page);
+  await preview(page, { desc: 'After' });
+  await expect(dialog(page).getByRole('status')).toContainText('2 ready');
+  controls.holdWrite = 'first';
+  await dialog(page).getByRole('button', { name: 'Apply 2 changes' }).click();
+  await expect.poll(() => held.has('first')).toBe(true);
+  await page.goBack();
+  const leave = page.getByRole('dialog', { name: 'Leave bulk editor?', exact: true });
+  await expect(leave.getByRole('button', { name: 'Discard and leave' })).toBeDisabled();
+  await expect(leave).toContainText('Changes are being applied.');
+  held.get('first')!();
+  await leave.getByRole('button', { name: 'Stay in bulk editor' }).click();
+  await expect(dialog(page).getByRole('status')).toContainText('2 saved and verified');
 });

@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
+import { useBlocker } from '@tanstack/react-router';
 import { Alert, Button, Modal, Space, Table, Tag, Typography } from 'antd';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { applyBulkPatchRow, type BulkPatchRow, isBulkPatchFailure, parseBulkPatch, prepareBulkPatch, supportsBulkPatch } from '@/apis/bulk-patch';
 import { JsonChangeReview } from '@/components/form/JsonChangeReview';
@@ -41,12 +42,11 @@ export const BulkRawEdit = ({ apiBase, selectedIds, disabled, onComplete }: Prop
   const ready = rows.filter((row) => row.status === 'Ready');
   const failed = rows.filter(isBulkPatchFailure);
   const pending = !applied && json.trim() !== '{}';
-  useEffect(() => {
-    if (!open || (!pending && !busy)) return;
-    const beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
-    window.addEventListener('beforeunload', beforeUnload);
-    return () => window.removeEventListener('beforeunload', beforeUnload);
-  }, [open, pending, busy]);
+  const navigationBlocker = useBlocker({
+    shouldBlockFn: () => open && (pending || busy || ready.length > 0),
+    enableBeforeUnload: () => open && (pending || busy || ready.length > 0),
+    withResolver: true,
+  });
   if (!supportsBulkPatch(apiBase)) return null;
   const close = () => {
     if (busy) return;
@@ -129,5 +129,12 @@ export const BulkRawEdit = ({ apiBase, selectedIds, disabled, onComplete }: Prop
       modified={JSON.stringify(review?.after, null, 2) ?? ''} title={`Changes for ${review?.id ?? ''}`}
       description="Saved value at preview time compared with the proposed result. This comparison does not apply changes."
       confirmText="Back to bulk editor" onCancel={() => setReview(undefined)} onSave={() => setReview(undefined)} />
+    <Modal open={navigationBlocker.status === 'blocked'} title="Leave bulk editor?"
+      onCancel={() => navigationBlocker.reset?.()}
+      onOk={() => { if (!busy) navigationBlocker.proceed?.(); }}
+      okText="Discard and leave" cancelText="Stay in bulk editor" okButtonProps={{ disabled: busy, danger: true }}>
+      {busy ? 'Changes are being applied. Stay on this page until verification finishes.' :
+        'Your bulk JSON and pending preview will be discarded. Applied changes will remain saved.'}
+    </Modal>
   </>;
 };
