@@ -48,6 +48,7 @@ import {
 import { req } from '@/config/req';
 import type { APISIXType } from '@/types/schema/apisix';
 import { GraphqlCostDecoration } from '@/types/schema/apisix/graphql_cost_decorations';
+import { isRecord } from '@/utils/apisixEditable';
 
 export const EXPORT_VERSION = 3;
 
@@ -139,6 +140,46 @@ const RESOURCE_API_MAP: Record<ResourceKey, string> = {
   protos: API_PROTOS,
   secrets: API_SECRETS,
 };
+
+export const getExportResourceKey = (apiBase: string): ResourceKey | undefined =>
+  (Object.keys(RESOURCE_API_MAP) as ResourceKey[]).find(
+    (key) => !!apiBase && RESOURCE_API_MAP[key] === apiBase
+  );
+
+/** Export exactly the chosen resources; references and child collections stay external. */
+export async function exportSelectedResources(apiBase: string, selectedIds: string[]): Promise<ExportData> {
+  const resourceKey = getExportResourceKey(apiBase);
+  const ids = [...new Set(selectedIds)];
+  if (!resourceKey || !ids.length) throw new Error('Select resources to export.');
+  const items: Record<string, unknown>[] = [];
+  for (let offset = 0; offset < ids.length; offset += 4) {
+    const batch = await Promise.all(ids.slice(offset, offset + 4).map(async (id) => {
+      const segments = apiBase === API_SECRETS ? id.split('/') : [id];
+      if (segments.some((segment) => !segment || segment === '.' || segment === '..') ||
+        (apiBase === API_SECRETS && segments.length !== 2)) {
+        throw new Error(`Invalid resource identity: ${id}`);
+      }
+      try {
+        const response = await req.get(`${apiBase}/${segments.map(encodeURIComponent).join('/')}`);
+        if (!isRecord(response.data?.value)) throw new Error('No resource value returned');
+        const identity = apiBase === API_SECRETS
+          ? { manager: segments[0], id: segments[1] }
+          : apiBase === API_CONSUMERS ? { username: id } : { id };
+        return { ...response.data.value, ...identity };
+      } catch {
+        throw new Error(`Could not read ${id}. No file was exported. Retry after refreshing the list.`);
+      }
+    }));
+    items.push(...batch);
+  }
+  const resources: ExportData['resources'] = {
+    upstreams: [], services: [], graphqlCostDecorations: [], routes: [], streamRoutes: [],
+    consumers: [], credentials: [], consumerGroups: [], ssls: [], globalRules: [],
+    pluginConfigs: [], pluginMetadata: [], protos: [], secrets: [],
+  };
+  resources[resourceKey] = items;
+  return { version: EXPORT_VERSION, exportedAt: new Date().toISOString(), resources };
+}
 
 const VALIDATION_RESOURCE_KEYS: Record<ResourceKey, string | null> = {
   upstreams: 'upstreams',
