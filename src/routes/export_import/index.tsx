@@ -46,6 +46,8 @@ import {
   type ResourceKey,
   validateConfiguration,
 } from '@/apis/export-import';
+import { type ImportPreviewItem,previewImport, verifyImportPreview } from '@/apis/import-preview';
+import { ImportChangePreview } from '@/components/page/ImportChangePreview';
 import PageHeader from '@/components/page/PageHeader';
 import { downloadJson } from '@/utils/downloadJson';
 import IconDownload from '~icons/material-symbols/download';
@@ -134,6 +136,8 @@ function ImportSection() {
   const [fileName, setFileName] = useState('');
   const [selectedResources, setSelectedResources] = useState<ResourceKey[]>([]);
   const [importing, setImporting] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [preview, setPreview] = useState<{ items: ImportPreviewItem[]; data: ExportData; selected: ResourceKey[] } | null>(null);
   const [results, setResults] = useState<ImportResult[]>([]);
   const [progress, setProgress] = useState(0);
   const [showResults, setShowResults] = useState(false);
@@ -174,49 +178,41 @@ function ImportSection() {
 
   const handleImport = async () => {
     if (!fileData || selectedResources.length === 0) return;
+    setPreviewing(true);
+    try {
+      const items = await previewImport(fileData, selectedResources);
+      setPreview({ items, data: fileData, selected: [...selectedResources] });
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : 'Could not prepare import preview. Nothing was imported.');
+    } finally { setPreviewing(false); }
+  };
 
-    Modal.confirm({
-      title: 'Confirm Import',
-      content: (
-        <div>
-          <p>This will create or overwrite the following resources:</p>
-          <ul>
-            {selectedResources.map((key) => (
-              <li key={key}>
-                {RESOURCE_LABELS[key]}: {fileData.resources[key]?.length ?? 0} items
-              </li>
-            ))}
-          </ul>
-          <Alert
-            type="warning"
-            message="Existing resources with the same ID will be overwritten."
-            style={{ marginTop: 8 }}
-          />
-        </div>
-      ),
-      okText: 'Import',
-      okType: 'primary',
-      onOk: async () => {
+  const applyImport = async () => {
+    if (!preview || importing) return;
         setImporting(true);
         setResults([]);
         setProgress(0);
         abortRef.current = false;
 
-        const totalSteps = selectedResources.length;
+        const totalSteps = preview.selected.length;
         let completed = 0;
 
         const allResults = await importResources(
-          fileData,
-          selectedResources,
+          preview.data,
+          preview.selected,
           (result) => {
             completed++;
             setProgress(Math.round((completed / totalSteps) * 100));
             setResults((prev) => [...prev, result]);
           },
+          (resourceType, item, index) => verifyImportPreview(
+            preview.items.find((row) => row.resourceType === resourceType && row.index === index), item,
+          ),
         );
 
         setImporting(false);
         setShowResults(true);
+        setPreview(null);
 
         const totalSuccess = allResults.reduce((sum, r) => sum + r.success, 0);
         const totalErrors = allResults.reduce((sum, r) => sum + r.errors.length, 0);
@@ -226,8 +222,6 @@ function ImportSection() {
         } else {
           message.warning(`Imported ${totalSuccess} resources with ${totalErrors} errors`);
         }
-      },
-    });
   };
 
   const handleValidate = async () => {
@@ -283,6 +277,7 @@ function ImportSection() {
       </Typography.Paragraph>
 
       <Upload.Dragger
+        disabled={previewing || importing}
         accept=".json"
         showUploadList={false}
         beforeUpload={handleFile}
@@ -310,7 +305,7 @@ function ImportSection() {
           </Typography.Text>
 
           <div style={{ marginBottom: 8 }}>
-            <Checkbox checked={allSelected} onChange={(e) => toggleAll(e.target.checked)}>
+            <Checkbox disabled={previewing || importing} checked={allSelected} onChange={(e) => toggleAll(e.target.checked)}>
               Select All
             </Checkbox>
           </div>
@@ -322,7 +317,7 @@ function ImportSection() {
                 <Col key={key} xs={12} sm={8} md={6}>
                   <Checkbox
                     checked={selectedResources.includes(key)}
-                    disabled={count === 0}
+                    disabled={count === 0 || previewing || importing}
                     onChange={(e) => toggleResource(key, e.target.checked)}
                   >
                     {RESOURCE_LABELS[key]} ({count})
@@ -340,7 +335,7 @@ function ImportSection() {
             <Button
               onClick={handleValidate}
               loading={validating}
-              disabled={selectedResources.length === 0}
+              disabled={selectedResources.length === 0 || previewing || importing}
               size="large"
             >
               Validate Selected Resources
@@ -348,7 +343,7 @@ function ImportSection() {
             <Button
               type="primary"
               icon={<IconUpload />}
-              loading={importing}
+              loading={importing || previewing}
               disabled={selectedResources.length === 0}
               onClick={handleImport}
               size="large"
@@ -359,6 +354,13 @@ function ImportSection() {
 
           {validation && <ValidationResult result={validation} />}
           {showResults && <ImportResults results={results} />}
+          <Modal open={preview !== null} title="Confirm Import" width={1000} okText="Import"
+            onCancel={() => setPreview(null)} onOk={applyImport} confirmLoading={importing}
+            closable={!importing} maskClosable={!importing} keyboard={!importing}
+            cancelButtonProps={{ disabled: importing }} destroyOnHidden
+            okButtonProps={{ disabled: !preview?.items.some((item) => item.status === 'New' || item.status === 'Changed') }}>
+            {preview && <ImportChangePreview items={preview.items} />}
+          </Modal>
         </>
       )}
     </Card>
@@ -404,6 +406,7 @@ function ValidationResult({ result }: { result: ConfigValidationResult }) {
 function ImportResults({ results }: { results: ImportResult[] }) {
   const totalSuccess = results.reduce((sum, r) => sum + r.success, 0);
   const totalErrors = results.reduce((sum, r) => sum + r.errors.length, 0);
+  const totalSkipped = results.reduce((sum, r) => sum + (r.skipped ?? 0), 0);
 
   const columns = [
     {
@@ -424,6 +427,11 @@ function ImportResults({ results }: { results: ImportResult[] }) {
       render: (val: number) => <Tag color="green">{val}</Tag>,
     },
     {
+      title: 'Unchanged',
+      key: 'skipped',
+      render: (_: unknown, record: ImportResult) => record.skipped ?? 0,
+    },
+    {
       title: 'Errors',
       key: 'errors',
       render: (_: unknown, record: ImportResult) =>
@@ -439,7 +447,7 @@ function ImportResults({ results }: { results: ImportResult[] }) {
     <div style={{ marginTop: 24 }}>
       <Result
         status={totalErrors === 0 ? 'success' : 'warning'}
-        title={`Import Complete: ${totalSuccess} succeeded, ${totalErrors} failed`}
+        title={`Import Complete: ${totalSuccess} succeeded, ${totalErrors} failed${totalSkipped ? `, ${totalSkipped} unchanged` : ''}`}
       />
       <Table
         columns={columns}
