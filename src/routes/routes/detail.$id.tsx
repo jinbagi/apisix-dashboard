@@ -43,6 +43,7 @@ import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
+import { RouteConfigurationExplanation } from '@/components/page/RouteConfigurationExplanation';
 import { StatusSwitch } from '@/components/StatusTag';
 import { API_ROUTES } from '@/config/constant';
 import { req } from '@/config/req';
@@ -142,7 +143,8 @@ export const RouteDetail = (props: RouteDetailProps) => {
         title={`Route: ${routeData.value.name || id}`}
         desc={`ID: ${id} - Matches incoming traffic and resolves it through a Service or directly to an Upstream.`}
         extra={(
-          <Space>
+          <Space wrap>
+            <RouteConfigurationExplanation id={id} />
             <StatusSwitch api={`${API_ROUTES}/${id}`} />
             <Link to="/routes/add" search={{ clone_from: id }}>
               <Button size="small">Clone</Button>
