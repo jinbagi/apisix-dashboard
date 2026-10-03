@@ -46,6 +46,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { getTopologyData, type TopologyData } from '@/apis/topology';
 import PageHeader from '@/components/page/PageHeader';
+import { ReferenceDiagnostics } from '@/components/page/ReferenceDiagnostics';
 import { useThemeMode } from '@/stores/global';
 
 const NODE_WIDTH = 260;
@@ -657,6 +658,7 @@ function TopologyPage() {
     <>
       <PageHeader
         title="Service Topology"
+        extra={<ReferenceDiagnostics />}
         desc="Visualize connections between Routes, Stream Routes, Services, and Upstreams"
       />
       {isError ? (
