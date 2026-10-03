@@ -19,6 +19,7 @@ import type { editor } from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ZodIssue } from 'zod';
 
+import { JsonChangeReview } from '@/components/form/JsonChangeReview';
 import { JsonCodeEditor } from '@/components/form/JsonCodeEditor';
 import { JsonSchemaGuide } from '@/components/form/JsonSchemaGuide';
 import { queryClient } from '@/config/global';
@@ -143,6 +144,7 @@ export const AdminApiJsonEditor = ({
   const [original, setOriginal] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [review, setReview] = useState<{ original: string; modified: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saveFeedback, setSaveFeedback] = useState<SaveFeedback | null>(null);
   const [resourceBase, setResourceBase] = useState<Record<string, unknown>>({});
@@ -271,7 +273,7 @@ export const AdminApiJsonEditor = ({
   }, [active, api, autoFetch, initialData, loadData]);
 
   const handleSave = useCallback(async () => {
-    if (saving || disabled) return;
+    if (saving || loading || disabled) return;
     setError(null);
     setSaveFeedback(null);
 
@@ -335,6 +337,7 @@ export const AdminApiJsonEditor = ({
     }
 
     setSaving(true);
+    setReview(null);
     let patchAccepted = false;
     try {
       try {
@@ -383,7 +386,17 @@ export const AdminApiJsonEditor = ({
     } finally {
       setSaving(false);
     }
-  }, [api, disabled, loadData, onSaved, original, resourceBase, saving, value]);
+  }, [api, disabled, loadData, loading, onSaved, original, resourceBase, saving, value]);
+
+  const handleReview = () => {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (!isRecord(parsed)) throw new Error('Payload must be a JSON object');
+      setReview({ original, modified: toJson(parsed) });
+    } catch (e) {
+      setError('Cannot review invalid JSON: ' + String(e));
+    }
+  };
 
   const handleFormat = useCallback(() => {
     setError(null);
@@ -478,6 +491,7 @@ export const AdminApiJsonEditor = ({
           value={value}
           title="Required fields and schema validation"
           compact
+          collapsible
           validAlertType="info"
           validMessage={null}
           ignoredPaths={[...identityPaths, 'create_time', 'update_time']}
@@ -524,9 +538,9 @@ export const AdminApiJsonEditor = ({
                   ? `Saved at ${saveFeedback.at}`
                   : 'No pending changes'}
           </Typography.Text>
-          <Space>
+          <Space wrap>
             <Tooltip title="Format Admin API JSON">
-              <Button size="small" onClick={handleFormat}>Format</Button>
+              <Button size="small" onClick={handleFormat} disabled={saving || loading}>Format</Button>
             </Tooltip>
             <Tooltip title="Copy Admin API JSON">
               <Button size="small" onClick={handleCopy}>Copy</Button>
@@ -534,9 +548,12 @@ export const AdminApiJsonEditor = ({
             <Button
               size="small"
               onClick={handleResetDraft}
-              disabled={!isDirty}
+              disabled={!isDirty || saving || loading}
             >
               Reset
+            </Button>
+            <Button onClick={handleReview} disabled={!isDirty || saving || loading}>
+              Review changes
             </Button>
             <Button
               type="primary"
@@ -549,6 +566,17 @@ export const AdminApiJsonEditor = ({
           </Space>
         </Space>
       )}
+      <JsonChangeReview
+        open={review !== null}
+        original={review?.original ?? ''}
+        modified={review?.modified ?? ''}
+        saving={saving}
+        onCancel={() => setReview(null)}
+        onSave={async () => {
+          setReview(null);
+          await handleSave();
+        }}
+      />
     </div>
   );
 };

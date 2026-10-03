@@ -64,6 +64,10 @@ for (const entry of cases) {
     await expect(page).toHaveURL(new RegExp(`/${entry.resource}/detail/fresh$`));
     await page.getByRole('menuitem', { name: entry.targetMenu, exact: true }).click();
     await page.getByRole('link', { name: entry.targetAdd, exact: true }).click();
+    // JSON creation is now remembered across resources. Choose the visual
+    // editor explicitly before exercising its cached reference selector.
+    await expect(page.getByRole('tab', { name: 'Payload JSON', exact: true })).toHaveAttribute('aria-selected', 'true');
+    await page.getByRole('tab', { name: 'Visual Editor', exact: true }).click();
     await page.getByRole('combobox', { name: entry.label, exact: true }).click();
     await page.getByRole('combobox', { name: entry.label, exact: true }).fill('fresh');
     const option = page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({ has: page.getByText('fresh', { exact: true }) });

@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { DiffEditor } from '@monaco-editor/react';
 import { useBlocker, useRouter } from '@tanstack/react-router';
 import type { TabsProps } from 'antd';
 import { Alert, Button, Modal, Space, Tabs } from 'antd';
@@ -30,11 +29,6 @@ import { ResourceOverview } from '@/components/page/ResourceOverview';
 import { queryClient } from '@/config/global';
 import { getRequestErrorMessage } from '@/config/req';
 import {
-  APP_CODE_EDITOR_FONT_SIZE,
-  APP_MONOSPACE_FONT_FAMILY,
-} from '@/config/typography';
-import { useThemeMode } from '@/stores/global';
-import {
   isRecord,
   mergeIdentityPayload,
   restorePatchReadonlyFields,
@@ -47,7 +41,10 @@ import { RESOURCE_DELETED_EVENT, revealFormTarget } from '@/utils/formNavigation
 
 import { FormSubmitBtn } from './Btn';
 import classes from './FormJsonTabs.module.css';
+import { JsonChangeReview } from './JsonChangeReview';
 import { JsonSchemaGuide } from './JsonSchemaGuide';
+
+const EDITOR_PREFERENCE_KEY = 'resource-editor:preferred-tab';
 
 function flattenErrors(
   errors: Record<string, unknown>,
@@ -260,9 +257,16 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
     detailTabs = [],
     overviewReferenceContext,
   } = props;
-  const { mode } = useThemeMode();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<string>('form');
+  const restoredEditor = useRef(false);
+  const selectEditorTab = useCallback((key: string, remember = true) => {
+    setActiveTab(key);
+    if (remember && ['form', 'json', 'raw'].includes(key)) {
+      try { localStorage.setItem(EDITOR_PREFERENCE_KEY, key); }
+      catch { /* Browser storage is optional. */ }
+    }
+  }, []);
   const [jsonStr, setJsonStr] = useState<string>('');
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -461,12 +465,12 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
 
   const handleApplyJsonToForm = useCallback(() => {
     if (applyJsonToForm()) {
-      setActiveTab('form');
+      selectEditorTab('form');
     }
-  }, [applyJsonToForm]);
+  }, [applyJsonToForm, selectEditorTab]);
 
   const handleTabChange = useCallback(
-    (key: string) => {
+    (key: string, remember = true) => {
       if (saveInProgress) return;
 
       if (key === 'raw' && jsonHasUnsavedChanges) {
@@ -474,7 +478,7 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
           title: 'Discard this draft and open saved API state?',
           content: 'Admin API JSON edits the saved resource separately. Use Payload JSON to continue editing this draft.',
           okText: 'Discard draft', cancelText: 'Keep editing', okButtonProps: { danger: true },
-          onOk: () => { form.reset(); setJsonTabDirty(false); setDraftRevision((revision) => revision + 1); setActiveTab(key); },
+          onOk: () => { form.reset(); setJsonTabDirty(false); setDraftRevision((revision) => revision + 1); selectEditorTab(key, remember); },
         });
         return;
       }
@@ -492,7 +496,7 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
               setJsonTabDirty(false);
               setJsonError(null);
             }
-            setActiveTab(key);
+            selectEditorTab(key, remember);
           },
         });
         return;
@@ -517,7 +521,7 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
           return;
         }
       }
-      setActiveTab(key);
+      selectEditorTab(key, remember);
     },
     [
       activeTab,
@@ -529,8 +533,25 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
       saveInProgress,
       jsonHasUnsavedChanges,
       rawTabDirty,
+      selectEditorTab,
     ]
   );
+
+  useEffect(() => {
+    if (restoredEditor.current) return;
+    // Resource pages initialize transformed form values in their mount effects.
+    // Restore the editor after those effects, through the normal draft transfer.
+    const frame = requestAnimationFrame(() => {
+      restoredEditor.current = true;
+      try {
+        const preferred = localStorage.getItem(EDITOR_PREFERENCE_KEY);
+        if (preferred === 'json' || preferred === 'raw') {
+          handleTabChange(preferred === 'raw' && rawData === undefined ? 'json' : preferred, false);
+        }
+      } catch { /* Browser storage is optional. */ }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [handleTabChange, rawData]);
 
   const handleJsonSubmit = useCallback(async () => {
     setJsonError(null);
@@ -754,35 +775,14 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
         Your unsaved form or JSON changes will be lost. Keep editing to review
         and save them, or discard this draft to leave the page.
       </Modal>
-      <Modal
+      <JsonChangeReview
         open={diffModalOpen}
-        title="Review Changes Before Saving"
-        width={900}
         onCancel={() => { setDiffModalOpen(false); pendingSubmitRef.current = null; }}
-        onOk={confirmDiffAndSave}
-        okText="Confirm & Save"
-        cancelText="Cancel"
-      >
-        <div style={{ border: '1px solid var(--ant-color-border)', borderRadius: 6, overflow: 'hidden' }}>
-          <DiffEditor
-            height="450px"
-            language="json"
-            theme={mode === 'dark' ? 'vs-dark' : 'vs-light'}
-            original={diffOriginal}
-            modified={diffModified}
-            options={{
-              readOnly: true,
-              minimap: { enabled: false },
-              renderSideBySide: true,
-              automaticLayout: true,
-              wordWrap: 'on',
-              wrappingIndent: 'indent',
-              fontFamily: APP_MONOSPACE_FONT_FAMILY,
-              fontSize: APP_CODE_EDITOR_FONT_SIZE,
-            }}
-          />
-        </div>
-      </Modal>
+        onSave={confirmDiffAndSave}
+        saving={isSaving}
+        original={diffOriginal}
+        modified={diffModified}
+      />
     </>
   );
 };

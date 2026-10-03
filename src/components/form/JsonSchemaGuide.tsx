@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Alert, Space, Typography } from 'antd';
-import { useMemo } from 'react';
+import { Alert, Button, Space, Typography } from 'antd';
+import { useId, useMemo, useState } from 'react';
 import type { ZodTypeAny } from 'zod';
 
 import {
@@ -31,6 +31,7 @@ export type JsonSchemaGuideProps = {
   value: string;
   title?: string;
   compact?: boolean;
+  collapsible?: boolean;
   ignoredPaths?: string[];
   identityPaths?: string[];
   identityValues?: Record<string, unknown>;
@@ -44,6 +45,7 @@ export const JsonSchemaGuide = ({
   value,
   title = 'APISIX schema guidance',
   compact = false,
+  collapsible = false,
   ignoredPaths = [],
   identityPaths = [],
   identityValues = {},
@@ -51,6 +53,8 @@ export const JsonSchemaGuide = ({
   validAlertType = 'success',
   validMessage = 'The current JSON satisfies the resource schema.',
 }: JsonSchemaGuideProps) => {
+  const [expanded, setExpanded] = useState(false);
+  const descriptionId = useId();
   const feedback = useMemo(() => {
     const result = getJsonSchemaFeedback(schema, value);
     const ignored = new Set(ignoredPaths);
@@ -65,6 +69,8 @@ export const JsonSchemaGuide = ({
 
   const visibleIssues = feedback.issues.slice(0, 8);
   const isValid = !feedback.syntaxError && feedback.issues.length === 0;
+  // Invalid payloads always reveal their feedback, even when guidance is folded.
+  const showDescription = !collapsible || expanded || !isValid;
 
   return (
     <div className={compact ? classes.compact : undefined}>
@@ -73,8 +79,19 @@ export const JsonSchemaGuide = ({
         type={feedback.syntaxError || feedback.issues.length > 0 ? 'warning' : validAlertType}
         showIcon
         message={<Typography.Text className={classes.guideTitle}>{title}</Typography.Text>}
-        description={
-          <Space direction="vertical" size={compact ? 3 : 6}>
+        action={collapsible && isValid && (
+          <Button
+            size="small"
+            type="text"
+            aria-expanded={showDescription}
+            aria-controls={showDescription ? descriptionId : undefined}
+            onClick={() => setExpanded((current) => !current)}
+          >
+            {showDescription ? 'Hide guidance' : 'Show guidance'}
+          </Button>
+        )}
+        description={showDescription && (
+          <Space id={descriptionId} direction="vertical" size={compact ? 3 : 6}>
             {identityPaths.length > 0 && (
               <div className={classes.guideSection}>
                 <Typography.Text className={classes.sectionLabel} strong>Resource identity: </Typography.Text>
@@ -192,7 +209,7 @@ export const JsonSchemaGuide = ({
               </div>
             )}
           </Space>
-        }
+        )}
       />
     </div>
   );
