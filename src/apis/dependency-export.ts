@@ -16,12 +16,13 @@
  */
 
 import { EXPORT_VERSION, type ExportData, getExportResourceKey } from '@/apis/export-import';
+import { graphqlCostDecorationsApi } from '@/apis/graphql_cost_decorations';
 import { SKIP_INTERCEPTOR_HEADER } from '@/config/constant';
 import { req } from '@/config/req';
 import { isRecord } from '@/utils/apisixEditable';
 
 export const supportsDependencyExport = (api: string) => ['/routes', '/stream_routes', '/services'].includes(api);
-type Kind = 'routes' | 'stream_routes' | 'services' | 'upstreams' | 'plugin_configs';
+type Kind = 'routes' | 'stream_routes' | 'services' | 'upstreams' | 'plugin_configs' | 'protos' | 'graphql_cost_decorations';
 export type DependencyExportRow = {
   key: string;
   kind: Kind;
@@ -33,7 +34,50 @@ export type DependencyExportRow = {
 export const DEPENDENCY_EXPORT_SCOPE =
   'Follows top-level service_id, upstream_id and plugin_config_id references only. Plugin-internal references, Secrets, Consumers, credentials, SSLs, Global Rules, plugin metadata and Service child collections are not included.';
 
-export async function prepareDependencyExport(apiBase: string, selectedIds: string[]) {
+export type DependencyExportOptions = { graphqlCostDecorations?: boolean; pluginReferences?: boolean };
+export const dependencyExportScope = (options: DependencyExportOptions) => {
+  if (!options.graphqlCostDecorations && !options.pluginReferences) return DEPENDENCY_EXPORT_SCOPE;
+  return 'Follows top-level service_id, upstream_id and plugin_config_id references. ' +
+    (options.graphqlCostDecorations ? 'Includes Service GraphQL cost decorations. ' : 'Service child collections are excluded. ') +
+    (options.pluginReferences ? 'Also follows grpc-transcode.proto_id and traffic-split.rules[].weighted_upstreams[].upstream_id. Other plugin-internal references are excluded. ' : 'Plugin-internal references are excluded. ') +
+    'Secrets, Consumers, credentials, SSLs, Global Rules and plugin metadata are not included.';
+};
+
+async function readDecorations(serviceId: string) {
+  const items: Record<string, unknown>[] = [];
+  const ids = new Set<string>();
+  let total: number | undefined;
+  for (let page = 1; ; page++) {
+    let data;
+    try {
+      ({ data } = await req.get(graphqlCostDecorationsApi(serviceId), {
+        params: { page, page_size: 100 }, timeout: 15_000,
+        headers: { [SKIP_INTERCEPTOR_HEADER]: ['404'] },
+      }));
+    } catch (error) {
+      if (page !== 1 || (error as { response?: { status?: number } }).response?.status !== 404) throw error;
+      // APISIX returns 404 for an empty collection, but a deleted owner must not look empty.
+      const owner = await req.get(`/services/${encodeURIComponent(serviceId)}`, { timeout: 15_000 });
+      if (!isRecord(owner.data?.value) || String(owner.data.value.id) !== serviceId) throw new Error('The Service owner could not be verified.');
+      return [];
+    }
+    if (!Array.isArray(data?.list) || !Number.isSafeInteger(data.total) || data.total < 0 ||
+      (total !== undefined && total !== data.total)) throw new Error('GraphQL collection returned an invalid or changing total. Refresh the preview.');
+    total = data.total as number;
+    for (const item of data.list) {
+      const value: unknown = item?.value;
+      if (!isRecord(value) || !['string', 'number'].includes(typeof value.id) || !String(value.id) ||
+        ['.', '..'].includes(String(value.id)) || ids.has(String(value.id)) ||
+        (value.service_id != null && String(value.service_id) !== serviceId)) throw new Error('GraphQL collection returned an invalid, duplicate or mismatched identity.');
+      ids.add(String(value.id));
+      items.push({ ...value, id: String(value.id), service_id: serviceId });
+    }
+    if (items.length > total || (!data.list.length && items.length < total)) throw new Error('GraphQL collection is incomplete. Refresh the preview.');
+    if (items.length === total) return items;
+  }
+}
+
+export async function prepareDependencyExport(apiBase: string, selectedIds: string[], options: DependencyExportOptions = {}) {
   if (!supportsDependencyExport(apiBase) || !selectedIds.length) throw new Error('Select Routes, Stream Routes or Services to export with dependencies.');
   const resources: ExportData['resources'] = {
     upstreams: [], services: [], graphqlCostDecorations: [], routes: [], streamRoutes: [],
@@ -86,13 +130,39 @@ export async function prepareDependencyExport(apiBase: string, selectedIds: stri
         if (row.kind === 'routes' && value.plugin_config_id != null) add('plugin_configs', value.plugin_config_id, `${row.key} → plugin_config_id`);
       }
       if (row.kind === 'services' && value.upstream_id != null) add('upstreams', value.upstream_id, `${row.key} → upstream_id`);
+      if (options.pluginReferences && isRecord(value.plugins)) {
+        const grpc = value.plugins['grpc-transcode'];
+        if (isRecord(grpc) && grpc.proto_id != null) add('protos', grpc.proto_id, `${row.key} → grpc-transcode.proto_id`);
+        const split = value.plugins['traffic-split'];
+        if (isRecord(split) && Array.isArray(split.rules)) split.rules.forEach((rule, ruleIndex) => {
+          if (isRecord(rule) && Array.isArray(rule.weighted_upstreams)) rule.weighted_upstreams.forEach((upstream, index) => {
+            if (isRecord(upstream) && upstream.upstream_id != null) add('upstreams', upstream.upstream_id,
+              `${row.key} → traffic-split.rules[${ruleIndex}].weighted_upstreams[${index}].upstream_id`);
+          });
+        });
+      }
+      if (options.graphqlCostDecorations && row.kind === 'services') {
+        const collectionKey = `${row.key}/graphql_cost_decorations`;
+        try {
+          const decorations = await readDecorations(row.id);
+          for (const decoration of decorations) {
+            resources.graphqlCostDecorations!.push(decoration);
+            const key = `${collectionKey}/${decoration.id}`;
+            rows.set(key, { key, kind: 'graphql_cost_decorations', id: String(decoration.id), status: 'Included', reasons: [`${row.key} → child collection`] });
+          }
+        } catch (error) {
+          rows.set(collectionKey, { key: collectionKey, kind: 'graphql_cost_decorations', id: row.id,
+            status: 'Unreadable', reasons: [`${row.key} → child collection`],
+            error: error instanceof Error ? error.message : 'Could not read the complete child collection.' });
+        }
+      }
     }
   }
   const items = [...rows.values()];
   const blocked = items.filter((row) => row.status !== 'Included').length;
   const data: ExportData = {
     version: EXPORT_VERSION, exportedAt: new Date().toISOString(),
-    skippedResources: [DEPENDENCY_EXPORT_SCOPE], resources,
+    skippedResources: [dependencyExportScope(options)], resources,
   };
   return { rows: items, blocked, data };
 }

@@ -35,6 +35,7 @@ async function setup(page: Page, kind = 'routes') {
     plugin_configs: [{ id: 'common', plugins: { 'proxy-rewrite': { uri: '/test' } } }],
   };
   const failures = new Map<string, number>();
+  const collections: Record<string, { list: { value: Record<string, unknown> }[]; total: number }> = {};
   const reads: string[] = [];
   const writes: string[] = [];
   await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('test-admin-key')));
@@ -46,6 +47,7 @@ async function setup(page: Page, kind = 'routes') {
     const [resource, ...identity] = path.split('/');
     const id = identity.join('/');
     if (failures.has(path)) return route.fulfill({ status: failures.get(path), json: { error_msg: 'Unavailable fixture' } });
+    if (collections[path]) { reads.push(path); return route.fulfill({ json: collections[path] }); }
     if (id) {
       reads.push(path);
       const value = data[resource]?.find((item) => String(item.id) === id);
@@ -55,7 +57,7 @@ async function setup(page: Page, kind = 'routes') {
     return route.fulfill({ json: { list: (data[resource] ?? []).map((value) => ({ value })), total: (data[resource] ?? []).length } });
   });
   await page.goto(kind);
-  return { data, failures, reads, writes };
+  return { data, failures, reads, writes, collections };
 }
 async function open(page: Page, selected = 1) {
   const checkboxes = page.getByRole('checkbox', { name: 'Select row', exact: true });
@@ -177,3 +179,80 @@ test('narrow export preview stays within the viewport and preserves the table se
   await expect(page.getByRole('region', { name: 'Selected resource actions' })).toContainText('Selected 1 item(s)');
 });
 
+
+
+test('opt-in includes GraphQL owners, shared Protos and traffic-split upstreams once', async ({ page }) => {
+  const { data, reads, writes, collections } = await setup(page, 'services');
+  const plugins = { 'grpc-transcode': { proto_id: 'shared-proto', service: 'Hello', method: 'Say' },
+    'traffic-split': { rules: [{ weighted_upstreams: [{ upstream_id: 'split', weight: 1 }, { upstream: { nodes: { '127.0.0.1:1980': 1 } } }] }] } };
+  data.services = [{ id: 'shared', plugins }, { id: 'unrelated', plugins }];
+  data.protos = [{ id: 'shared-proto', content: 'syntax = "proto3"; message Hello {}' }];
+  data.upstreams.push({ id: 'split', nodes: { '127.0.0.1:1980': 1 } });
+  for (const id of ['shared', 'unrelated']) collections[`services/${id}/graphql_cost_decorations`] = {
+    list: [{ value: { id: 'same-id', field_path: 'Query.products', add_value: 2, unknown_extension: true } }], total: 1,
+  };
+  await page.reload();
+  await open(page, 2);
+  const basic = await download(page);
+  expect(basic.resources.protos).toEqual([]);
+  expect(basic.resources.graphqlCostDecorations).toEqual([]);
+  expect(reads.some((path) => path.includes('graphql_cost_decorations'))).toBe(false);
+  await dialog(page).getByLabel('Include Service GraphQL cost decorations', { exact: true }).check();
+  await expect(dialog(page).getByRole('button', { name: 'Refresh export preview' })).toBeEnabled();
+  await dialog(page).getByLabel('Include supported plugin references', { exact: false }).check();
+  await expect(dialog(page).getByRole('status')).toHaveText('6 included · 0 unresolved references');
+  await page.screenshot({ path: test.info().outputPath('extended-dependency-export.png'), animations: 'disabled' });
+  const exported = await download(page);
+  expect(exported.resources.graphqlCostDecorations).toEqual(['shared', 'unrelated'].map((service_id) => ({
+    id: 'same-id', service_id, field_path: 'Query.products', add_value: 2, unknown_extension: true,
+  })));
+  expect(exported.resources.protos.map((item) => item.id)).toEqual(['shared-proto']);
+  expect(exported.resources.upstreams.map((item) => item.id)).toEqual(['split']);
+  expect(reads.filter((path) => path === 'protos/shared-proto')).toHaveLength(1);
+  expect(reads.filter((path) => path === 'upstreams/split')).toHaveLength(1);
+  expect(writes).toEqual([]);
+});
+
+test('unreadable GraphQL collection and missing plugin dependency block the bundle', async ({ page }) => {
+  const { data, failures, writes } = await setup(page, 'services');
+  data.services[0].plugins = { 'grpc-transcode': { proto_id: 'missing' } };
+  failures.set('services/shared/graphql_cost_decorations', 503);
+  await open(page);
+  await dialog(page).getByLabel('Include Service GraphQL cost decorations', { exact: true }).check();
+  await expect(dialog(page).getByRole('button', { name: 'Refresh export preview' })).toBeEnabled();
+  await dialog(page).getByLabel('Include supported plugin references', { exact: false }).check();
+  await expect(dialog(page).getByRole('status')).toHaveText('2 included · 2 unresolved references');
+  await expect(dialog(page)).toContainText('protos/missing');
+  await expect(dialog(page)).toContainText('services/shared/graphql_cost_decorations');
+  await expect(dialog(page).getByRole('button', { name: 'Download bundle' })).toBeDisabled();
+  failures.clear();
+  data.protos = [{ id: 'missing', content: 'syntax = "proto3";' }];
+  await dialog(page).getByRole('button', { name: 'Refresh export preview' }).click();
+  await expect(dialog(page).getByRole('status')).toHaveText('3 included · 0 unresolved references');
+  expect((await download(page)).resources.graphqlCostDecorations).toEqual([]);
+  expect(writes).toEqual([]);
+});
+
+test('GraphQL pagination includes every child and rejects changing totals or duplicate identities', async ({ page }) => {
+  const { writes } = await setup(page, 'services');
+  let mode = 'complete';
+  await page.route('**/apisix/admin/services/shared/graphql_cost_decorations?*', async (route) => {
+    const pageNumber = Number(new URL(route.request().url()).searchParams.get('page'));
+    const index = mode === 'duplicate' ? 1 : pageNumber;
+    await route.fulfill({ json: { total: mode === 'changing' && pageNumber === 2 ? 3 : 2,
+      list: [{ value: { id: `child-${index}`, field_path: `Query.field${index}`, add_value: index } }] } });
+  });
+  await open(page);
+  await dialog(page).getByLabel('Include Service GraphQL cost decorations', { exact: true }).check();
+  await expect(dialog(page).getByRole('status')).toHaveText('4 included · 0 unresolved references');
+  expect((await download(page)).resources.graphqlCostDecorations?.map((item) => item.id)).toEqual(['child-1', 'child-2']);
+  mode = 'duplicate';
+  await dialog(page).getByRole('button', { name: 'Refresh export preview' }).click();
+  await expect(dialog(page)).toContainText('duplicate or mismatched identity');
+  await expect(dialog(page).getByRole('button', { name: 'Download bundle' })).toBeDisabled();
+  mode = 'changing';
+  await dialog(page).getByRole('button', { name: 'Refresh export preview' }).click();
+  await expect(dialog(page)).toContainText('invalid or changing total');
+  await expect(dialog(page).getByRole('button', { name: 'Download bundle' })).toBeDisabled();
+  expect(writes).toEqual([]);
+});
