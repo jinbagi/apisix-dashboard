@@ -192,6 +192,7 @@ test('RAW blocks a conflicting save and preserves the draft until latest is expl
   await page.screenshot({ path: testInfo.outputPath('raw-conflict.png'), animations: 'disabled' });
   expect(writes).toEqual([]);
   await conflict.getByRole('button', { name: 'Keep editing' }).click();
+  await expect(conflict).toBeHidden();
   await expect.poll(() => page.evaluate(() => window.__monacoEditor__?.getValue())).toContain('My draft');
   await drawer.getByRole('button', { name: 'Save Changes', exact: true }).click();
   await conflict.getByRole('button', { name: 'Use latest and discard draft' }).click();
