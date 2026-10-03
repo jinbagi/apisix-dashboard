@@ -33,6 +33,7 @@ import { FormPartService } from '@/components/form-slice/FormPartService';
 import { ServicePutSchema } from '@/components/form-slice/FormPartService/schema';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
+import { ConfigurationImpact } from '@/components/page/ConfigurationImpact';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
 import { ReverseReferences } from '@/components/page/ReverseReferences';
@@ -118,7 +119,8 @@ function RouteComponent() {
         title={`Service: ${serviceData.value.name || id}`}
         desc={`ID: ${id} - Reusable policy layer between Routes and the downstream Upstream.`}
         extra={(
-          <Space>
+          <Space wrap>
+            <ConfigurationImpact api={`${API_SERVICES}/${id}`} />
             <Link to="/routes/add" search={{ service_id: id }}>
               <Button size="small">+ Route</Button>
             </Link>
