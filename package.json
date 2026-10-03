@@ -38,6 +38,7 @@
     "fast-clean": "^1.4.0",
     "immer": "^10.1.1",
     "jotai": "^2.20.1",
+    "jsonc-parser": "^3.3.1",
     "mobx": "^6.16.1",
     "mobx-persist-store": "^1.1.8",
     "mobx-react-lite": "^4.1.0",

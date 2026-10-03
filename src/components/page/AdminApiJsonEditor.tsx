@@ -24,6 +24,7 @@ import { JsonCodeEditor } from '@/components/form/JsonCodeEditor';
 import { JsonSchemaGuide } from '@/components/form/JsonSchemaGuide';
 import { ConfigurationImpact } from '@/components/page/ConfigurationImpact';
 import { LocalRawDraft } from '@/components/page/LocalRawDraft';
+import { RawJsonNavigation } from '@/components/page/RawJsonNavigation';
 import { queryClient } from '@/config/global';
 import { req } from '@/config/req';
 import {
@@ -144,6 +145,7 @@ export const AdminApiJsonEditor = ({
   onSavingChange,
 }: AdminApiJsonEditorProps) => {
   const [value, setValue] = useState('');
+  const [codeEditor, setCodeEditor] = useState<editor.IStandaloneCodeEditor | null>(null);
   const [original, setOriginal] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -447,6 +449,7 @@ export const AdminApiJsonEditor = ({
 
   const handleEditorMount = useCallback((ed: editor.IStandaloneCodeEditor) => {
     editorRef.current = ed;
+    setCodeEditor(ed);
     window.__monacoEditor__ = ed;
 
     // Ctrl+S / Cmd+S keybinding for Saving Changes
@@ -516,6 +519,8 @@ export const AdminApiJsonEditor = ({
           conditionalRequirements={conditionalRequirements}
         />
       )}
+      {!loading && <RawJsonNavigation codeEditor={codeEditor} value={value} original={original}
+        schema={resourceSchema} resourceBase={resourceBase} disabled={disabled || saving} />}
       {loading ? (
         <div
           className={fillAvailable ? classes.editorArea : undefined}
