@@ -226,7 +226,8 @@ test('named views restore search, labels, sort, filters, page size, columns, and
   await views.getByRole('button', { name: 'Restore view' }).click();
   await expect(page.getByRole('searchbox', { name: 'Label', exact: true })).toHaveValue('env:prod');
   await views.getByRole('button', { name: 'Save view', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Update view', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Update view', exact: true }).press('Enter');
+  await expect(dialog).toBeHidden();
   await views.getByRole('button', { name: 'Delete view', exact: true }).click();
   await page.getByRole('tooltip').getByRole('button', { name: 'Delete view', exact: true }).click();
   await expect(page.getByRole('searchbox', { name: 'Label', exact: true })).toHaveValue('env:prod');
