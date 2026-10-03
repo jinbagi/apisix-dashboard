@@ -14,13 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useBlocker } from '@tanstack/react-router';
 import {
   Alert,
   Button,
   Card,
   Checkbox,
   Col,
+  Collapse,
+  Input,
   message,
   Modal,
   Progress,
@@ -34,6 +36,7 @@ import {
 } from 'antd';
 import { useCallback, useRef, useState } from 'react';
 
+import { mapImportEnvironment, selectImportItems, unselectedImportDependencies } from '@/apis/environment-import';
 import {
   type ConfigValidationResult,
   EXPORT_VERSION,
@@ -134,6 +137,8 @@ function ExportSection() {
 function ImportSection() {
   const [fileData, setFileData] = useState<ExportData | null>(null);
   const [fileName, setFileName] = useState('');
+  const [mappingText, setMappingText] = useState('{}');
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [selectedResources, setSelectedResources] = useState<ResourceKey[]>([]);
   const [importing, setImporting] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -145,6 +150,8 @@ function ImportSection() {
   const [validation, setValidation] =
     useState<ConfigValidationResult | null>(null);
   const abortRef = useRef(false);
+  const navigationBlocker = useBlocker({ shouldBlockFn: () => importing, enableBeforeUnload: () => importing, withResolver: true });
+  const missingDependencies = preview ? unselectedImportDependencies(preview.items, selectedItems) : [];
 
   const handleFile = useCallback((file: File) => {
     const reader = new FileReader();
@@ -158,7 +165,7 @@ function ImportSection() {
         if (data.version > EXPORT_VERSION) {
           message.warning('This file was exported from a newer version. Some resources may not import correctly.');
         }
-        setFileData(data);
+        setFileData(data); setMappingText('{}'); setPreview(null); setSelectedItems([]);
         setFileName(file.name);
         // Auto-select all non-empty resources
         const nonEmpty = IMPORT_ORDER.filter(
@@ -180,15 +187,18 @@ function ImportSection() {
     if (!fileData || selectedResources.length === 0) return;
     setPreviewing(true);
     try {
-      const items = await previewImport(fileData, selectedResources);
-      setPreview({ items, data: fileData, selected: [...selectedResources] });
+      const mapped = mapImportEnvironment(fileData, mappingText);
+      const items = await previewImport(mapped, selectedResources);
+      setSelectedItems(items.filter((row) => ['New', 'Changed'].includes(row.status)).map((row) => row.key));
+      setPreview({ items, data: mapped, selected: [...selectedResources] });
     } catch (error) {
       message.error(error instanceof Error ? error.message : 'Could not prepare import preview. Nothing was imported.');
     } finally { setPreviewing(false); }
   };
 
   const applyImport = async () => {
-    if (!preview || importing) return;
+    if (!preview || importing || missingDependencies.length || !selectedItems.length) return;
+    const selection = selectImportItems(preview.data, preview.items, selectedItems);
         setImporting(true);
         setResults([]);
         setProgress(0);
@@ -198,7 +208,7 @@ function ImportSection() {
         let completed = 0;
 
         const allResults = await importResources(
-          preview.data,
+          selection.data,
           preview.selected,
           (result) => {
             completed++;
@@ -206,7 +216,7 @@ function ImportSection() {
             setResults((prev) => [...prev, result]);
           },
           (resourceType, item, index) => verifyImportPreview(
-            preview.items.find((row) => row.resourceType === resourceType && row.index === index), item,
+            selection.rows.get(resourceType)?.[index], item,
           ),
         );
 
@@ -227,7 +237,10 @@ function ImportSection() {
   const handleValidate = async () => {
     if (!fileData || selectedResources.length === 0) return;
     setValidating(true);
-    const result = await validateConfiguration(fileData, selectedResources);
+    let mapped: ExportData;
+    try { mapped = mapImportEnvironment(fileData, mappingText); }
+    catch (error) { message.error(error instanceof Error ? error.message : 'Invalid ID mappings'); setValidating(false); return; }
+    const result = await validateConfiguration(mapped, selectedResources);
     setValidation(result);
     setValidating(false);
     if (result.valid) {
@@ -300,6 +313,16 @@ function ImportSection() {
             style={{ marginBottom: 16 }}
           />
 
+          <Collapse style={{ marginBottom: 16 }} items={[{ key: 'mappings', label: 'Environment ID mappings (optional)', children: <>
+            <Typography.Paragraph>
+              Compare this exported file with the current environment: {window.location.origin}.
+              Map IDs for routes, streamRoutes, services, upstreams, pluginConfigs, consumers and consumerGroups.
+              Matching top-level references and Service/Consumer child owners are updated together. Plugin-internal references are unchanged.
+            </Typography.Paragraph>
+            <Typography.Paragraph code>{'{"upstreams":{"dev-upstream":"prod-upstream"}}'}</Typography.Paragraph>
+            <Input.TextArea aria-label="Environment ID mappings" rows={4} value={mappingText} disabled={previewing || importing || validating}
+              onChange={(event) => { setMappingText(event.target.value); setValidation(null); setPreview(null); }} />
+          </> }]} />
           <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
             Select resources to import:
           </Typography.Text>
@@ -332,6 +355,9 @@ function ImportSection() {
           )}
 
           <Space wrap>
+            <Button size="large" onClick={handleImport} loading={previewing} disabled={importing || selectedResources.length === 0}>
+              Compare with current environment
+            </Button>
             <Button
               onClick={handleValidate}
               loading={validating}
@@ -354,12 +380,21 @@ function ImportSection() {
 
           {validation && <ValidationResult result={validation} />}
           {showResults && <ImportResults results={results} />}
+          <Modal open={navigationBlocker.status === 'blocked'} title="Import in progress"
+            onCancel={() => navigationBlocker.reset?.()} footer={<Button onClick={() => navigationBlocker.reset?.()}>Keep waiting</Button>}>
+            Wait for the current import to finish before leaving this page.
+          </Modal>
           <Modal open={preview !== null} title="Confirm Import" width={1000} okText="Import"
             onCancel={() => setPreview(null)} onOk={applyImport} confirmLoading={importing}
             closable={!importing} maskClosable={!importing} keyboard={!importing}
             cancelButtonProps={{ disabled: importing }} destroyOnHidden
-            okButtonProps={{ disabled: !preview?.items.some((item) => item.status === 'New' || item.status === 'Changed') }}>
-            {preview && <ImportChangePreview items={preview.items} />}
+            okButtonProps={{ disabled: !selectedItems.length || missingDependencies.length > 0 }}>
+            {preview && <>
+              <Typography.Paragraph>{selectedItems.length} item(s) selected for application. Unselected changes remain untouched.</Typography.Paragraph>
+              {missingDependencies.length > 0 && <Alert type="error" showIcon message="Select required new dependencies"
+                description={missingDependencies.join(', ')} />}
+              <ImportChangePreview items={preview.items} selectedKeys={selectedItems} onSelectionChange={setSelectedItems} disabled={importing} />
+            </>}
           </Modal>
         </>
       )}
