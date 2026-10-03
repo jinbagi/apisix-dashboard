@@ -21,7 +21,9 @@ import { RESOURCE_LABELS } from '@/apis/export-import';
 import type { ImportPreviewItem } from '@/apis/import-preview';
 import { JsonChangeReview } from '@/components/form/JsonChangeReview';
 
-export const ImportChangePreview = ({ items }: { items: ImportPreviewItem[] }) => {
+export const ImportChangePreview = ({ items, selectedKeys, onSelectionChange, disabled }: {
+  items: ImportPreviewItem[]; selectedKeys?: string[]; onSelectionChange?: (keys: string[]) => void; disabled?: boolean;
+}) => {
   const [review, setReview] = useState<ImportPreviewItem | null>(null);
   const colors = { New: 'green', Changed: 'orange', Unchanged: 'default', Blocked: 'red' };
   return (
@@ -29,9 +31,13 @@ export const ImportChangePreview = ({ items }: { items: ImportPreviewItem[] }) =
       <Typography.Paragraph>
         Compare the exact PUT payloads before importing. Unchanged items are skipped.
         Blocked items remain errors; eligible items can still be imported.
-        Each changed destination is checked again before writing. Imports can partially succeed.
+        Select the new or changed items to apply. Each changed destination is checked again before writing. Imports can partially succeed.
       </Typography.Paragraph>
-      <Table size="small" rowKey="key" dataSource={items} pagination={{ pageSize: 8 }} scroll={{ x: 640 }}
+      <Table rowSelection={onSelectionChange ? {
+        selectedRowKeys: selectedKeys,
+        onChange: (keys) => onSelectionChange(keys.map(String)),
+        getCheckboxProps: (row) => ({ disabled: disabled || !['New', 'Changed'].includes(row.status), 'aria-label': `Apply ${row.url ?? row.id}` }),
+      } : undefined} size="small" rowKey="key" dataSource={items} pagination={{ pageSize: 8 }} scroll={{ x: 640 }}
         columns={[
           { title: 'Resource', key: 'resource', render: (_, row) => RESOURCE_LABELS[row.resourceType] },
           { title: 'Destination', key: 'destination', render: (_, row) => <Typography.Text style={{ overflowWrap: 'anywhere' }}>{row.url ?? row.id}</Typography.Text> },
