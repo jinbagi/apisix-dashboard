@@ -19,14 +19,17 @@ import type { editor } from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ZodIssue } from 'zod';
 
+import { applyBulkPatch } from '@/apis/bulk-patch';
 import { JsonChangeReview } from '@/components/form/JsonChangeReview';
 import { JsonCodeEditor } from '@/components/form/JsonCodeEditor';
 import { JsonSchemaGuide } from '@/components/form/JsonSchemaGuide';
 import { ConfigurationImpact } from '@/components/page/ConfigurationImpact';
 import { LocalRawDraft } from '@/components/page/LocalRawDraft';
 import { RawJsonNavigation } from '@/components/page/RawJsonNavigation';
+import { ResourceHistory } from '@/components/page/ResourceHistory';
 import { queryClient } from '@/config/global';
 import { req } from '@/config/req';
+import { recordResourceChange } from '@/stores/resourceHistory';
 import {
   buildPatchPayload,
   getChangedTopLevelReadonlyKeys,
@@ -377,6 +380,7 @@ export const AdminApiJsonEditor = ({
       }
 
       const verifiedResource = await verifySavedResource(api, payload);
+      recordResourceChange(api, normalizedLatest, applyBulkPatch(normalizedLatest, payload));
       loadData(verifiedResource);
       const successMsg = 'Saved and verified changed fields in APISIX';
       showNotification({ message: successMsg, type: 'success' });
@@ -560,6 +564,11 @@ export const AdminApiJsonEditor = ({
                   : 'No pending changes'}
           </Typography.Text>
           <Space wrap>
+            <ResourceHistory api={api} disabled={saving || loading} onRestore={(draft, latest) => {
+              setResourceBase(normalizeApiResource(api, latest)); setOriginal(draft.original); setValue(draft.value);
+              userEditedRef.current = true; setError(null);
+              setSaveFeedback({ type: 'warning', message: 'Previous values restored into the editor. Review and save to apply.', at: new Date().toLocaleTimeString() });
+            }} />
             <ConfigurationImpact api={api} disabled={saving || loading} />
             <LocalRawDraft key={api} api={api} snapshot={{ original, value }} disabled={saving || loading || !original}
               onRestore={(draft, latest) => {

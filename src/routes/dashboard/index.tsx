@@ -40,6 +40,7 @@ import {
   type ResourceCounts,
 } from '@/apis/dashboard';
 import PageHeader from '@/components/page/PageHeader';
+import { ReferenceDiagnostics } from '@/components/page/ReferenceDiagnostics';
 import { TableEllipsisText } from '@/components/TableEllipsisText';
 import IconArrowForward from '~icons/material-symbols/arrow-forward';
 import IconCheckCircle from '~icons/material-symbols/check-circle';
@@ -583,6 +584,7 @@ function DashboardPage() {
         desc="Gateway configuration and operational overview"
         extra={
           <div className={classes.headerMeta}>
+            <ReferenceDiagnostics />
             {dataUpdatedAt > 0 && (
               <span className={classes.updatedAt}>
                 Updated {dayjs(dataUpdatedAt).fromNow()}
