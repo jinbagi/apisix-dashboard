@@ -47,18 +47,9 @@ import {
   validateConfiguration,
 } from '@/apis/export-import';
 import PageHeader from '@/components/page/PageHeader';
+import { downloadJson } from '@/utils/downloadJson';
 import IconDownload from '~icons/material-symbols/download';
 import IconUpload from '~icons/material-symbols/upload';
-
-function downloadJson(data: ExportData) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `apisix-export-${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 function ExportSection() {
   const [loading, setLoading] = useState(false);
@@ -70,7 +61,7 @@ function ExportSection() {
     setLoading(true);
     try {
       const data = await exportAllResources();
-      downloadJson(data);
+      downloadJson(data, `apisix-export-${new Date().toISOString().slice(0, 10)}.json`);
       if (data.skippedResources?.length) {
         message.warning(`Exported with ${data.skippedResources.length} skipped: ${data.skippedResources.join(', ')}`);
       } else {
