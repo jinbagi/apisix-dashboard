@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-import { Alert, Button, Modal, Space, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Checkbox, Modal, Space, Table, Tag, Typography } from 'antd';
 import { useRef, useState } from 'react';
 
-import { DEPENDENCY_EXPORT_SCOPE, prepareDependencyExport, supportsDependencyExport } from '@/apis/dependency-export';
+import { type DependencyExportOptions, dependencyExportScope, prepareDependencyExport, supportsDependencyExport } from '@/apis/dependency-export';
 import { downloadJson } from '@/utils/downloadJson';
 
 export const DependencyExport = ({ apiBase, selectedIds, disabled }: {
@@ -29,13 +29,14 @@ export const DependencyExport = ({ apiBase, selectedIds, disabled }: {
   const [ids, setIds] = useState<string[]>([]);
   const [data, setData] = useState<Awaited<ReturnType<typeof prepareDependencyExport>>>();
   const [error, setError] = useState('');
+  const [options, setOptions] = useState<DependencyExportOptions>({});
   const sequence = useRef(0);
   if (!supportsDependencyExport(apiBase)) return null;
-  const refresh = async (selection: string[]) => {
+  const refresh = async (selection: string[], scope = options) => {
     const request = ++sequence.current;
     setLoading(true); setData(undefined); setError('');
     try {
-      const result = await prepareDependencyExport(apiBase, selection);
+      const result = await prepareDependencyExport(apiBase, selection, scope);
       if (request === sequence.current) setData(result);
     } catch (cause) {
       if (request === sequence.current) setError(cause instanceof Error ? cause.message : 'Unable to read dependencies.');
@@ -54,7 +55,13 @@ export const DependencyExport = ({ apiBase, selectedIds, disabled }: {
         }}>Download bundle</Button></Space>}>
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         <Typography.Text strong>{ids.length} selected resources · {apiBase}</Typography.Text>
-        <Alert type="info" showIcon message="Included reference scope" description={DEPENDENCY_EXPORT_SCOPE} />
+        <Alert type="info" showIcon message="Included reference scope" description={dependencyExportScope(options)} />
+        <Checkbox checked={!!options.graphqlCostDecorations} disabled={loading} onChange={(event) => {
+          const next = { ...options, graphqlCostDecorations: event.target.checked }; setOptions(next); void refresh(ids, next);
+        }}>Include Service GraphQL cost decorations</Checkbox>
+        <Checkbox checked={!!options.pluginReferences} disabled={loading} onChange={(event) => {
+          const next = { ...options, pluginReferences: event.target.checked }; setOptions(next); void refresh(ids, next);
+        }}>Include supported plugin references (grpc-transcode and traffic-split)</Checkbox>
         <Typography.Paragraph style={{ margin: 0 }}>
           Shared references are included once, including references overridden by a Route.
           The file uses the existing import format. This is a snapshot of sequential reads, not an atomic backup.

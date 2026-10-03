@@ -108,6 +108,7 @@ export const RESOURCE_LABELS: Record<ResourceKey, string> = {
 
 // Import order matters: upstreams before services, services before routes, etc.
 export const IMPORT_ORDER: ResourceKey[] = [
+  'protos',
   'upstreams',
   'services',
   'graphqlCostDecorations',
@@ -118,7 +119,6 @@ export const IMPORT_ORDER: ResourceKey[] = [
   'globalRules',
   'pluginConfigs',
   'pluginMetadata',
-  'protos',
   'secrets',
   'routes',
   'streamRoutes',
