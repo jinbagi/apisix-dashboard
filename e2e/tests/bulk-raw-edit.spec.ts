@@ -41,7 +41,7 @@ async function setup(page: Page, resource = 'routes') {
       if (request.method() === 'PUT') {
         const body = request.postDataJSON();
         writes.push({ id, body });
-        values[id] = body;
+        values[id] = { ...body, create_time: 1, update_time: 2 };
       } else if (request.method() === 'PATCH') {
         const body = request.postDataJSON();
         writes.push({ id, body });
@@ -248,4 +248,27 @@ test('Consumer identity and concurrent changed-field guards block PUT', async ({
   await dialog(page).getByRole('button', { name: 'Apply 1 changes' }).click();
   await expect(dialog(page)).toContainText('Changed since preview: desc');
   expect(writes).toHaveLength(0);
+});
+
+
+test('Consumer RAW PUT preserves latest unrelated data and blocks a mismatched username', async ({ page }) => {
+  const { values, writes } = await setup(page, 'consumers');
+  await dialog(page).getByRole('button', { name: 'Close bulk editor' }).click();
+  await page.getByRole('row').filter({ hasText: 'first' }).getByRole('button', { name: 'Raw', exact: true }).click();
+  const raw = page.getByRole('dialog').filter({ has: page.getByRole('button', { name: 'Save Changes', exact: true }) });
+  await expect(raw.getByRole('textbox', { name: 'Editor content' })).toBeVisible();
+  const editable = Object.fromEntries(Object.entries(values.first).filter(([key]) => !['id', 'username', 'create_time', 'update_time'].includes(key)));
+  await uiFillMonacoEditor(page, raw.locator('.monaco-editor'), JSON.stringify({ ...editable, desc: 'RAW after' }));
+  values.first.labels = { env: 'dev', team: 'first', latest: 'keep' };
+  await raw.getByRole('button', { name: 'Save Changes', exact: true }).click();
+  await expect(raw.getByText(/Saved at/)).toBeVisible();
+  expect(writes).toHaveLength(1);
+  expect(writes[0].body).toMatchObject({ username: 'first', desc: 'RAW after', labels: { latest: 'keep' }, future_field: { preserved: true } });
+  expect(writes[0].body).not.toHaveProperty('id');
+  expect(writes[0].body).not.toHaveProperty('update_time');
+  await uiFillMonacoEditor(page, raw.locator('.monaco-editor'), JSON.stringify({ ...editable, labels: values.first.labels, desc: 'Try again' }));
+  values.first.username = 'unexpected';
+  await raw.getByRole('button', { name: 'Save Changes', exact: true }).click();
+  await expect(raw).toContainText('unexpected username');
+  expect(writes).toHaveLength(1);
 });

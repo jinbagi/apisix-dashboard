@@ -77,6 +77,15 @@ for (const resource of ['consumers', 'consumer_groups', 'global_rules']) {
       const { data } = await e2eReq.get(`/${resource}/${id}`);
       expect(data.value.plugins['response-rewrite'].headers['X-Bulk-Test']).toBe('after');
       expect(data.value[resource === 'consumers' ? 'username' : 'id']).toBe(id);
+      await modal.getByRole('button', { name: 'Close bulk editor' }).click();
+      await page.getByRole('row').filter({ hasText: id }).getByRole('button', { name: 'Raw', exact: true }).click();
+      await page.getByRole('button', { name: 'Change history', exact: true }).click();
+      await page.getByRole('dialog', { name: 'Resource change history', exact: true }).getByRole('button', { name: 'Restore previous values' }).click();
+      await page.getByRole('dialog', { name: 'Restore previous resource values', exact: true }).getByRole('button', { name: 'Restore into editor' }).click();
+      await page.getByRole('button', { name: 'Save Changes', exact: true }).click();
+      await expect(page.getByText(/Saved at/)).toBeVisible();
+      const restored = await e2eReq.get(`/${resource}/${id}`);
+      expect(restored.data.value.plugins['response-rewrite'].headers['X-Bulk-Test']).toBe('before');
     } finally { await e2eReq.delete(`/${resource}/${id}`); }
   });
 }
