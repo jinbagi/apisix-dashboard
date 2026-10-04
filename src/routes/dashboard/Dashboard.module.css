@@ -63,7 +63,7 @@
 }
 
 .snapshotValueSuccess {
-  color: var(--ant-color-success);
+  color: var(--app-color-success-text);
 }
 
 .snapshotDetail {

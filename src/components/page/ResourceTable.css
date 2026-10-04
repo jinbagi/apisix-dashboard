@@ -124,6 +124,15 @@
   border-color: var(--ant-color-primary-border);
   font-weight: 600;
 }
+.resource-table-raw .ant-btn:not(:disabled):not(.ant-btn-disabled) {
+  color: var(--app-color-action-text);
+}
+.resource-table-raw .ant-btn:not(:disabled):not(.ant-btn-disabled):hover {
+  color: var(--app-color-action-text-hover);
+}
+.resource-table-raw .ant-btn:not(:disabled):not(.ant-btn-disabled):active {
+  color: var(--app-color-action-text-active);
+}
 .resource-table-identity {
   display: flex;
   flex-direction: column;

@@ -16,6 +16,8 @@
  */
 import { expect, type Locator, type Page, test } from '@playwright/test';
 
+import { textContrast } from '../utils/textContrast';
+
 const routeValue = {
   id: 'contrast-route', name: 'Production API', uri: '/api/*', status: 1,
   desc: 'Routes external requests to the public API.',
@@ -23,38 +25,10 @@ const routeValue = {
   create_time: 1791090000, update_time: 1791090000,
 };
 
-async function contrast(locator: Locator) {
-  return locator.evaluate((element) => {
-    const rgba = (value: string): number[] => {
-      const numbers = value.match(/[\d.]+/g)?.map(Number);
-      if (!numbers || numbers.length < 3) throw new Error(`Unsupported color: ${value}`);
-      const scale = value.startsWith('color(srgb ') ? 255 : 1;
-      return [numbers[0] * scale, numbers[1] * scale, numbers[2] * scale, numbers[3] ?? 1];
-    };
-    const composite = (front: number[], back: number[]) => {
-      const alpha = front[3] + back[3] * (1 - front[3]);
-      return [0, 1, 2].map(i => (front[i] * front[3] + back[i] * back[3] * (1 - front[3])) / alpha).concat(alpha);
-    };
-    const luminance = (color: number[]) => color.slice(0, 3).map(value => value / 255)
-      .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
-      .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
-    const layers: number[][] = [];
-    for (let node: Element | null = element; node; node = node.parentElement) {
-      const style = getComputedStyle(node);
-      if (style.backgroundImage !== 'none' || style.opacity !== '1') throw new Error('This assertion needs a solid, unmasked text surface.');
-      layers.unshift(rgba(style.backgroundColor));
-    }
-    const background = layers.reduce((back, front) => composite(front, back), [255, 255, 255, 1]);
-    const color = getComputedStyle(element).color;
-    const foreground = composite(rgba(color), background);
-    const [bright, dark] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
-    return { text: element.textContent, color, background, ratio: (bright + 0.05) / (dark + 0.05) };
-  });
-}
 
 async function readable(locator: Locator) {
   await expect(locator).toBeVisible();
-  const result = await contrast(locator);
+  const result = await textContrast(locator);
   expect(result.ratio, JSON.stringify(result)).toBeGreaterThanOrEqual(4.5);
 }
 
@@ -97,7 +71,7 @@ for (const mode of ['light', 'dark'] as const) {
       await readable(page.locator('.resource-table-field > label').filter({ hasText: /^Search$/ }));
       await checkSidebar(page, width);
       const input = page.getByRole('searchbox', { name: 'Search', exact: true });
-      expect(await input.evaluate(element => getComputedStyle(element, '::placeholder').color)).toBe(disabledColor);
+      expect(await input.evaluate(element => getComputedStyle(element, '::placeholder').color)).toBe(mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)');
       const descriptionToken = await input.evaluate(element => getComputedStyle(element).getPropertyValue('--ant-color-text-description').replace(/\s/g, ''));
       expect(descriptionToken).toBe(mode === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)');
 
