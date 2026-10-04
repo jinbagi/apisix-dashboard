@@ -63,6 +63,8 @@ Owner: this development thread. Scope approved by the user: implement all 20 pro
 
 | 38 | P1 | Full-export paging trusts the first total, and child exports may read only one page or treat an unverified owner404 as empty. | Validate complete page sequences and exact owners before claiming complete coverage; preserve explicitly incomplete endpoint skips. | Implementing with 32 |
 
+| 41 | P2 | At a 645px window the three Routes header actions retained their width, squeezing the title to a 195px-high vertical word and the description to single-character lines after RAW minimizing. | Reflow by available header content width, keep complete text and actions usable across phone/intermediate/desktop widths and sidebar changes, preserve keyboard/back navigation. | Verified: fail-before/pass-after at645px; 74 header/table/diagnostics fixtures, lint, TypeScript and production build; screenshots in docs/design/page-header-reflow. |
+
 ## Execution log
 
 - Baseline: master 4b8216f5. Existing local changes remain preserved.

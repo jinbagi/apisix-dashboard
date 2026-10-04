@@ -19,12 +19,15 @@
 }
 
 .row {
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 24px;
 }
 
 .titleGroup {
+  flex: 1 1 320px;
   min-width: 0;
+  max-width: 100%;
   gap: 10px;
 }
 
@@ -36,6 +39,7 @@
 }
 
 .titleRow {
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -57,13 +61,19 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.extra > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 @media (max-width: 640px) {
   .row {
     align-items: flex-start;
-    flex-direction: column;
   }
 
   .extra {
