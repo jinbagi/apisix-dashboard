@@ -36,11 +36,17 @@ function exportData(decorations: Record<string, unknown>[], services: Record<str
 
 type MockResponse = { status?: number; body: unknown };
 async function mockAdmin(page: Page, respond: (path: string, request: Request) => MockResponse | undefined | Promise<MockResponse | undefined>) {
+  const records = new Map<string, Record<string, unknown>>();
   await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('test-admin-key')));
   await page.route('**/apisix/admin/**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname.replace('/apisix/admin', '');
-    const response = await respond(path, request);
+    let response = await respond(path, request);
+    if (request.method() === 'PUT' && (response?.status ?? 200) < 400) {
+      const segments = path.split('/').map(decodeURIComponent);
+      records.set(path, { ...request.postDataJSON(), id: segments.at(-1), ...(segments[3] === 'graphql_cost_decorations' ? { service_id: segments[2] } : {}) });
+    }
+    if (!response && request.method() === 'GET' && records.has(path)) response = { body: { value: records.get(path), key: `/apisix${path}` } };
     if (!response && request.method() === 'GET' && /^\/services\/[^/]+(?:\/graphql_cost_decorations\/[^/]+)?$/.test(path)) {
       await route.fulfill({ status: 404, json: { error_msg: 'Not found' } });
       return;
@@ -163,6 +169,7 @@ test('does not claim validation success when an imported decoration has an empty
 test('reports a missing owner per item and continues importing a later valid decoration', async ({ page }) => {
   const writes: { path: string; body: unknown }[] = [];
   await mockAdmin(page, (path, request) => {
+    if (request.method() === 'GET' && path === '/services/service-a') return { body: { value: { id: 'service-a' } } };
     if (request.method() === 'PUT') {
       const body = request.postDataJSON();
       writes.push({ path, body });

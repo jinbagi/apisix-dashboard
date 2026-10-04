@@ -24,7 +24,7 @@ import { JsonChangeReview } from '@/components/form/JsonChangeReview';
 export const ImportChangePreview = ({ items, selectedKeys, onSelectionChange, disabled }: {
   items: ImportPreviewItem[]; selectedKeys?: string[]; onSelectionChange?: (keys: string[]) => void; disabled?: boolean;
 }) => {
-  const [review, setReview] = useState<ImportPreviewItem | null>(null);
+  const [review, setReview] = useState<{ row: ImportPreviewItem; mapping: boolean } | null>(null);
   const colors = { New: 'green', Changed: 'orange', Unchanged: 'default', Blocked: 'red' };
   return (
     <>
@@ -40,15 +40,17 @@ export const ImportChangePreview = ({ items, selectedKeys, onSelectionChange, di
       } : undefined} size="small" rowKey="key" dataSource={items} pagination={{ pageSize: 8 }} scroll={{ x: 640 }}
         columns={[
           { title: 'Resource', key: 'resource', render: (_, row) => RESOURCE_LABELS[row.resourceType] },
+          { title: 'Exported source', key: 'source', render: (_, row) => <Typography.Text style={{ overflowWrap: 'anywhere' }}>{row.sourceUrl ?? row.url ?? row.id}</Typography.Text> },
           { title: 'Destination', key: 'destination', render: (_, row) => <Typography.Text style={{ overflowWrap: 'anywhere' }}>{row.url ?? row.id}</Typography.Text> },
           { title: 'Action', dataIndex: 'status', key: 'status', render: (status: ImportPreviewItem['status']) => <Tag color={colors[status]}>{status}</Tag> },
           { title: 'Details', key: 'details', render: (_, row) => row.error
             ? <Typography.Text type="danger">{row.error}</Typography.Text>
-            : <Button size="small" onClick={() => setReview(row)}>Compare JSON</Button> },
+            : <><Button size="small" onClick={() => setReview({ row, mapping: false })}>Compare JSON</Button>
+              {row.sourceBody && <Button size="small" onClick={() => setReview({ row, mapping: true })}>Review mapping</Button>}</> },
         ]} />
-      <JsonChangeReview open={review !== null} title="Import JSON comparison"
-        description={`${review?.url ?? ''} — current configuration on the left; imported payload on the right. Fields absent from the imported payload may be removed by PUT.`}
-        original={JSON.stringify(review?.before ?? {}, null, 2)} modified={JSON.stringify(review?.after ?? {}, null, 2)}
+      <JsonChangeReview open={review !== null} title={review?.mapping ? 'Import mapping comparison' : 'Import JSON comparison'}
+        description={review?.mapping ? `${review.row.sourceUrl} → ${review.row.url}: exported payload on the left; mapped payload on the right.` : `${review?.row.url ?? ''} — current configuration on the left; imported payload on the right. Fields absent from the imported payload may be removed by PUT.`}
+        original={JSON.stringify((review?.mapping ? review.row.sourceBody : review?.row.before) ?? {}, null, 2)} modified={JSON.stringify(review?.row.after ?? {}, null, 2)}
         confirmText="Back to import preview" onCancel={() => setReview(null)} onSave={() => setReview(null)} />
     </>
   );

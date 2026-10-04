@@ -14,8 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { test } from '@e2e/utils/test';
-import { expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 import type { ExportData } from '@/apis/export-import';
 
@@ -67,14 +66,25 @@ test('imports uploaded resources with sanitized PUT payloads', async ({
     },
   };
   const requests: Array<{ url: string; body: Record<string, unknown> }> = [];
+  const records = new Map<string, Record<string, unknown>>();
 
+  await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('fixture-key')));
   await page.route('**/apisix/admin/**', async (route) => {
     const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (request.method() === 'GET' && records.has(path)) {
+      await route.fulfill({ json: { value: records.get(path), key: path.replace('/apisix/admin', '/apisix') } });
+      return;
+    }
     if (request.method() === 'GET' && /\/(consumers\/alice(?:\/credentials\/key-auth-main)?|secrets\/vault\/vault-secret)$/.test(new URL(request.url()).pathname)) {
       await route.fulfill({ status: 404, json: { error_msg: 'Not found' } });
       return;
     }
     if (request.method() === 'PUT') {
+      const body = request.postDataJSON();
+      const id = path.split('/').at(-1)!;
+      const value = path === '/apisix/admin/consumers/alice' ? body : { ...body, id };
+      records.set(path, value);
       requests.push({
         url: new URL(request.url()).pathname,
         body: request.postDataJSON() as Record<string, unknown>,
@@ -82,11 +92,11 @@ test('imports uploaded resources with sanitized PUT payloads', async ({
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ value: request.postDataJSON() }),
+        body: JSON.stringify({ value, key: path.replace('/apisix/admin', '/apisix') }),
       });
       return;
     }
-    await route.continue();
+    await route.fulfill({ json: { list: [], total: 0 } });
   });
 
   await page.goto('export_import');
