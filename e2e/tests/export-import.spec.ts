@@ -118,7 +118,7 @@ test('imports uploaded resources with sanitized PUT payloads', async ({
   await page.getByRole('button', { name: 'Import Selected Resources' }).click();
   await page
     .getByRole('dialog', { name: 'Confirm Import' })
-    .getByRole('button', { name: 'Import' })
+    .getByRole('button', { name: 'Import', exact: true })
     .click();
 
   await expect(

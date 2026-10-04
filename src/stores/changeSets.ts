@@ -25,8 +25,9 @@ export type StagedChange = {
   resourceType: ResourceKey; item: Record<string, unknown>;
   baseline?: Record<string, unknown> | null;
   outcome?: 'verified' | 'uncertain'; detail?: string;
+  verifiedAfter?: Record<string, unknown>; resumeError?: string;
 };
-export const changeSetAtom = atom<{ drafts: StagedChange[]; plan: ChangeSetRow[] | null; busy: boolean }>({ drafts: [], plan: null, busy: false });
+export const changeSetAtom = atom<{ drafts: StagedChange[]; plan: ChangeSetRow[] | null; busy: boolean; needsRecheck?: boolean }>({ drafts: [], plan: null, busy: false });
 export const changeUrl = (draft: StagedChange) => getImportRequest(draft.resourceType, draft.item).url;
 
 /** Staging is memory only. All destinations are checked before any draft is added. */

@@ -55,7 +55,7 @@ test.afterEach(() => { req.defaults.adapter = adapter; store.set(adminKeyAtom, '
 
 async function execute(plan: ChangeSetRow[]) {
   const results = new Map<string, ChangeSetRow>();
-  await applyChangeSet(plan, (row, outcome) => { results.set(row.url!, row); if (outcome) row.draft.outcome = outcome; });
+  await applyChangeSet(plan, (row, outcome) => { results.set(row.url!, row); if (outcome) Object.assign(plan.find((entry) => entry.url === row.url)!.draft, row.draft, { outcome }); });
   return results;
 }
 

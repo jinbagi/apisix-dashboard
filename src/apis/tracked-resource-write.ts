@@ -42,6 +42,13 @@ function comparable(api: string, body: Record<string, unknown>, paths: string[])
   }
   return result;
 }
+export function matchesTrackedPut(api: string, body: Record<string, unknown>, before: Record<string, unknown> | null, after: Record<string, unknown> | null) {
+  if (after === null) return false;
+  const paths = getHistoryIgnoredPaths(api);
+  const sent = comparable(api, body, paths);
+  const expected = before ? buildPatchPayload(sent, comparable(api, before, paths)) : sent;
+  return getPatchMismatchPaths(sent, after).length === 0 && getPatchMismatchPaths(expected, after).length === 0;
+}
 async function readResource(api: string): Promise<Record<string, unknown> | null> {
   try {
     const response = await req.get(api, { timeout: 15_000, headers: skips });
@@ -59,7 +66,7 @@ export class UnverifiedResourceWriteError extends Error {
 export async function trackResourceWrite<T extends AxiosResponse>(
   options: { source: HistorySource; method: string; api: string; body?: unknown; allowUntracked?: boolean; beforeWrite?: (before: Record<string, unknown> | null) => void | Promise<void> },
   write: () => Promise<T>,
-): Promise<{ response: T; history: HistoryOutcome }> {
+): Promise<{ response: T; history: HistoryOutcome; verified?: { before: Record<string, unknown> | null; after: Record<string, unknown> | null } }> {
   const { source, api, body } = options;
   const method = options.method.toUpperCase();
   const target = getHistoryTarget(api);
@@ -115,7 +122,7 @@ export async function trackResourceWrite<T extends AxiosResponse>(
           verification: hasHistoryProtectedFields(detailApi, before, body, after) ? 'readable' : 'full',
           restoreAfter,
         });
-        return { response, history: entry
+        return { response, verified: { before, after }, history: entry
           ? { status: 'recorded', message: 'Read-back verified. Resource history includes the observed before and after values.' }
           : { status: 'unchanged', message: 'Read-back verified, with no observed configuration change. Protected fields may not expose changes; no history entry was added.' } };
       }

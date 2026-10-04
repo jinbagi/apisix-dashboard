@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { verifiedJournalBody } from '@/apis/change-journal';
 import { environmentReferences, verifyEnvironmentReferences } from '@/apis/environment-import';
 import { EXPORT_VERSION, type ExportData,getImportRequest, IMPORT_ORDER } from '@/apis/export-import';
 import { type ImportPreviewItem, importResourceBody, previewImport, readImportResource } from '@/apis/import-preview';
@@ -40,11 +41,16 @@ export async function previewChangeSet(drafts: StagedChange[]): Promise<ChangeSe
     const dependencies = references.map((ref) => ({ field: ref.field,
       url: `/${ref.targetKind}/${encodeURIComponent(String(ref.value))}`, staged: false }));
     const result: ChangeSetRow = { ...row, draft, dependencies };
-    if (draft?.outcome === 'uncertain') {
+    if (draft?.resumeError) {
+      result.status = 'Blocked'; result.error = draft.resumeError;
+    } else if (draft?.outcome === 'uncertain') {
       result.status = 'Blocked'; result.result = 'Uncertain'; result.error = 'A previous write may have been applied. Inspect the destination before discarding or restaging this item. It will not be retried.';
     } else if (draft?.outcome === 'verified') {
+      if (draft.verifiedAfter && !isDeepEqual(row.before, draft.verifiedAfter)) {
+        result.status = 'Blocked'; result.error = 'A previously verified destination changed. Recheck the journal and inspect it before continuing.';
+      }
       result.result = hasHistoryProtectedFields(row.url!, row.after) ? 'Verified readable fields' : 'Verified';
-      result.detail = 'Previously verified. This item will not be written again.';
+      result.detail = draft.detail ?? 'Previously verified. This item will not be written again.';
     } else if (draft?.baseline !== undefined && row.status !== 'Blocked' && !isDeepEqual(draft.baseline, row.before)) {
       result.status = 'Blocked'; result.error = 'The destination changed since this draft was staged. Reload the source, resolve changes, and stage again.';
     }
@@ -75,7 +81,7 @@ export async function previewChangeSet(drafts: StagedChange[]): Promise<ChangeSe
 }
 
 /** Serial writes stop at the first failure. Only GET verification is retried. */
-export async function applyChangeSet(plan: ChangeSetRow[], update: (row: ChangeSetRow, outcome?: StagedChange['outcome']) => void) {
+export async function applyChangeSet(plan: ChangeSetRow[], update: (row: ChangeSetRow, outcome?: StagedChange['outcome']) => void | Promise<void>) {
   if (plan.some((row) => row.status === 'Blocked')) throw new Error('Resolve every blocked item before applying this change set.');
   for (const row of plan) {
     if (row.draft.outcome) continue;
@@ -83,23 +89,25 @@ export async function applyChangeSet(plan: ChangeSetRow[], update: (row: ChangeS
     try {
       const current = await readImportResource(row.resourceType, row.url!);
       if (!isDeepEqual(current, row.before)) throw new Error('The destination changed after preview. Nothing was written for this item. Preview again.');
-      if (row.status === 'Unchanged') { update({ ...row, result: 'Unchanged', detail: 'Fresh read confirmed no changes.' }); continue; }
+      if (row.status === 'Unchanged') { await update({ ...row, draft: { ...row.draft, baseline: row.before, verifiedAfter: current! }, result: 'Unchanged', detail: 'Fresh read confirmed no changes.' }, 'verified'); continue; }
       await verifyEnvironmentReferences(row);
       const { body, url } = getImportRequest(row.resourceType, row.draft.item);
-      await trackResourceWrite({ source: 'changeset', method: 'PUT', api: url, body, beforeWrite: (snapshot) => {
+      const verified = await trackResourceWrite({ source: 'changeset', method: 'PUT', api: url, body, beforeWrite: (snapshot) => {
         const latest = snapshot === null ? null : importResourceBody(row.resourceType, url, snapshot);
         if (!isDeepEqual(latest, row.before)) throw new Error('The destination changed before writing. Preview again.');
       } }, async () => {
-        sent = true; update({ ...row, result: 'Uncertain', detail: 'Writing and verifying with APISIX…' }, 'uncertain');
+        await update({ ...row, draft: { ...row.draft, baseline: row.before }, result: 'Uncertain', detail: 'Writing and verifying with APISIX…' }, 'uncertain');
+        sent = true;
         return req.put(url, body);
       });
       const readable = hasHistoryProtectedFields(url, row.before, body);
-      update({ ...row, result: readable ? 'Verified readable fields' : 'Verified', detail: readable
+      if (!verified.verified?.after) throw new UnverifiedResourceWriteError();
+      await update({ ...row, draft: { ...row.draft, baseline: row.before, verifiedAfter: verifiedJournalBody(row.draft, verified.verified.after) }, result: readable ? 'Verified readable fields' : 'Verified', detail: readable
         ? 'APISIX accepted the write and readable fields match. Protected values cannot be verified from read-back.'
         : 'Read-back verified. This item will not be written again.' }, 'verified');
     } catch (error) {
       const uncertain = sent || error instanceof UnverifiedResourceWriteError;
-      update({ ...row, result: uncertain ? 'Uncertain' : 'Blocked', detail: uncertain
+      await update({ ...row, draft: { ...row.draft, ...(sent ? { baseline: row.before } : {}) }, result: uncertain ? 'Uncertain' : 'Blocked', detail: uncertain
         ? 'A write was sent, but its final state is uncertain. Execution stopped; inspect the destination before restaging. No automatic retry.' : failure(error) }, uncertain ? 'uncertain' : undefined);
       return;
     }

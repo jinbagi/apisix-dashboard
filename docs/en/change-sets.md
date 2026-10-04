@@ -1,6 +1,6 @@
 # Change sets
 
-Use **Stage change** in a RAW editor or **Stage selected** in an Import preview to collect related changes. Staging copies the draft into memory and sends no write request. The RAW editor keeps its draft. Open **Tools → Change sets** to review all destinations together.
+Use **Stage change** in a RAW editor or **Stage for resumable import** in an Import preview to collect related changes. Staging copies the draft into memory and sends no write request. The RAW editor keeps its draft. Open **Tools → Change sets** to review all destinations together.
 
 Change sets support native Admin API resources already supported by Import, including Consumer Credentials and Service GraphQL Cost Decorations. Every staged change has an explicit resource ID and uses **PUT**: create a missing resource or replace an existing writable configuration. Fields absent from the replacement may be removed. Generated-ID POSTs, arbitrary Console subpaths and deletion are not part of this workflow.
 
@@ -17,7 +17,7 @@ This is sequential execution with conflict detection from fresh reads, not atomi
 
 ## Lifetime and privacy
 
-Drafts and outcomes are kept in this browser tab's memory and survive navigation within the app. Closing or reloading the tab removes them; a browser unload prompt helps prevent accidental loss. Nothing is persisted to local storage by Change sets. Configuration payloads may include secrets, so the workspace does not log them or include session credentials.
+Drafts and outcomes are kept in this browser tab's memory and survive navigation within the app. Closing or reloading the tab removes unsaved drafts; a browser unload prompt helps prevent accidental loss. With an encrypted journal enabled, only the last checkpoint survives reload. Newly staged items and draft removals are checkpointed on the next Preview or Apply. To save the current drafts immediately, open Encrypted journal and choose Encrypt and enable checkpoints. If you remove every staged draft, the saved checkpoint still remains; use Remove encrypted journal to explicitly remove that stored copy. See [Resumable import journals](resumable-import.md) for opt-in encrypted checkpoints and reconnection checks. Configuration payloads may include secrets, so the workspace does not log them or include session credentials.
 
 ## Validation evidence
 
