@@ -268,3 +268,35 @@ test('an earlier read cannot replace a verified save after the tab becomes clean
   await expect(activePanel(page).getByRole('button', { name: 'Save Changes', exact: true })).toBeDisabled();
   expect(writes).toEqual([{ path: '/routes/tab-route', body: { desc: 'Verified before old read' } }]);
 });
+
+test('inactive RAW widgets suspend without losing model undo history and close disposes the model', async ({ page }) => {
+  const { writes } = await mockApi(page);
+  await openRoute(page);
+  const original = await editorValue(page);
+  const model = await page.evaluateHandle(() => window.__monacoEditor__!.getModel()!);
+  await page.evaluate(() => {
+    const editor = window.__monacoEditor__!;
+    editor.pushUndoStop();
+    editor.executeEdits('fixture', [{ range: editor.getModel()!.getFullModelRange(), text: editor.getValue().replace('Route before', 'Undo survives') }]);
+    editor.pushUndoStop();
+  });
+  await expect.poll(() => editorValue(page)).toContain('Undo survives');
+  await openService(page);
+  await expect(page.locator('.monaco-editor')).toHaveCount(1);
+  expect(await model.evaluate((value) => value.isDisposed())).toBe(false);
+  await drawer(page).getByRole('tab', { name: /Route: Catalog route/ }).click();
+  await expect(activePanel(page).getByRole('textbox', { name: 'Editor content' })).toBeVisible();
+  expect(await model.evaluate((value) => value === window.__monacoEditor__!.getModel())).toBe(true);
+  await activePanel(page).getByRole('textbox', { name: 'Editor content' }).press('ControlOrMeta+z');
+  await expect.poll(() => editorValue(page)).toBe(original);
+  await drawer(page).getByRole('button', { name: 'Minimize', exact: true }).click();
+  await expect(page.locator('.monaco-editor')).toHaveCount(0);
+  expect(await model.evaluate((value) => value.isDisposed())).toBe(false);
+  await page.getByRole('button', { name: 'Open RAW workspace (2 tabs)', exact: true }).click();
+  await expect(activePanel(page).getByRole('textbox', { name: 'Editor content' })).toBeVisible();
+  await drawer(page).getByRole('button', { name: 'Close all', exact: true }).click();
+  await expect(page.locator('.monaco-editor')).toHaveCount(0);
+  expect(await model.evaluate((value) => value.isDisposed())).toBe(true);
+  await model.dispose();
+  expect(writes).toEqual([]);
+});

@@ -96,8 +96,78 @@ test('deleted fields jump to their parent and controls fit a narrow viewport', a
   await drawer(page).getByRole('button', { name: 'Next field', exact: true }).click();
   expect(await page.evaluate(() => window.__monacoEditor__?.getPosition()?.lineNumber)).toBe(1);
   await page.setViewportSize({ width: 390, height: 844 });
+  await drawer(page).getByRole('button', { name: 'Show JSON tools', exact: true }).click();
   for (const label of ['Next field', 'Copy JSON path']) {
     const box = await drawer(page).getByRole('button', { name: label, exact: true }).boundingBox();
     expect(box!.x + box!.width).toBeLessThanOrEqual(391);
   }
+});
+
+test('narrow RAW gives editor space to the draft while keyboard tools remain available', async ({ page }, info) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const controls = await setup(page);
+  const draft = JSON.stringify({ ...editable, desc: 'Mobile draft' }, null, 2);
+  await fillRaw(page, draft);
+  const raw = drawer(page);
+  const toggle = raw.getByRole('button', { name: 'Show JSON tools', exact: true });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(raw.getByRole('button', { name: 'Next field', exact: true })).toHaveCount(0);
+  await expect(raw.getByText('Minimize keeps tabs. Reload clears them.', { exact: true })).toBeVisible();
+  const collapsed = (await raw.locator('.monaco-editor').boundingBox())!.height;
+  expect(collapsed).toBeGreaterThan(300);
+  await page.screenshot({ path: info.outputPath('raw-mobile-editor.png'), animations: 'disabled' });
+  await toggle.focus(); await toggle.press('Enter');
+  await expect(raw.getByRole('button', { name: 'Hide JSON tools', exact: true })).toHaveAttribute('aria-expanded', 'true');
+  const expanded = (await raw.locator('.monaco-editor').boundingBox())!.height;
+  expect(collapsed - expanded).toBeGreaterThanOrEqual(75);
+  await raw.getByRole('button', { name: 'Copy JSON path', exact: true }).focus();
+  await raw.getByRole('button', { name: 'Copy JSON path', exact: true }).press('Escape');
+  await expect(toggle).toBeFocused();
+  await expect(raw.getByRole('button', { name: 'Next field', exact: true })).toHaveCount(0);
+  const content = raw.getByRole('textbox', { name: 'Editor content' });
+  await content.focus(); await content.press('Alt+]');
+  await expect.poll(() => page.evaluate(() => {
+    const editor = window.__monacoEditor__!; return editor.getModel()!.getLineContent(editor.getPosition()!.lineNumber);
+  })).toContain('Mobile draft');
+  expect(await page.evaluate(() => window.__monacoEditor__!.getValue())).toBe(draft);
+  await expect(raw.getByRole('button', { name: 'Save Changes', exact: true })).toBeInViewport({ ratio: 1 });
+  expect(controls.writes).toEqual([]);
+});
+
+test('narrow collapsed tools keep errors visible and F8 navigates to the invalid field', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const controls = await setup(page);
+  await fillRaw(page, JSON.stringify({ ...editable, priority: 'invalid' }, null, 2));
+  const raw = drawer(page);
+  await expect(raw.getByText('Current payload needs attention:', { exact: true })).toBeVisible();
+  await expect(raw.getByRole('button', { name: 'Show JSON tools', exact: true })).toHaveAttribute('aria-expanded', 'false');
+  const problem = raw.getByRole('button', { name: /Next problem/ });
+  await expect(problem).toBeVisible();
+  await expect(problem).toBeEnabled();
+  await raw.getByRole('textbox', { name: 'Editor content' }).press('F8');
+  await expect.poll(() => page.evaluate(() => {
+    const editor = window.__monacoEditor__!; return editor.getModel()!.getLineContent(editor.getPosition()!.lineNumber);
+  })).toContain('priority');
+  await expect(raw.getByRole('status')).toContainText('/priority');
+  await fillRaw(page, JSON.stringify(editable, null, 2));
+  await expect(problem).toHaveCount(0);
+  await expect(raw.getByRole('button', { name: 'Show guidance', exact: true })).toBeVisible();
+  expect(controls.writes).toEqual([]);
+});
+
+test('resizing a RAW panel folds navigation and closes its selector without changing the draft', async ({ page }) => {
+  await setup(page);
+  await fillRaw(page, JSON.stringify({ ...editable, desc: 'Keep selection' }, null, 2));
+  const raw = drawer(page);
+  await raw.getByRole('combobox', { name: 'Changed JSON field', exact: true }).click();
+  await expect(page.getByRole('option')).toHaveCount(1);
+  await raw.getByRole('separator', { name: 'Resize RAW panel', exact: true }).press('Home');
+  await expect(raw.getByRole('button', { name: 'Show JSON tools', exact: true })).toBeVisible();
+  await expect(page.getByRole('option')).toHaveCount(0);
+  await raw.getByRole('button', { name: 'Show JSON tools', exact: true }).click();
+  await expect(raw.getByRole('combobox', { name: 'Changed JSON field', exact: true })).toBeVisible();
+  await raw.getByRole('separator', { name: 'Resize RAW panel', exact: true }).press('End');
+  await expect(raw.getByRole('button', { name: 'Hide JSON tools', exact: true })).toHaveCount(0);
+  await expect(raw.getByRole('button', { name: 'Next field', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => JSON.parse(window.__monacoEditor__!.getValue()).desc)).toBe('Keep selection');
 });
