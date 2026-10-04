@@ -26,3 +26,7 @@ Fixture-based tests exercise real encryption and decryption, wrong passwords and
 ### Follow-up 45: concurrent-checkpoint evidence
 
 The original same-module concurrency fixture expected one executor Promise to reject. The executor can instead preserve a Blocked or Uncertain result through its update callback and return normally, so that assertion depended on encryption scheduling. The strengthened fixture requires exactly one PUT and one history entry, a blocked competing attempt, a verified or uncertain encrypted outcome, and no duplicate write after decrypting and reconciling it. A separate browser fixture uses independent tabs against shared mock destination records: the stale archive is rejected, each destination is written once, and reopening the winning archive in the stale tab reconciles completed items without replay. This follow-up changes test coverage only; the executor and archive-locking behavior are unchanged.
+
+### Follow-up 49: direct Import selection in the combined workflow
+
+The complete integrated APISIX 3.19 run exposed one legacy fixture using a substring match for the Import button. The new Stage for resumable import action also matched that selector, so Playwright stopped before any import with a strict locator error. The fixture now targets the exact Import action inside Confirm Import. It retains the complete assertions for three sanitized PUT payloads; no application behavior, payload contract or validation is weakened.
