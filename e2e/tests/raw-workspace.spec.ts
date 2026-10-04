@@ -17,7 +17,9 @@
 import { uiFillMonacoEditor } from '@e2e/utils/ui';
 import { expect, type Page, test } from '@playwright/test';
 
+import { applyBulkPatch } from '@/apis/bulk-patch';
 import { getPatchConflictPaths } from '@/utils/apisixEditable';
+import { rawConflicts, resolveRawConflicts } from '@/utils/rawConflict';
 
 const original = {
   id: 'workspace', name: 'Workspace route', uri: '/workspace/*', desc: 'Before',
@@ -47,7 +49,7 @@ async function mockApi(page: Page, controls: { latest?: Record<string, unknown>;
       if (request.method() === 'PATCH') {
         const body = request.postDataJSON();
         writes.push(body);
-        value = { ...value, ...body };
+        value = applyBulkPatch(value, body);
       }
       return route.fulfill({ json: { value } });
     }
@@ -187,6 +189,8 @@ test('RAW blocks a conflicting save and preserves the draft until latest is expl
   await drawer.getByRole('button', { name: 'Save Changes', exact: true }).click();
   const conflict = page.getByRole('dialog', { name: 'Resolve concurrent changes' });
   await expect(conflict.getByText(/These fields changed in APISIX while you were editing: desc/)).toBeVisible();
+  await expect(conflict.getByRole('region', { name: 'Conflict /desc', exact: true })).toBeVisible();
+  await conflict.getByRole('tab', { name: 'Compare JSON' }).click();
   await expect(conflict.locator('.monaco-diff-editor')).toBeVisible();
   await expect(conflict).toHaveCSS('transform', 'none');
   await page.screenshot({ path: testInfo.outputPath('raw-conflict.png'), animations: 'disabled' });
@@ -239,4 +243,83 @@ test('conflict detection respects nested changes, field removal, arrays, and ide
     { desc: 'before', plugins: {} }, { desc: 'same' })).toEqual([]);
   expect(getPatchConflictPaths({ plugins: { cors: { max_age: 10 } } },
     { plugins: { cors: { max_age: 5 } } }, {})).toEqual(['plugins']);
+});
+
+
+test('RAW resolves fields individually, preserves independent edits, and saves a rebased patch', async ({ page }, testInfo) => {
+  const controls: { latest?: Record<string, unknown> } = {};
+  const writes = await mockApi(page, controls);
+  const drawer = await openRaw(page);
+  const draft = { ...editable, name: 'My name', desc: 'My description', future_field: { preserved: true, local: 'keep' } };
+  await uiFillMonacoEditor(page, drawer.locator('.monaco-editor'), JSON.stringify(draft));
+  controls.latest = { ...original, name: 'Server name', desc: 'Server description', future_field: { preserved: true, remote: 'keep' } };
+  await drawer.getByRole('button', { name: 'Save Changes', exact: true }).click();
+  const conflict = page.getByRole('dialog', { name: 'Resolve concurrent changes' });
+  await expect(conflict.getByRole('button', { name: 'Apply choices to draft' })).toBeDisabled();
+  await conflict.getByRole('region', { name: 'Conflict /name', exact: true }).getByRole('radio', { name: 'Keep server value' }).check();
+  await conflict.getByRole('region', { name: 'Conflict /desc', exact: true }).getByRole('radio', { name: 'Keep my value' }).check();
+  await expect(conflict.getByRole('status')).toHaveText('0 of 2 choices remaining');
+  await page.screenshot({ path: testInfo.outputPath('raw-field-conflicts.png'), animations: 'disabled' });
+  await conflict.getByRole('button', { name: 'Apply choices to draft' }).click();
+  expect(writes).toEqual([]);
+  await expect.poll(async () => JSON.parse((await page.evaluate(() => window.__monacoEditor__?.getValue())) ?? '{}')).toEqual({
+    ...editable, name: 'Server name', desc: 'My description', future_field: { preserved: true, local: 'keep', remote: 'keep' },
+  });
+  await drawer.getByRole('button', { name: 'Save Changes', exact: true }).click();
+  await expect(drawer.getByText(/Saved at/)).toBeVisible();
+  expect(writes).toEqual([{ desc: 'My description', future_field: { local: 'keep' } }]);
+});
+
+test('RAW rechecks a field after conflict resolution and supports keyboard choices on narrow screens', async ({ page }, testInfo) => {
+  const controls: { latest?: Record<string, unknown> } = {};
+  const writes = await mockApi(page, controls);
+  const drawer = await openRaw(page);
+  await uiFillMonacoEditor(page, drawer.locator('.monaco-editor'), JSON.stringify({ ...editable, desc: 'My draft' }));
+  controls.latest = { ...original, desc: 'Server edit' };
+  await drawer.getByRole('button', { name: 'Save Changes', exact: true }).click();
+  const conflict = page.getByRole('dialog', { name: 'Resolve concurrent changes' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mine = conflict.getByRole('radio', { name: 'Keep my value' });
+  await mine.focus();
+  await mine.press('Space');
+  await expect(mine).toBeChecked();
+  const apply = conflict.getByRole('button', { name: 'Apply choices to draft' });
+  await expect(apply).toBeInViewport({ ratio: 1 });
+  expect(await conflict.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('raw-field-conflicts-narrow.png'), animations: 'disabled' });
+  await apply.click();
+  controls.latest = { ...original, desc: 'Another server edit' };
+  await drawer.getByRole('button', { name: 'Save Changes', exact: true }).click();
+  await expect(conflict).toBeVisible();
+  await expect(conflict.getByText('"Another server edit"', { exact: true })).toBeVisible();
+  await expect(apply).toBeDisabled();
+  expect(writes).toEqual([]);
+});
+
+test('conflict choices preserve server nulls, escaped field names and unrelated edits', () => {
+  const snapshot = {
+    previous: { labels: { 'a.b/c~d': 'old', stable: 'yes' }, desc: 'old', future: 'old' },
+    draft: { labels: { 'a.b/c~d': 'mine', stable: 'yes' }, desc: 'mine', future: 'mine' },
+    latest: { labels: { 'a.b/c~d': 'server', stable: 'yes', other: 'new' }, desc: 'server', future: null },
+  };
+  expect(rawConflicts(snapshot).map(({ pointer }) => pointer)).toEqual(['/labels/a.b~1c~0d', '/desc', '/future']);
+  expect(resolveRawConflicts(snapshot, { '/labels/a.b~1c~0d': 'mine', '/desc': 'server', '/future': 'server' })).toEqual({
+    labels: { 'a.b/c~d': 'mine', stable: 'yes', other: 'new' }, desc: 'server', future: null,
+  });
+  expect(() => resolveRawConflicts(snapshot, {})).toThrow('Choose a value');
+  expect(snapshot.latest.labels['a.b/c~d']).toBe('server');
+});
+
+test('conflict resolution treats arrays and removed objects as whole values', () => {
+  const snapshot = {
+    previous: { methods: ['GET'], plugins: { cors: { max_age: 5, allow_origins: '*' } }, desc: 'before' },
+    draft: { methods: ['POST'], plugins: { cors: { max_age: 10, allow_origins: '*' } } },
+    latest: { methods: ['PUT'], desc: 'server', another: 'preserved' },
+  };
+  expect(resolveRawConflicts(snapshot, { '/methods': 'server', '/plugins': 'mine', '/desc': 'mine' })).toEqual({
+    methods: ['PUT'], plugins: { cors: { max_age: 10, allow_origins: '*' } }, another: 'preserved',
+  });
+  expect(resolveRawConflicts(snapshot, { '/methods': 'mine', '/plugins': 'server', '/desc': 'server' })).toEqual({
+    methods: ['POST'], desc: 'server', another: 'preserved',
+  });
 });

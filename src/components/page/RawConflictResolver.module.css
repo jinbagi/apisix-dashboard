@@ -1,0 +1,7 @@
+.summary { margin-bottom: 12px; }
+.list { max-height: 50vh; overflow-y: auto; }
+.field { border: 1px solid var(--ant-color-border); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+.pointer { overflow-wrap: anywhere; }
+.values { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 12px 0; }
+.values pre { max-height: 160px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0 0; padding: 8px; background: var(--ant-color-fill-tertiary); border-radius: 4px; }
+@media (max-width: 640px) { .values { grid-template-columns: 1fr; } .values pre { max-height: 100px; } }
