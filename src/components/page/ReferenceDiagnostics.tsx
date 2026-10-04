@@ -19,6 +19,7 @@ import { Alert, Button, Collapse, Modal, Space, Table, Tag, Typography } from 'a
 import { useRef, useState } from 'react';
 
 import { diagnoseReferences } from '@/apis/reference-diagnostics';
+import { AffectedRoutes } from '@/components/page/AffectedRoutes';
 import { RawDrawer } from '@/components/page/RawDrawer';
 
 export const ReferenceDiagnostics = () => {
@@ -63,7 +64,7 @@ export const ReferenceDiagnostics = () => {
             { title: 'Source / field', key: 'source', render: (_, row) => <Space orientation="vertical"><Typography.Text code>{row.source}</Typography.Text><Typography.Text style={{ overflowWrap: 'anywhere' }}>{row.field}</Typography.Text></Space> },
             { title: 'Target', dataIndex: 'target', render: (value) => <Typography.Text style={{ overflowWrap: 'anywhere' }}>{value}</Typography.Text> },
             { title: 'Result', key: 'status', render: (_, row) => <Tag color={row.status === 'Not verified' ? 'orange' : 'red'}>{row.status}</Tag> },
-            { title: 'Potentially affected Routes', key: 'affected', render: (_, row) => <Typography.Text style={{ overflowWrap: 'anywhere' }}>{row.affected.join(', ') || (/^\/consumer(?:s|_groups)\//.test(row.source) ? 'Depends on the authenticated Consumer' : 'No Route references observed')}</Typography.Text> },
+            { title: 'Potentially affected Routes', key: 'affected', render: (_, row) => <AffectedRoutes routes={row.affected} source={row.source} /> },
             { title: 'Repair', key: 'repair', render: (_, row) => <Button onClick={() => { setEditing(row.source); setOpen(false); }}>Open source RAW</Button> },
           ]} />
         </>}

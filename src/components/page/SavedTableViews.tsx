@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 import { Alert, Button, Input, Modal, Popconfirm, Select, Tag } from 'antd';
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { z } from 'zod';
 
 import { columnFiltersSchema } from '@/types/schema/pageSearch';
@@ -41,10 +41,10 @@ const savedViewSchema = z.object({
 type SavedView = z.infer<typeof savedViewSchema>;
 export type TableViewSnapshot = z.infer<typeof snapshotSchema>;
 
-function readViews(key: string): SavedView[] {
+function readViews(key: string, strict = false): SavedView[] {
   try {
     const entries: unknown = JSON.parse(localStorage.getItem(key) ?? '[]');
-    if (!Array.isArray(entries)) return [];
+    if (!Array.isArray(entries)) throw new Error('Invalid saved views');
     const names = new Set<string>();
     return entries.flatMap((entry) => {
       const parsed = savedViewSchema.safeParse(entry);
@@ -53,6 +53,7 @@ function readViews(key: string): SavedView[] {
       return [parsed.data];
     }).slice(0, 20);
   } catch {
+    if (strict) throw new Error('Saved views could not be read. Existing browser storage was preserved.');
     return [];
   }
 }
@@ -72,6 +73,20 @@ export function SavedTableViews({
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const id = useId();
+  const [busy, setBusy] = useState(false);
+  const openedViews = useRef<SavedView[]>([]);
+  const deletingView = useRef<SavedView | undefined>(undefined);
+  useEffect(() => {
+    const sync = (event: StorageEvent) => {
+      if (event.storageArea !== localStorage || (event.key !== null && event.key !== storageKey)) return;
+      try {
+        const fresh = readViews(storageKey, true); setViews(fresh);
+        setSelected((current) => fresh.some((view) => view.name === current) ? current : undefined);
+      } catch (cause) { setError((cause as Error).message); }
+    };
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
+  }, [storageKey]);
   const chosen = views.find((view) => view.name === selected);
   const trimmedName = name.trim();
   const replacing = views.some((view) => view.name === trimmedName);
@@ -88,18 +103,53 @@ export function SavedTableViews({
       return false;
     }
   };
-  const save = () => {
-    if (!trimmedName) return;
-    if (!replacing && views.length >= 20) {
-      setError('You can save up to 20 views per table. Delete a view before adding another.');
-      return;
-    }
-    const next = { name: trimmedName, snapshot: snapshotSchema.parse(snapshot) };
-    if (persist(replacing ? views.map((view) => view.name === trimmedName ? next : view) : [...views, next])) {
-      setSelected(trimmedName);
-      setOpen(false);
-    }
+  const mutate = async (action: (fresh: SavedView[]) => void) => {
+    setBusy(true);
+    try {
+      const run = () => { const fresh = readViews(storageKey, true); setViews(fresh); action(fresh); };
+      if (navigator.locks) await navigator.locks.request(storageKey, { ifAvailable: true }, (lock) => {
+        if (!lock) throw new Error('Another tab is saving views. Try again in a moment.');
+        run();
+      });
+      else run();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not update saved views.'); }
+    finally { setBusy(false); }
   };
+  const save = () => {
+    if (!trimmedName || busy) return;
+    void mutate((fresh) => {
+      const previous = openedViews.current.find((view) => view.name === trimmedName);
+      const latest = fresh.find((view) => view.name === trimmedName);
+      if (JSON.stringify(previous) !== JSON.stringify(latest)) {
+        setError('This saved view changed in another tab. Close and reopen this dialog before replacing it.'); return;
+      }
+      if (!latest && fresh.length >= 20) {
+        setError('You can save up to 20 views per table. Delete a view before adding another.'); return;
+      }
+      const next = { name: trimmedName, snapshot: snapshotSchema.parse(snapshot) };
+      if (persist(latest ? fresh.map((view) => view.name === trimmedName ? next : view) : [...fresh, next])) {
+        setSelected(trimmedName); setOpen(false);
+      }
+    });
+  };
+  const apply = (viewName: string) => {
+    try {
+      const fresh = readViews(storageKey, true); setViews(fresh);
+      const view = fresh.find((entry) => entry.name === viewName);
+      if (!view) { setSelected(undefined); setError('This saved view was removed in another tab.'); return; }
+      setSelected(viewName); setError(''); onApply(view.snapshot);
+    } catch (cause) { setError((cause as Error).message); }
+  };
+  const remove = () => mutate((fresh) => {
+    const previous = deletingView.current;
+    if (!previous) return;
+    const latest = fresh.find((view) => view.name === previous.name);
+    if (!latest) { setSelected(undefined); return; }
+    if (JSON.stringify(previous) !== JSON.stringify(latest)) {
+      setError('This saved view changed in another tab. Review it before deleting.'); return;
+    }
+    if (persist(fresh.filter((view) => view.name !== previous.name))) setSelected(undefined);
+  });
 
   return (
     <div className="resource-table-saved-views" role="region" aria-label="Saved table views">
@@ -113,28 +163,22 @@ export function SavedTableViews({
         optionFilterProp="label"
         options={views.map((view) => ({ label: view.name, value: view.name }))}
         notFoundContent="No saved views yet"
-        onChange={(value) => {
-          const view = views.find((entry) => entry.name === value);
-          if (view) {
-            setSelected(value);
-            onApply(view.snapshot);
-          }
-        }}
+        disabled={busy}
+        onChange={apply}
       />
-      <Button onClick={() => { setName(selected ?? ''); setError(''); setOpen(true); }}>Save view</Button>
+      <Button disabled={busy} onClick={() => { openedViews.current = views; setName(selected ?? ''); setError(''); setOpen(true); }}>Save view</Button>
       {chosen && (
         <>
           {modified && <Tag>Modified</Tag>}
-          <Button type="link" size="small" onClick={() => onApply(chosen.snapshot)}>Restore view</Button>
+          <Button type="link" size="small" disabled={busy} onClick={() => apply(chosen.name)}>Restore view</Button>
           <Popconfirm
             title={`Delete saved view “${chosen.name}”?`}
             description="The current table and gateway resources will stay unchanged."
             okText="Delete view"
-            onConfirm={() => {
-              if (persist(views.filter((view) => view.name !== chosen.name))) setSelected(undefined);
-            }}
+            onOpenChange={(visible) => { if (visible) deletingView.current = chosen; }}
+            onConfirm={() => { void remove(); }}
           >
-            <Button type="text" size="small">Delete view</Button>
+            <Button type="text" size="small" disabled={busy}>Delete view</Button>
           </Popconfirm>
         </>
       )}
@@ -145,7 +189,7 @@ export function SavedTableViews({
         onCancel={() => setOpen(false)}
         onOk={save}
         okText={replacing ? 'Update view' : 'Save view'}
-        okButtonProps={{ disabled: !trimmedName }}
+        okButtonProps={{ disabled: !trimmedName || busy, loading: busy }}
         destroyOnHidden
       >
         <p>Keep search, labels, sorting, column filters, column visibility, order, widths, pins, row spacing, and page size together. Views are saved in this browser for this table.</p>

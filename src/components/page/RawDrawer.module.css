@@ -56,3 +56,9 @@
   .body { padding: 12px !important; }
   .tab > span:first-child { max-width: 160px; }
 }
+
+.shortHint { display: none; }
+@media (max-width: 767px) {
+  .fullHint { display: none; }
+  .shortHint { display: inline; }
+}
