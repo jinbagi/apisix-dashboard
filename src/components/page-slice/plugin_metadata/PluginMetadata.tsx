@@ -22,6 +22,7 @@ import { difference } from 'rambdax';
 import { useDeepCompareEffect } from 'react-use';
 
 import { deletePluginMetadataReq, putPluginMetadataReq } from '@/apis/plugins';
+import { trackResourceWrite } from '@/apis/tracked-resource-write';
 import type { PluginCardProps } from '@/components/form-slice/FormItemPlugins/PluginCard';
 import {
   PluginCardList,
@@ -33,10 +34,6 @@ import {
 } from '@/components/form-slice/FormItemPlugins/PluginEditorDrawer';
 import { SelectPluginsDrawer } from '@/components/form-slice/FormItemPlugins/SelectPluginsDrawer';
 import { API_PLUGIN_METADATA } from '@/config/constant';
-import {
-  verifyAdminApiDeletion,
-  verifyAdminApiResource,
-} from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
 
@@ -46,12 +43,11 @@ import classes from './PluginMetadata.module.css';
 export const PluginMetadata = () => {
   const getMetadataListReq = usePluginMetadataList();
   const putMetadata = useMutation({
-    mutationFn: putPluginMetadataReq,
+    mutationFn: async (variables: Parameters<typeof putPluginMetadataReq>[0]) => (await trackResourceWrite({
+      source: 'form', method: 'PUT', api: `${API_PLUGIN_METADATA}/${variables.name}`,
+      body: stripSystemReadonlyFields(variables.config),
+    }, () => putPluginMetadataReq(variables))).response,
     async onSuccess(_, variables) {
-      await verifyAdminApiResource(
-        `${API_PLUGIN_METADATA}/${variables.name}`,
-        stripSystemReadonlyFields(variables.config)
-      );
       await getMetadataListReq.refetch();
       showNotification({
         message: `Plugin Metadata for ${variables.name} saved and verified`,
@@ -60,9 +56,10 @@ export const PluginMetadata = () => {
     },
   });
   const deleteMetadata = useMutation({
-    mutationFn: (name: string) => deletePluginMetadataReq(name),
+    mutationFn: async (name: string) => (await trackResourceWrite({
+      source: 'form', method: 'DELETE', api: `${API_PLUGIN_METADATA}/${name}`,
+    }, () => deletePluginMetadataReq(name))).response,
     async onSuccess(_, name) {
-      await verifyAdminApiDeletion(`${API_PLUGIN_METADATA}/${name}`);
       await getMetadataListReq.refetch();
       showNotification({
         message: `Plugin Metadata for ${name} deleted and verified`,

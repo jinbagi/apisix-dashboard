@@ -20,6 +20,7 @@ import { SKIP_INTERCEPTOR_HEADER } from '@/config/constant';
 import { req } from '@/config/req';
 import { isRecord } from '@/utils/apisixEditable';
 import { supportedPluginReferences } from '@/utils/pluginReferences';
+import { validateExactResourceSnapshot } from '@/utils/resourceIdentity';
 import { assertRestorableExport } from '@/utils/sharingFormat';
 
 export const MAPPABLE_RESOURCES = ['routes', 'streamRoutes', 'services', 'upstreams', 'pluginConfigs', 'consumers', 'consumerGroups', 'protos'] as const;
@@ -163,9 +164,7 @@ export async function verifyEnvironmentReferences(row: ImportPreviewItem, plan: 
     let read = cache.get(target);
     if (!read) {
       read = req.get(target, { timeout: 15_000, headers: { [SKIP_INTERCEPTOR_HEADER]: ['404'] } }).then(({ data }) => {
-        const value = data?.value;
-        if (!isRecord(value) || String(value[ref.targetKind === 'consumers' ? 'username' : 'id']) !== String(ref.value))
-          throw new Error('Destination identity could not be verified');
+        validateExactResourceSnapshot(target, data?.value, data?.key);
       });
       cache.set(target, read);
     }

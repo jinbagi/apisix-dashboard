@@ -277,3 +277,27 @@ test('mapped Consumer credentials and GraphQL child owners keep their parent dep
   expect(controls.writes[1].body).toEqual({ field_path: 'Query.users', add_value: 1 });
   expect(controls.writes[3].body).toEqual({ plugins: { 'key-auth': { key: 'fixture-only-key' } } });
 });
+
+
+test('external reference array IDs and conflicting envelope keys block preview and write preflight', async ({ page }) => {
+  const data = makeData([{ id: 'route', uri: '/route', plugins: { 'grpc-transcode': { proto_id: 'outside' } } }]);
+  const controls = await setup(page, data);
+  let external: { value: unknown; key?: string } = { value: { id: ['outside'], content: 'private-other-proto' } };
+  await page.route('**/apisix/admin/protos/outside', (route) => route.fulfill({ json: external }));
+  await preview(page);
+  await expect(modal(page)).toContainText('Unresolved reference at plugins.grpc-transcode.proto_id');
+  await expect(modal(page).getByRole('button', { name: 'Import', exact: true })).toBeDisabled();
+  await expect(modal(page)).not.toContainText('private-other-proto');
+  await modal(page).getByRole('button', { name: 'Cancel', exact: true }).click();
+  external = { value: { id: 'outside' }, key: '/apisix/protos/other' };
+  await preview(page);
+  await expect(modal(page).getByRole('button', { name: 'Import', exact: true })).toBeDisabled();
+  await modal(page).getByRole('button', { name: 'Cancel', exact: true }).click();
+  external = { value: { id: 'outside' }, key: '/custom-etcd-prefix/protos/outside' };
+  await preview(page);
+  await expect(modal(page).getByRole('button', { name: 'Import', exact: true })).toBeEnabled();
+  external = { value: { id: ['outside'] } };
+  await modal(page).getByRole('button', { name: 'Import', exact: true }).click();
+  await expect(page.getByText('Import Complete: 0 succeeded, 1 failed')).toBeVisible();
+  expect(controls.writes).toEqual([]);
+});

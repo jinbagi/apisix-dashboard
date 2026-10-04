@@ -27,6 +27,7 @@ import { getSecretListReq } from '@/apis/secrets';
 import { getServiceListReq } from '@/apis/services';
 import { getSSLListReq } from '@/apis/ssls';
 import { getStreamRouteListReq } from '@/apis/stream_routes';
+import { trackResourceWrite } from '@/apis/tracked-resource-write';
 import { getUpstreamListReq } from '@/apis/upstreams';
 import {
   API_CONFIG_VALIDATE,
@@ -49,6 +50,7 @@ import { req } from '@/config/req';
 import type { APISIXType } from '@/types/schema/apisix';
 import { GraphqlCostDecoration } from '@/types/schema/apisix/graphql_cost_decorations';
 import { isRecord } from '@/utils/apisixEditable';
+import { validateExactResourceSnapshot } from '@/utils/resourceIdentity';
 import { assertRestorableExport } from '@/utils/sharingFormat';
 
 export const EXPORT_VERSION = 3;
@@ -161,8 +163,9 @@ export async function exportSelectedResources(apiBase: string, selectedIds: stri
         throw new Error(`Invalid resource identity: ${id}`);
       }
       try {
-        const response = await req.get(`${apiBase}/${segments.map(encodeURIComponent).join('/')}`);
-        if (!isRecord(response.data?.value)) throw new Error('No resource value returned');
+        const api = `${apiBase}/${segments.map(encodeURIComponent).join('/')}`;
+        const response = await req.get(api, { timeout: 15_000 });
+        validateExactResourceSnapshot(api, response.data?.value, response.data?.key);
         const identity = apiBase === API_SECRETS
           ? { manager: segments[0], id: segments[1] }
           : apiBase === API_CONSUMERS ? { username: id } : { id };
@@ -496,7 +499,7 @@ export async function importResources(
   data: ExportData,
   selectedResources: ResourceKey[],
   onProgress?: (result: ImportResult) => void,
-  beforeWrite?: (resourceType: ResourceKey, item: Record<string, unknown>, index: number) => Promise<boolean>,
+  beforeWrite?: (resourceType: ResourceKey, item: Record<string, unknown>, index: number, latest?: Record<string, unknown> | null) => Promise<boolean>,
 ): Promise<ImportResult[]> {
   assertRestorableExport(data);
   const results: ImportResult[] = [];
@@ -523,7 +526,12 @@ export async function importResources(
           continue;
         }
         // Use PUT with ID to create or update
-        await req.put(request.url, request.body);
+        await trackResourceWrite({ source: 'import', method: 'PUT', api: request.url, body: request.body,
+          beforeWrite: beforeWrite ? async (latest) => {
+            if (!(await beforeWrite(resourceType, item, index, latest)))
+              throw new Error('Import preflight changed. No write was sent.');
+          } : undefined,
+        }, () => req.put(request.url, request.body));
         result.success++;
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);

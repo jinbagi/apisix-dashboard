@@ -6,6 +6,8 @@ Import preview validates that each detail response belongs to the exact requeste
 
 The same validation runs during the fresh read immediately before a changed resource is written. An identity change is rejected even when its editable fields happen to match the earlier preview. A changed import destination also requires a new preview.
 
+When Import records resource history, its final prerequisite snapshot is also compared with the reviewed destination. A concurrent edit, a newly occupied ID, deletion, or unreadable response stops that item before PUT and creates no history entry. A verified 404 remains an explicit missing resource; it is not replaced with a later read.
+
 ## Supported response identities
 
 - Top-level resources use their own `id`; numeric and string IDs compare by textual value. Consumers use their own `username`.

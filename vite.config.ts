@@ -59,6 +59,8 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      // Generated report HTML must not trigger full reloads during UI checks.
+      watch: { ignored: ['**/playwright-report/**'] },
       // as an example, if you want to use the e2e server as the api server,
       proxy: proxyConfig,
       ...(inDevContainer && {

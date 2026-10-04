@@ -21,16 +21,14 @@ import { nanoid } from 'nanoid';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { putCredentialReq } from '@/apis/credentials';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartCredential } from '@/components/form-slice/FormPartCredential';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import PageHeader from '@/components/page/PageHeader';
 import { API_CREDENTIALS } from '@/config/constant';
-import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
-import { verifyAdminApiResource } from '@/utils/adminApiVerification';
-import { stripPatchReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
@@ -44,12 +42,8 @@ const CredentialAddForm = () => {
   const putCredential = useMutation({
     mutationFn: async (d: APISIXType['CredentialPut']) => {
       const payload = prepareResourceFormPayload({ ...d, username });
-      const response = await putCredentialReq(req, payload);
+      const response = await putCredentialReq(formHistoryReq, payload);
       const id = payload.id;
-      await verifyAdminApiResource(
-        `${API_CREDENTIALS(username)}/${id}`,
-        stripPatchReadonlyFields(payload as Record<string, unknown>)
-      );
       return { response, id };
     },
     async onSuccess({ id }) {

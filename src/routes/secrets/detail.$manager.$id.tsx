@@ -28,6 +28,7 @@ import { useBoolean } from 'react-use';
 
 import { getSecretQueryOptions } from '@/apis/hooks';
 import { putSecretReq } from '@/apis/secrets';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartSecret } from '@/components/form-slice/FormPartSecret';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
@@ -35,7 +36,6 @@ import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
 import { API_SECRETS } from '@/config/constant';
-import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
@@ -75,7 +75,7 @@ const SecretDetailForm = (props: Props) => {
 
   const putSecret = useMutation({
     mutationFn: (d: APISIXType['Secret']) =>
-      putSecretReq(req, prepareResourceFormPayload(d)),
+      putSecretReq(formHistoryReq, prepareResourceFormPayload(d)),
     async onSuccess() {
       await refetch({ throwOnError: true });
       await refreshResourceCaches('secrets', API_SECRETS);

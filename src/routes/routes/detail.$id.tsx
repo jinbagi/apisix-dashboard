@@ -28,6 +28,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 
 import { getRouteQueryOptions } from '@/apis/hooks';
 import { putRouteReq } from '@/apis/routes';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartRoute } from '@/components/form-slice/FormPartRoute';
 import {
@@ -46,10 +47,7 @@ import PageHeader from '@/components/page/PageHeader';
 import { RouteConfigurationExplanation } from '@/components/page/RouteConfigurationExplanation';
 import { StatusSwitch } from '@/components/StatusTag';
 import { API_ROUTES } from '@/config/constant';
-import { req } from '@/config/req';
 import { type APISIXType } from '@/types/schema/apisix';
-import { verifyAdminApiResource } from '@/utils/adminApiVerification';
-import { buildPatchPayload, stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
 
@@ -89,15 +87,7 @@ const RouteDetailForm = (props: Props) => {
   const putRoute = useMutation({
     mutationFn: async (d: RoutePutType) => {
       const payload = produceRoute({ ...d, ...enforcedValues }) as APISIXType['Route'];
-      const response = await putRouteReq(req, payload);
-      await verifyAdminApiResource(
-        `${API_ROUTES}/${id}`,
-        buildPatchPayload(
-          stripSystemReadonlyFields(payload),
-          stripSystemReadonlyFields(routeData.value)
-        ),
-        { ignoredPaths: ['upstream.tls.client_key'] }
-      );
+      const response = await putRouteReq(formHistoryReq, payload);
       return response;
     },
     async onSuccess() {

@@ -20,6 +20,7 @@ import { req } from '@/config/req';
 import { recordResourceChange } from '@/stores/resourceHistory';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { buildPatchPayload, getPatchConflictPaths, isRecord, PATCH_READONLY_KEYS, setJsonProperty, stripSystemReadonlyFields } from '@/utils/apisixEditable';
+import { validateExactResourceSnapshot } from '@/utils/resourceIdentity';
 import { getAdminResourceSchema } from '@/utils/resourceJsonSchema';
 
 export const supportsBulkPatch = (api: string) =>
@@ -77,6 +78,7 @@ async function readResource(api: string, id: string): Promise<Record<string, unk
   const identity = isConsumer(api) ? 'username' : 'id';
   if (!isRecord(data?.value) || String(data.value[identity]) !== id)
     throw new Error('The selected resource could not be read with its expected identity.');
+  validateExactResourceSnapshot(api, data.value, data.key);
   rejectUnsafeKeys(data.value);
   return { ...data.value, [identity]: id };
 }
@@ -123,8 +125,8 @@ export async function applyBulkPatchRow(row: BulkPatchRow): Promise<BulkPatchRow
       // Consumers only support PUT. Preserve the latest unrelated fields and required username.
       await req.put(row.api, stripSystemReadonlyFields(after), { timeout: 15_000 });
     } else await req.patch(row.api, delta, { timeout: 15_000 });
-    await verifyAdminApiResource(row.api, delta, { timeoutMs: 15_000 });
-    recordResourceChange(row.api, current, after);
+    const verified = await verifyAdminApiResource(row.api, delta, { timeoutMs: 15_000 });
+    recordResourceChange(row.api, current, verified, { source: 'bulk', restoreAfter: after });
     return { ...row, status: 'Saved', error: undefined };
   } catch (error) {
     // A network error after sending a write cannot establish whether the server committed it.

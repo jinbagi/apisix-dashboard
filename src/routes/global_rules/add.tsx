@@ -24,17 +24,15 @@ import { nanoid } from 'nanoid';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { putGlobalRuleReq } from '@/apis/global_rules';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartGlobalRules } from '@/components/form-slice/FormPartGlobalRules';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import PageHeader from '@/components/page/PageHeader';
 import { API_GLOBAL_RULES } from '@/config/constant';
-import { req } from '@/config/req';
 import type { APISIXType } from '@/types/schema/apisix';
 import { APISIX } from '@/types/schema/apisix';
-import { verifyAdminApiResource } from '@/utils/adminApiVerification';
-import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
@@ -45,11 +43,7 @@ const GlobalRuleAddForm = () => {
   const putGlobalRule = useMutation({
     mutationFn: async (d: APISIXType['GlobalRulePut']) => {
       const payload = prepareResourceFormPayload(d);
-      const response = await putGlobalRuleReq(req, payload);
-      await verifyAdminApiResource(
-        `${API_GLOBAL_RULES}/${payload.id}`,
-        stripSystemReadonlyFields(payload as Record<string, unknown>)
-      );
+      const response = await putGlobalRuleReq(formHistoryReq, payload);
       return response;
     },
     async onSuccess(res) {

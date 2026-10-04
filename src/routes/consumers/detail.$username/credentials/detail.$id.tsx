@@ -28,6 +28,7 @@ import { useBoolean } from 'react-use';
 
 import { putCredentialReq } from '@/apis/credentials';
 import { getCredentialQueryOptions } from '@/apis/hooks';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartCredential } from '@/components/form-slice/FormPartCredential';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
@@ -35,7 +36,6 @@ import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
 import { API_CREDENTIALS } from '@/config/constant';
-import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
@@ -74,7 +74,7 @@ const CredentialDetailForm = (props: CredentialFormProps) => {
 
   const putCredential = useMutation({
     mutationFn: (d: APISIXType['CredentialPut']) =>
-      putCredentialReq(req, prepareResourceFormPayload({ ...d, username })),
+      putCredentialReq(formHistoryReq, prepareResourceFormPayload({ ...d, username })),
     async onSuccess() {
       await refetch({ throwOnError: true });
       await refreshResourceCaches(['credentials', username], API_CREDENTIALS(username));

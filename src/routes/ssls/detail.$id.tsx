@@ -27,6 +27,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 
 import { getSSLQueryOptions } from '@/apis/hooks';
 import { putSSLReq } from '@/apis/ssls';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartSSL } from '@/components/form-slice/FormPartSSL';
 import {
@@ -41,7 +42,6 @@ import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
 import { StatusSwitch } from '@/components/StatusTag';
 import { API_SSLS } from '@/config/constant';
-import { req } from '@/config/req';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
 
@@ -60,7 +60,7 @@ const SSLDetailForm = (props: { id: string }) => {
   });
 
   const putSSL = useMutation({
-    mutationFn: (d: SSLPutType) => putSSLReq(req, produceSSLSubmitPayload(d)),
+    mutationFn: (d: SSLPutType) => putSSLReq(formHistoryReq, produceSSLSubmitPayload(d)),
     async onSuccess() {
       await refetch({ throwOnError: true });
       await refreshResourceCaches('ssls', API_SSLS);
