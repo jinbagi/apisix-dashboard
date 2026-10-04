@@ -14,6 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/** JSON keys are data, including names used by Object.prototype. */
+export const setJsonProperty = (target: Record<string, unknown>, key: string, value: unknown) => {
+  Object.defineProperty(target, key, { value, enumerable: true, configurable: true, writable: true });
+};
+const ownValue = (target: Record<string, unknown>, key: string) =>
+  Object.hasOwn(target, key) ? target[key] : undefined;
+
 export const SYSTEM_TIMESTAMP_KEYS = ['create_time', 'update_time'] as const;
 export const SYSTEM_READONLY_KEYS = ['id', 'manager', ...SYSTEM_TIMESTAMP_KEYS] as const;
 export const PATCH_READONLY_KEYS = [...SYSTEM_READONLY_KEYS, 'username'] as const;
@@ -142,7 +149,7 @@ export const sortJsonKeys = (value: unknown, inPluginConfig = false): unknown =>
   if (inPluginConfig) {
     const result: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(obj)) {
-      result[k] = sortJsonKeys(v, true);
+      setJsonProperty(result, k, sortJsonKeys(v, true));
     }
     return result;
   }
@@ -150,21 +157,21 @@ export const sortJsonKeys = (value: unknown, inPluginConfig = false): unknown =>
   const sorted: Record<string, unknown> = {};
 
   for (const key of KEY_ORDER) {
-    if (key in obj) {
+    if (Object.hasOwn(obj, key)) {
       if (key === 'plugins') {
         const pluginsObj = obj[key];
         if (isRecord(pluginsObj)) {
           const sortedPlugins: Record<string, unknown> = {};
           const pluginNames = Object.keys(pluginsObj).sort();
           for (const name of pluginNames) {
-            sortedPlugins[name] = sortJsonKeys(pluginsObj[name], true);
+            setJsonProperty(sortedPlugins, name, sortJsonKeys(pluginsObj[name], true));
           }
-          sorted[key] = sortedPlugins;
+          setJsonProperty(sorted, key, sortedPlugins);
         } else {
-          sorted[key] = sortJsonKeys(pluginsObj, false);
+          setJsonProperty(sorted, key, sortJsonKeys(pluginsObj, false));
         }
       } else {
-        sorted[key] = sortJsonKeys(obj[key], false);
+        setJsonProperty(sorted, key, sortJsonKeys(obj[key], false));
       }
     }
   }
@@ -174,7 +181,7 @@ export const sortJsonKeys = (value: unknown, inPluginConfig = false): unknown =>
     .sort();
 
   for (const key of remainingKeys) {
-    sorted[key] = sortJsonKeys(obj[key], false);
+    setJsonProperty(sorted, key, sortJsonKeys(obj[key], false));
   }
 
   return sorted;
@@ -189,10 +196,10 @@ export const mergeEditablePayload = (
   const merged: Record<string, unknown> = { ...originalValue };
   for (const [key, value] of Object.entries(formValue)) {
     if (value === undefined) continue;
-    const previous = merged[key];
-    merged[key] = isRecord(previous) && isRecord(value)
+    const previous = ownValue(merged, key);
+    setJsonProperty(merged, key, isRecord(previous) && isRecord(value)
       ? mergeEditablePayload(previous, value)
-      : value;
+      : value);
   }
   return merged;
 };
@@ -212,18 +219,18 @@ export const mergeEditablePayloadByDirty = (
   for (const [key, value] of Object.entries(formValue)) {
     if (value === undefined) continue;
 
-    const keyDirty = dirtyRecord[key];
+    const keyDirty = ownValue(dirtyRecord, key);
     if (keyDirty === true) {
-      merged[key] = value;
+      setJsonProperty(merged, key, value);
       continue;
     }
 
     if (isRecord(keyDirty) && isRecord(value)) {
-      const previous = merged[key];
+      const previous = ownValue(merged, key);
       const base = isRecord(previous) ? previous : {};
       const nested = mergeEditablePayloadByDirty(base, value, keyDirty);
       if (Object.keys(nested as Record<string, unknown>).length > 0) {
-        merged[key] = nested;
+        setJsonProperty(merged, key, nested);
       }
     }
   }
@@ -262,13 +269,13 @@ export const buildPatchPayload = (
       continue;
     }
 
-    if (!(key in current)) {
-      patch[key] = null;
+    if (!Object.hasOwn(current, key)) {
+      setJsonProperty(patch, key, null);
       continue;
     }
 
-    if (!(key in previous)) {
-      patch[key] = current[key];
+    if (!Object.hasOwn(previous, key)) {
+      setJsonProperty(patch, key, current[key]);
       continue;
     }
 
@@ -278,13 +285,13 @@ export const buildPatchPayload = (
     if (isRecord(currentValue) && isRecord(previousValue)) {
       const nestedPatch = buildPatchPayload(currentValue, previousValue, depth + 1);
       if (Object.keys(nestedPatch).length > 0) {
-        patch[key] = nestedPatch;
+        setJsonProperty(patch, key, nestedPatch);
       }
       continue;
     }
 
     if (!isDeepEqual(currentValue, previousValue)) {
-      patch[key] = currentValue;
+      setJsonProperty(patch, key, currentValue);
     }
   }
 
@@ -296,7 +303,7 @@ export const getChangedTopLevelReadonlyKeys = (
   previous: Record<string, unknown>
 ) =>
   PATCH_READONLY_KEYS.filter((key) => {
-    if (!(key in current) && !(key in previous)) return false;
+    if (!Object.hasOwn(current, key) && !Object.hasOwn(previous, key)) return false;
     return !isDeepEqual(current[key], previous[key]);
   });
 
@@ -310,7 +317,7 @@ export const getPatchMismatchPaths = (
   for (const [key, expected] of Object.entries(patch)) {
     const path = prefix ? `${prefix}.${key}` : key;
     const hasActual = Object.prototype.hasOwnProperty.call(actual, key);
-    const actualValue = actual[key];
+    const actualValue = ownValue(actual, key);
 
     if (expected === null) {
       if (hasActual && actualValue !== null) mismatches.push(path);
@@ -341,8 +348,8 @@ export const getPatchConflictPaths = (
   latest: Record<string, unknown>,
   prefix = ''
 ): string[] => Object.entries(patch).flatMap(([key, expected]) => {
-  const before = previous[key];
-  const now = latest[key];
+  const before = ownValue(previous, key);
+  const now = ownValue(latest, key);
   const path = prefix ? `${prefix}.${key}` : key;
   if (isDeepEqual(before, now) || isDeepEqual(expected, now)) return [];
   if (expected === null && now === undefined) return [];

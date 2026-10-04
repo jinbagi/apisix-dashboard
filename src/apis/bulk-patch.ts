@@ -19,7 +19,7 @@ import { SKIP_INTERCEPTOR_HEADER } from '@/config/constant';
 import { req } from '@/config/req';
 import { recordResourceChange } from '@/stores/resourceHistory';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
-import { buildPatchPayload, getPatchConflictPaths, isRecord, PATCH_READONLY_KEYS, stripSystemReadonlyFields } from '@/utils/apisixEditable';
+import { buildPatchPayload, getPatchConflictPaths, isRecord, PATCH_READONLY_KEYS, setJsonProperty, stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { getAdminResourceSchema } from '@/utils/resourceJsonSchema';
 
 export const supportsBulkPatch = (api: string) =>
@@ -62,9 +62,12 @@ export function applyBulkPatch(before: Record<string, unknown>, patch: Record<st
   const after = { ...before };
   for (const [key, value] of Object.entries(patch)) {
     if (value === null) delete after[key];
-    else after[key] = isRecord(value)
-      ? applyBulkPatch(isRecord(before[key]) ? before[key] : {}, value)
-      : value;
+    else {
+      const current = Object.hasOwn(before, key) ? before[key] : undefined;
+      setJsonProperty(after, key, isRecord(value)
+        ? applyBulkPatch(isRecord(current) ? current : {}, value)
+        : value);
+    }
   }
   return after;
 }
