@@ -134,3 +134,46 @@ test('dependency source verification blocks wrong IDs before following private r
   const source = await prepareDependencyExport('/routes', ['main'], { pluginReferences: true, graphqlCostDecorations: true });
   expect(source.blocked).toBe(1); expect(reads).toEqual(['/routes/main']); expect(writes).toEqual([]);
 });
+
+
+test('mixed reuse keeps original references, prunes reused owner children, and stages only create-only clones', async () => {
+  const source = snapshot({ routes: [{ id: 'main', service_id: 'svc', plugin_config_id: 'pc' }],
+    services: [{ id: 'svc', upstream_id: 'backend' }], upstreams: [{ id: 'backend', nodes: {} }],
+    pluginConfigs: [{ id: 'pc', plugins: { 'grpc-transcode': { proto_id: 'proto' }, 'traffic-split': { rules: [{ weighted_upstreams: [{ upstream_id: 'backend' }] }] } } }],
+    protos: [{ id: 'proto', content: 'test' }], graphqlCostDecorations: [{ service_id: 'svc', id: 'cost', cost: 2 }],
+  });
+  const original = JSON.stringify(source);
+  const choices = { rootUrls: ['/routes/main'], reusedUrls: ['/services/svc', '/protos/proto'] };
+  records.set('/services/svc', { value: { id: 'svc', upstream_id: 'backend' } });
+  records.set('/protos/proto', { value: { id: 'proto', content: 'test' } });
+  const result = await prepareCloneDrafts(source, suggestCloneMappings(source), false, choices);
+  expect(result.drafts).toHaveLength(3); expect(result.drafts.every((draft) => draft.baseline === null)).toBe(true);
+  expect(result.preview.reusedUrls.sort()).toEqual(['/protos/proto', '/services/svc']);
+  expect(result.preview.omittedUrls).toEqual(['/services/svc/graphql_cost_decorations/cost']);
+  expect(result.preview.data.resources.routes[0]).toMatchObject({ service_id: 'svc', plugin_config_id: 'pc-copy', status: 0 });
+  expect(result.preview.data.resources.pluginConfigs[0]).toMatchObject({ plugins: { 'grpc-transcode': { proto_id: 'proto' }, 'traffic-split': { rules: [{ weighted_upstreams: [{ upstream_id: 'backend-copy' }] }] } } });
+  expect(result.preview.data.resources.graphqlCostDecorations).toEqual([]);
+  expect(reads).not.toContain('/services/svc-copy'); expect(reads).not.toContain('/protos/proto-copy');
+  records.set('/upstreams/backend-copy', { value: { id: 'backend-copy', nodes: {} } });
+  const collision = await prepareCloneDrafts(source, suggestCloneMappings(source), false, choices);
+  expect(collision.drafts).toEqual([]);
+  expect(collision.preview.rows.find((row) => row.resourceType === 'upstreams')?.error).toContain('already exists');
+  expect(JSON.stringify(source)).toBe(original); expect(writes).toEqual([]);
+});
+
+test('reuse validates exact current identities at preview and staging and cannot reuse selected roots or children', async () => {
+  const source = snapshot({ routes: [{ id: 'main', service_id: 'svc' }], services: [{ id: 'svc', upstream_id: 'backend' }],
+    upstreams: [{ id: 'backend' }], graphqlCostDecorations: [{ service_id: 'svc', id: 'cost', cost: 2 }] });
+  const choices = { rootUrls: ['/routes/main'], reusedUrls: ['/services/svc'] }; const mappings = suggestCloneMappings(source);
+  records.set('/services/svc', { value: { id: 'svc' }, key: '/apisix/services/other' });
+  expect((await previewDependencyClone(source, mappings, false, choices)).rows[0].status).toBe('Blocked');
+  records.set('/services/svc', { value: { id: 'svc' } });
+  const preview = await previewDependencyClone(source, mappings, false, choices);
+  expect(preview.rows).toHaveLength(1); expect(preview.omittedUrls.sort()).toEqual(['/services/svc/graphql_cost_decorations/cost', '/upstreams/backend']);
+  records.set('/services/svc', { value: { id: ['svc'] } });
+  expect((await prepareCloneDrafts(source, mappings, false, choices)).drafts).toEqual([]);
+  records.delete('/services/svc'); expect((await prepareCloneDrafts(source, mappings, false, choices)).drafts).toEqual([]);
+  for (const url of ['/routes/main', '/services/svc/graphql_cost_decorations/cost', '/services/unknown'])
+    await expect(previewDependencyClone(source, mappings, false, { ...choices, reusedUrls: [url] })).rejects.toThrow('Only non-selected dependencies');
+  expect(writes).toEqual([]);
+});

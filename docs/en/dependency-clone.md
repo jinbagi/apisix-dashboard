@@ -15,3 +15,10 @@ The executor checks each create-only destination again before its PUT and verifi
 ## Verification
 
 Fixture-backed contracts cover ID/ref/child remapping, unknown JSON and own `__proto__` keys, collisions, wrong identity responses, a destination appearing after preview, and HTTP/Stream status semantics. Browser fixtures exercise the complete clone → staged create-only → ordered verified apply workflow, no-write staging/failure paths, duplicate staging, stale response dismissal and bounded modal footers at 390px width. No populated local gateway is used by these tests.
+
+
+## Clone or reuse dependencies
+
+Selected resources always receive new IDs. Each eligible Service, Upstream, Plugin Config and Proto dependency offers an explicit **Clone with a new ID** or **Reuse existing original** choice. Reused references retain their original IDs and current configuration. A reused Service retains its existing GraphQL children and transitive dependencies; resources no longer needed by any cloned resource are listed outside the clone plan. A dependency still referenced by another cloned resource remains included. GraphQL children follow a cloned Service and cannot be independently reused under a different owner.
+
+Reused and omitted resource mappings are excluded from the effective clone mapping, even when mapping JSON contains saved suggestions; the visual fields show fixed original IDs. The preview lists both reused and omitted resource paths explicitly. Changing a choice invalidates the prior review. Fresh exact identity reads validate reused references at preview, staging, Change sets preview and immediately before applying each dependent resource. Missing, unreadable or wrongly identified responses block the operation. Reusing a resource does not freeze its configuration or provide an atomic cross-resource transaction.

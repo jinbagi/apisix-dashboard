@@ -211,3 +211,71 @@ test('leaving the source page while staging is waiting cannot add background dra
   await page.getByRole('menuitem', { name: 'Change sets', exact: true }).click();
   await expect(page.getByText('No staged changes yet', { exact: true })).toBeVisible(); expect(controls.writes).toEqual([]);
 });
+
+
+async function reuse(page: Page, url: string) {
+  const choice = modal(page).getByRole('combobox', { name: `Dependency choice ${url}`, exact: true });
+  await choice.click();
+  const listId = await choice.getAttribute('aria-controls');
+  await page.locator(`[id="${listId}"]`).getByRole('option', { name: 'Reuse existing original', exact: true }).click();
+  await expect(choice).toHaveAttribute('aria-expanded', 'false');
+}
+
+test('mixed reuse choices preserve original Service and Proto while cloning remaining references and children correctly', async ({ page }) => {
+  const controls = await setup(page); await open(page);
+  await expect(modal(page).getByRole('status')).toHaveText('6 resources · 0 blocked destinations');
+  await expect(modal(page).getByRole('combobox', { name: 'Dependency choice /routes/main', exact: true })).toHaveCount(0);
+  await expect(modal(page).getByRole('combobox', { name: /graphql_cost_decorations/ })).toHaveCount(0);
+  await reuse(page, '/services/svc'); await reuse(page, '/protos/proto');
+  await expect(modal(page).getByRole('button', { name: 'Stage clone', exact: true })).toBeDisabled();
+  await expect(modal(page).getByLabel('Destination services/svc', { exact: true })).toHaveValue('svc');
+  await expect(modal(page).getByLabel('Destination services/svc', { exact: true })).toBeDisabled();
+  await modal(page).getByRole('button', { name: 'Check destinations', exact: true }).click();
+  await expect(modal(page)).toContainText('2 existing dependencies reused');
+  await expect(modal(page)).toContainText('1 resources outside the clone plan');
+  await modal(page).getByText('Destination IDs', { exact: true }).click();
+  await modal(page).locator('.ant-modal-body').evaluate((element) => { element.scrollTop = 0; });
+  await page.screenshot({ path: test.info().outputPath('dependency-clone-reuse.png'), animations: 'disabled' });
+  await stage(page, 3); await workspace(page); await apply(page, 3);
+  expect(controls.writes.map((write) => write.url).sort()).toEqual(['/plugin_configs/common-copy', '/routes/main-copy', '/upstreams/backend-copy']);
+  expect(controls.records.get('/routes/main-copy')).toMatchObject({ service_id: 'svc', plugin_config_id: 'common-copy' });
+  expect(controls.records.get('/plugin_configs/common-copy')).toMatchObject({ plugins: { 'grpc-transcode': { proto_id: 'proto' }, 'traffic-split': { rules: [{ weighted_upstreams: [{ upstream_id: 'backend-copy' }] }] } } });
+  expect(controls.records.get('/services/svc')).toMatchObject({ upstream_id: 'backend' });
+});
+
+test('reused dependency failures block preview, staging and final application without a write', async ({ page }) => {
+  const controls = await setup(page); await open(page);
+  await expect(modal(page).getByRole('status')).toHaveText('6 resources · 0 blocked destinations');
+  await reuse(page, '/services/svc'); await reuse(page, '/plugin_configs/common');
+  controls.fail.add('/services/svc');
+  await modal(page).getByRole('button', { name: 'Check destinations', exact: true }).click();
+  await expect(modal(page)).toContainText('missing or unreadable');
+  controls.fail.clear(); await modal(page).getByRole('button', { name: 'Check destinations', exact: true }).click();
+  await expect(modal(page).getByRole('status')).toHaveText('1 resources · 0 blocked destinations');
+  controls.records.set('/services/svc', { id: 'wrong' });
+  await modal(page).getByRole('checkbox', { name: /I reviewed the destination IDs/ }).check();
+  await modal(page).getByRole('button', { name: 'Stage clone', exact: true }).click();
+  await expect(modal(page)).toContainText('A destination or reference changed');
+  controls.records.set('/services/svc', { id: 'svc', upstream_id: 'backend' });
+  await modal(page).getByRole('button', { name: 'Check destinations', exact: true }).click(); await stage(page, 1);
+  await workspace(page); await page.getByRole('button', { name: 'Preview destinations', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Apply 1 changes', exact: true })).toBeEnabled();
+  controls.records.set('/services/svc', { id: 'wrong' });
+  await page.getByRole('button', { name: 'Apply 1 changes', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Apply change set', exact: true }).getByRole('button', { name: 'Apply 1 changes', exact: true }).click();
+  await expect(page.getByText(/missing or unreadable/)).toBeVisible(); expect(controls.writes).toEqual([]);
+});
+
+test('reuse choice remains keyboard accessible in the narrow clone flow', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 640 }); await setup(page); await open(page);
+  await expect(modal(page).getByRole('status')).toHaveText('6 resources · 0 blocked destinations');
+  const choice = modal(page).getByRole('combobox', { name: 'Dependency choice /services/svc', exact: true });
+  await choice.focus(); await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter');
+  await expect(modal(page).getByRole('button', { name: 'Stage clone', exact: true })).toBeDisabled();
+  await modal(page).getByRole('button', { name: 'Check destinations', exact: true }).click();
+  await expect(modal(page)).toContainText('1 existing dependencies reused');
+  const footer = await modal(page).getByRole('button', { name: 'Stage clone', exact: true }).boundingBox();
+  expect(footer!.y + footer!.height).toBeLessThanOrEqual(640);
+  expect(await modal(page).evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
+  await choice.focus(); await page.screenshot({ path: test.info().outputPath('dependency-clone-reuse-narrow.png'), animations: 'disabled' });
+});
