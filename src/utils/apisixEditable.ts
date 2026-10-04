@@ -341,20 +341,31 @@ export const getPatchMismatchPaths = (
   return mismatches;
 };
 
+export type PatchConflict = { path: string[]; before: unknown; latest: unknown };
+
+/** Keep path segments intact: plugin and node names may contain dots or slashes. */
+export const getPatchConflicts = (
+  patch: Record<string, unknown>,
+  previous: Record<string, unknown>,
+  latest: Record<string, unknown>,
+  prefix: string[] = []
+): PatchConflict[] => Object.entries(patch).flatMap(([key, expected]) => {
+  const before = ownValue(previous, key);
+  const now = ownValue(latest, key);
+  const path = [...prefix, key];
+  if (isDeepEqual(before, now) || isDeepEqual(expected, now)) return [];
+  if (expected === null && now === undefined) return [];
+  if (isRecord(expected) && isRecord(now) && (isRecord(before) || before === undefined)) {
+    return getPatchConflicts(expected, isRecord(before) ? before : {}, now, path);
+  }
+  return [{ path, before, latest: now }];
+});
+
 /** Detect concurrent edits only where this PATCH will change the latest value. */
 export const getPatchConflictPaths = (
   patch: Record<string, unknown>,
   previous: Record<string, unknown>,
   latest: Record<string, unknown>,
   prefix = ''
-): string[] => Object.entries(patch).flatMap(([key, expected]) => {
-  const before = ownValue(previous, key);
-  const now = ownValue(latest, key);
-  const path = prefix ? `${prefix}.${key}` : key;
-  if (isDeepEqual(before, now) || isDeepEqual(expected, now)) return [];
-  if (expected === null && now === undefined) return [];
-  if (isRecord(expected) && isRecord(now) && (isRecord(before) || before === undefined)) {
-    return getPatchConflictPaths(expected, isRecord(before) ? before : {}, now, path);
-  }
-  return [path];
-});
+): string[] => getPatchConflicts(patch, previous, latest)
+  .map(({ path }) => prefix ? `${prefix}.${path.join('.')}` : path.join('.'));

@@ -25,6 +25,7 @@ import { JsonCodeEditor } from '@/components/form/JsonCodeEditor';
 import { JsonSchemaGuide } from '@/components/form/JsonSchemaGuide';
 import { ConfigurationImpact } from '@/components/page/ConfigurationImpact';
 import { LocalRawDraft } from '@/components/page/LocalRawDraft';
+import { RawConflictResolver } from '@/components/page/RawConflictResolver';
 import { RawJsonNavigation } from '@/components/page/RawJsonNavigation';
 import { ResourceHistory } from '@/components/page/ResourceHistory';
 import { queryClient } from '@/config/global';
@@ -154,7 +155,7 @@ export const AdminApiJsonEditor = ({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [review, setReview] = useState<{ original: string; modified: string } | null>(null);
-  const [conflict, setConflict] = useState<{ latest: Record<string, unknown>; paths: string[]; draft: string } | null>(null);
+  const [conflict, setConflict] = useState<{ latest: Record<string, unknown>; previous: Record<string, unknown>; draft: Record<string, unknown> } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saveFeedback, setSaveFeedback] = useState<SaveFeedback | null>(null);
   const [resourceBase, setResourceBase] = useState<Record<string, unknown>>({});
@@ -360,7 +361,7 @@ export const AdminApiJsonEditor = ({
       const normalizedLatest = normalizeApiResource(api, latest);
       const paths = getPatchConflictPaths(payload, previous, stripPatchReadonlyFields(normalizedLatest));
       if (paths.length > 0) {
-        setConflict({ latest: normalizedLatest, paths, draft: toJson(editableParsed) });
+        setConflict({ latest: normalizedLatest, previous, draft: editableParsed });
         return;
       }
       try {
@@ -617,18 +618,20 @@ export const AdminApiJsonEditor = ({
           </Space>
         </Space>
       )}
-      <JsonChangeReview
-        open={conflict !== null}
-        title="Resolve concurrent changes"
-        description={`Nothing was saved. These fields changed in APISIX while you were editing: ${conflict?.paths.join(', ') ?? ''}. Compare the latest server value (left) with your draft (right). Keep editing preserves your draft; using the latest value discards it.`}
-        original={conflict ? toJson(stripPatchReadonlyFields(conflict.latest)) : ''}
-        modified={conflict?.draft ?? ''}
-        confirmText="Use latest and discard draft"
+      {conflict && <RawConflictResolver
+        snapshot={{ previous: conflict.previous, draft: conflict.draft, latest: stripPatchReadonlyFields(conflict.latest) }}
         onCancel={() => setConflict(null)}
-        onSave={() => {
-          if (conflict) loadData(conflict.latest);
+        onDiscard={() => loadData(conflict.latest)}
+        onResolve={(draft) => {
+          setResourceBase(conflict.latest);
+          setOriginal(toJson(stripPatchReadonlyFields(conflict.latest)));
+          setValue(toJson(draft));
+          userEditedRef.current = true;
+          setError(null);
+          setConflict(null);
+          setSaveFeedback({ type: 'warning', message: 'Conflict choices applied to your draft. Review and save to apply them to APISIX.', at: new Date().toLocaleTimeString() });
         }}
-      />
+      />}
       <JsonChangeReview
         open={review !== null}
         original={review?.original ?? ''}
