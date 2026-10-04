@@ -83,7 +83,10 @@ async function encode(drafts: StagedChange[], password: string) {
 }
 async function withJournalLock<T>(operation: () => T): Promise<T> {
   if (typeof navigator === 'undefined' || !navigator.locks?.request) throw new Error('Encrypted checkpoints require browser Web Locks. No next write was sent. Use a supported HTTPS or localhost browser. You can lock and clear this journal, then stage new changes in memory.');
-  return navigator.locks.request(`apisix-dashboard:${CHANGE_JOURNAL_KEY}`, { mode: 'exclusive' }, operation);
+  return navigator.locks.request(`apisix-dashboard:${CHANGE_JOURNAL_KEY}`, { mode: 'exclusive', ifAvailable: true }, (lock) => {
+    if (!lock) throw new Error('The journal is busy in another tab. No next write was sent. Wait for that tab to finish, then retry. Your staged changes are preserved.');
+    return operation();
+  });
 }
 async function storeArchive(encoded: string, expected: string | null, guard?: () => void) {
   // Web Locks coordinate same-origin tabs; localStorage alone is not atomic CAS.

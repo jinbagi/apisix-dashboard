@@ -155,7 +155,22 @@ test('two tabs serialize encrypted checkpoints under the shared browser lock', a
     await journal(tab).getByLabel('Journal password', { exact: true }).fill(password);
     await journal(tab).getByLabel('Confirm journal password', { exact: true }).fill(password);
   }
-  await page.evaluate(async () => {
+  await Promise.all([page, other].map((tab) => journal(tab).getByRole('button', { name: 'Encrypt and enable checkpoints', exact: true }).click()));
+  await expect.poll(async () => (await Promise.all([page, other].map((tab) => journal(tab).getByText(/Encrypted journal saved/).count()))).reduce((a, b) => a + b, 0)).toBe(1);
+  await expect.poll(async () => (await Promise.all([page, other].map((tab) => journal(tab).getByText(/changed in another tab|busy in another tab/).count()))).reduce((a, b) => a + b, 0)).toBe(1);
+  expect([...first.writes, ...second.writes]).toEqual([]);
+});
+
+
+test('a held journal lock returns promptly without PUT and keeps drafts editable', async ({ page, context }) => {
+  const controls = await setup(page); await saveJournal(page);
+  await page.getByRole('button', { name: 'Preview destinations', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Apply 3 changes', exact: true })).toBeEnabled();
+  const previous = await page.evaluate(() => localStorage.getItem('change-set-journal:v1'));
+  const other = await context.newPage();
+  await other.route('**/apisix/admin/**', (route) => route.fulfill({ json: { list: [], total: 0 } }));
+  await other.goto('change_sets');
+  await other.evaluate(async () => {
     let acquired!: () => void;
     const ready = new Promise<void>((resolve) => { acquired = resolve; });
     void navigator.locks.request('apisix-dashboard:change-set-journal:v1', () => new Promise<void>((resolve) => {
@@ -165,12 +180,21 @@ test('two tabs serialize encrypted checkpoints under the shared browser lock', a
     await ready;
   });
   try {
-    await Promise.all([page, other].map((tab) => journal(tab).getByRole('button', { name: 'Encrypt and enable checkpoints', exact: true }).click()));
-    await expect.poll(async () => page.evaluate(async () => (await navigator.locks.query()).pending?.filter((lock) => lock.name === 'apisix-dashboard:change-set-journal:v1').length)).toBe(2);
+    await apply(page, 3);
+    await expect(page.getByText(/The journal is busy in another tab/)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('button', { name: 'Preview destinations', exact: true })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Remove draft', exact: true })).toHaveCount(3);
+    await expect(page.getByRole('button', { name: 'Remove draft', exact: true }).first()).toBeEnabled();
+    await expect(page.getByText('3 staged · 0 verified', { exact: true })).toBeVisible();
+    expect(controls.writes).toEqual([]);
+    expect(await page.evaluate(() => localStorage.getItem('change-set-journal:v1'))).toBe(previous);
+    expect(await other.evaluate(async () => (await navigator.locks.query()).pending?.filter((lock) => lock.name === 'apisix-dashboard:change-set-journal:v1').length)).toBe(0);
+    await page.getByRole('menuitem', { name: 'Import / Export', exact: true }).click();
+    await expect(page).toHaveURL(/\/export_import$/);
+    await expect(page.getByRole('dialog', { name: 'Change set in progress', exact: true })).toHaveCount(0);
+    await page.getByRole('menuitem', { name: 'Change sets', exact: true }).click();
+    await expect(page.getByText('3 staged · 0 verified', { exact: true })).toBeVisible();
   } finally {
-    await page.evaluate(() => ((window as unknown as Record<string, unknown>).releaseJournalLock as () => void)());
+    await other.evaluate(() => ((window as unknown as Record<string, unknown>).releaseJournalLock as () => void)());
   }
-  await expect.poll(async () => (await Promise.all([page, other].map((tab) => journal(tab).getByText(/Encrypted journal saved/).count()))).reduce((a, b) => a + b, 0)).toBe(1);
-  await expect.poll(async () => (await Promise.all([page, other].map((tab) => journal(tab).getByText(/changed in another tab/).count()))).reduce((a, b) => a + b, 0)).toBe(1);
-  expect([...first.writes, ...second.writes]).toEqual([]);
 });

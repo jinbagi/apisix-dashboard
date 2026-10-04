@@ -43,10 +43,11 @@ function response(value: unknown, url = '/routes/unit'): AxiosResponse {
 
 test.beforeEach(() => {
   records = new Map([['/routes/unit', { id: 'unit', uri: '/before' }]]); writes = []; ignored = false; wrong = false; quota = false; disk = new Map();
-  let lockTail = Promise.resolve();
-  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { locks: { request: async (_name: string, _options: unknown, operation: () => unknown) => {
-    const prior = lockTail; let release!: () => void; lockTail = new Promise<void>((resolve) => { release = resolve; });
-    await prior; try { return operation(); } finally { release(); }
+  let held = false;
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { locks: { request: async (_name: string, options: { ifAvailable: boolean }, operation: (lock: object | null) => unknown) => {
+    expect(options.ifAvailable).toBe(true);
+    if (held) return operation(null);
+    held = true; try { return operation({}); } finally { held = false; }
   } } } });
   Object.defineProperty(globalThis, 'location', { configurable: true, value: { origin: 'https://journal-fixture.example' } });
   Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
