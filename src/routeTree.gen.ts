@@ -20,6 +20,7 @@ import { Route as RoutesIndexRouteImport } from './routes/routes/index'
 import { Route as Raw_apiIndexRouteImport } from './routes/raw_api/index'
 import { Route as ProtosIndexRouteImport } from './routes/protos/index'
 import { Route as Plugin_metadataIndexRouteImport } from './routes/plugin_metadata/index'
+import { Route as Plugin_inventoryIndexRouteImport } from './routes/plugin_inventory/index'
 import { Route as Plugin_configsIndexRouteImport } from './routes/plugin_configs/index'
 import { Route as Global_rulesIndexRouteImport } from './routes/global_rules/index'
 import { Route as Export_importIndexRouteImport } from './routes/export_import/index'
@@ -116,6 +117,11 @@ const ProtosIndexRoute = ProtosIndexRouteImport.update({
 const Plugin_metadataIndexRoute = Plugin_metadataIndexRouteImport.update({
   id: '/plugin_metadata/',
   path: '/plugin_metadata/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Plugin_inventoryIndexRoute = Plugin_inventoryIndexRouteImport.update({
+  id: '/plugin_inventory/',
+  path: '/plugin_inventory/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Plugin_configsIndexRoute = Plugin_configsIndexRouteImport.update({
@@ -361,6 +367,7 @@ export interface FileRoutesByFullPath {
   '/export_import/': typeof Export_importIndexRoute
   '/global_rules/': typeof Global_rulesIndexRoute
   '/plugin_configs/': typeof Plugin_configsIndexRoute
+  '/plugin_inventory/': typeof Plugin_inventoryIndexRoute
   '/plugin_metadata/': typeof Plugin_metadataIndexRoute
   '/protos/': typeof ProtosIndexRoute
   '/raw_api/': typeof Raw_apiIndexRoute
@@ -416,6 +423,7 @@ export interface FileRoutesByTo {
   '/export_import': typeof Export_importIndexRoute
   '/global_rules': typeof Global_rulesIndexRoute
   '/plugin_configs': typeof Plugin_configsIndexRoute
+  '/plugin_inventory': typeof Plugin_inventoryIndexRoute
   '/plugin_metadata': typeof Plugin_metadataIndexRoute
   '/protos': typeof ProtosIndexRoute
   '/raw_api': typeof Raw_apiIndexRoute
@@ -470,6 +478,7 @@ export interface FileRoutesById {
   '/export_import/': typeof Export_importIndexRoute
   '/global_rules/': typeof Global_rulesIndexRoute
   '/plugin_configs/': typeof Plugin_configsIndexRoute
+  '/plugin_inventory/': typeof Plugin_inventoryIndexRoute
   '/plugin_metadata/': typeof Plugin_metadataIndexRoute
   '/protos/': typeof ProtosIndexRoute
   '/raw_api/': typeof Raw_apiIndexRoute
@@ -527,6 +536,7 @@ export interface FileRouteTypes {
     | '/export_import/'
     | '/global_rules/'
     | '/plugin_configs/'
+    | '/plugin_inventory/'
     | '/plugin_metadata/'
     | '/protos/'
     | '/raw_api/'
@@ -582,6 +592,7 @@ export interface FileRouteTypes {
     | '/export_import'
     | '/global_rules'
     | '/plugin_configs'
+    | '/plugin_inventory'
     | '/plugin_metadata'
     | '/protos'
     | '/raw_api'
@@ -635,6 +646,7 @@ export interface FileRouteTypes {
     | '/export_import/'
     | '/global_rules/'
     | '/plugin_configs/'
+    | '/plugin_inventory/'
     | '/plugin_metadata/'
     | '/protos/'
     | '/raw_api/'
@@ -691,6 +703,7 @@ export interface RootRouteChildren {
   Export_importIndexRoute: typeof Export_importIndexRoute
   Global_rulesIndexRoute: typeof Global_rulesIndexRoute
   Plugin_configsIndexRoute: typeof Plugin_configsIndexRoute
+  Plugin_inventoryIndexRoute: typeof Plugin_inventoryIndexRoute
   Plugin_metadataIndexRoute: typeof Plugin_metadataIndexRoute
   ProtosIndexRoute: typeof ProtosIndexRoute
   Raw_apiIndexRoute: typeof Raw_apiIndexRoute
@@ -791,6 +804,13 @@ declare module '@tanstack/react-router' {
       path: '/plugin_metadata'
       fullPath: '/plugin_metadata/'
       preLoaderRoute: typeof Plugin_metadataIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plugin_inventory/': {
+      id: '/plugin_inventory/'
+      path: '/plugin_inventory'
+      fullPath: '/plugin_inventory/'
+      preLoaderRoute: typeof Plugin_inventoryIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/plugin_configs/': {
@@ -1167,6 +1187,7 @@ const rootRouteChildren: RootRouteChildren = {
   Export_importIndexRoute: Export_importIndexRoute,
   Global_rulesIndexRoute: Global_rulesIndexRoute,
   Plugin_configsIndexRoute: Plugin_configsIndexRoute,
+  Plugin_inventoryIndexRoute: Plugin_inventoryIndexRoute,
   Plugin_metadataIndexRoute: Plugin_metadataIndexRoute,
   ProtosIndexRoute: ProtosIndexRoute,
   Raw_apiIndexRoute: Raw_apiIndexRoute,

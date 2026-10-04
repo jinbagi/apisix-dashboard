@@ -44,6 +44,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   topology: 'Topology',
   export_import: 'Import / Export',
   raw_api: 'API Console',
+  plugin_inventory: 'Plugin inventory',
   services: 'Services',
   routes: 'Routes',
   stream_routes: 'Stream Routes',
