@@ -35,7 +35,7 @@ async function setup(page: Page, kind = 'routes') {
     plugin_configs: [{ id: 'common', plugins: { 'proxy-rewrite': { uri: '/test' } } }],
   };
   const failures = new Map<string, number>();
-  const collections: Record<string, { list: { value: Record<string, unknown> }[]; total: number }> = {};
+  const collections: Record<string, { list: { value: Record<string, unknown>; key?: string }[]; total: number }> = {};
   const reads: string[] = [];
   const writes: string[] = [];
   await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('test-admin-key')));
@@ -255,4 +255,37 @@ test('GraphQL pagination includes every child and rejects changing totals or dup
   await expect(dialog(page)).toContainText('invalid or changing total');
   await expect(dialog(page).getByRole('button', { name: 'Download bundle' })).toBeDisabled();
   expect(writes).toEqual([]);
+});
+
+
+test('dependency envelope identity mismatch blocks download and does not traverse the wrong response', async ({ page }) => {
+  const { reads, writes } = await setup(page);
+  await page.route('**/apisix/admin/services/shared', (route) => route.fulfill({ json: { key: '/apisix/services/other', value: { id: 'shared', upstream_id: 'wrong-private-upstream' } } }));
+  const downloads: string[] = [];
+  page.on('download', (download) => downloads.push(download.suggestedFilename()));
+  await open(page);
+  await expect(dialog(page)).toContainText('Admin API resource identity could not be verified for /services/shared');
+  await expect(dialog(page).getByRole('button', { name: 'Download bundle' })).toBeDisabled();
+  expect(reads).not.toContain('upstreams/wrong-private-upstream');
+  expect(downloads).toEqual([]); expect(writes).toEqual([]);
+});
+
+test('GraphQL child envelope key and empty-collection owner detail must match the requested Service', async ({ page }) => {
+  const { collections, failures, writes } = await setup(page, 'services');
+  const childPath = 'services/shared/graphql_cost_decorations';
+  collections[childPath] = { list: [{ value: { id: 'cost', field_path: 'Query.viewer' }, key: '/apisix/services/other/graphql_cost_decorations/cost' }], total: 1 };
+  await open(page);
+  await dialog(page).getByRole('checkbox', { name: 'Include Service GraphQL cost decorations' }).check();
+  await expect(dialog(page)).toContainText('Admin API resource identity could not be verified');
+  await expect(dialog(page).getByRole('button', { name: 'Download bundle' })).toBeDisabled();
+  delete collections[childPath]; failures.set(childPath, 404);
+  let ownerReads = 0;
+  await page.route('**/apisix/admin/services/shared', (route) => {
+    ownerReads++;
+    return route.fulfill({ json: { value: { id: 'shared' }, key: ownerReads === 1 ? '/apisix/services/shared' : '/apisix/services/other' } });
+  });
+  await dialog(page).getByRole('button', { name: 'Refresh export preview' }).click();
+  await expect(dialog(page)).toContainText('Admin API resource identity could not be verified for /services/shared');
+  await expect(dialog(page).getByRole('button', { name: 'Download bundle' })).toBeDisabled();
+  expect(ownerReads).toBe(2); expect(writes).toEqual([]);
 });
