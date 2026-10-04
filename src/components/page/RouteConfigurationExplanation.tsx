@@ -15,24 +15,40 @@
  * limitations under the License.
  */
 
+import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { Alert, Button, Descriptions, Modal, Space, Spin, Table, Tag, Typography } from 'antd';
+import { Alert, AutoComplete, Button, Descriptions, Input, Modal, Space, Spin, Table, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 
-import { readRouteConfiguration, type RouteConfiguration } from '@/apis/route-configuration';
+import { readConsumerUsernames, readRouteConfiguration, type RouteConfiguration } from '@/apis/route-configuration';
 import type { ConfigurationSource, PluginOrigin } from '@/utils/routeConfiguration';
 
-const labels = { routes: 'Route', services: 'Service', plugin_configs: 'Plugin Config', global_rules: 'Global Rule', upstreams: 'Upstream' };
+const labels = { routes: 'Route', services: 'Service', plugin_configs: 'Plugin Config', global_rules: 'Global Rule', upstreams: 'Upstream', consumers: 'Consumer', consumer_groups: 'Consumer Group' };
 const paths = { routes: '/routes/detail/$id', services: '/services/detail/$id', plugin_configs: '/plugin_configs/detail/$id',
-  global_rules: '/global_rules/detail/$id', upstreams: '/upstreams/detail/$id' } as const;
-const SourceLink = ({ source }: { source: ConfigurationSource }) => (
+  global_rules: '/global_rules/detail/$id', upstreams: '/upstreams/detail/$id', consumer_groups: '/consumer_groups/detail/$id' } as const;
+const SourceLink = ({ source }: { source: ConfigurationSource }) => source.kind === 'consumers' ? (
+  <Link to="/consumers/detail/$username" params={{ username: source.id }} target="_blank" rel="noopener noreferrer">
+    Consumer: {source.id}
+  </Link>
+) : (
   <Link to={paths[source.kind]} params={{ id: source.id }} target="_blank" rel="noopener noreferrer">
     {labels[source.kind]}: {source.id}
   </Link>
 );
 
+const inspectedConfig = (source: ConfigurationSource, value: unknown) =>
+  source.kind === 'consumers' || source.kind === 'consumer_groups'
+    ? 'Hidden in this explanation to protect Consumer settings. Open the source resource to inspect intentionally.'
+    : value;
+
 const Explanation = ({ id }: { id: string }) => {
   const [version, setVersion] = useState(0);
+  const [consumerUsername, setConsumerUsername] = useState<string>();
+  const [usernameInput, setUsernameInput] = useState('');
+  const [loadConsumers, setLoadConsumers] = useState(false);
+  const consumers = useQuery({ queryKey: ['configuration-consumer-usernames'], queryFn: readConsumerUsernames,
+    enabled: loadConsumers, retry: false, staleTime: 30_000 });
+  const explainConsumer = (username: string) => { setConsumerUsername(username.trim() || undefined); setVersion((current) => current + 1); };
   const [data, setData] = useState<RouteConfiguration>();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -43,11 +59,11 @@ const Explanation = ({ id }: { id: string }) => {
     setData(undefined);
     setError('');
     setJson(undefined);
-    readRouteConfiguration(id).then((result) => { if (active) setData(result); })
+    readRouteConfiguration(id, consumerUsername).then((result) => { if (active) setData(result); })
       .catch((cause: unknown) => { if (active) setError(cause instanceof Error ? cause.message : 'Unable to read configuration'); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [id, version]);
+  }, [id, version, consumerUsername]);
 
   const pluginTable = (rows: PluginOrigin[], global = false) => (
     <Table size="small" rowKey={(row) => `${row.source.kind}:${row.source.id}:${row.name}`}
@@ -68,8 +84,8 @@ const Explanation = ({ id }: { id: string }) => {
         ) }] : []),
         { title: 'Inspect', key: 'inspect', width: 100, render: (_, row) => (
           <Button size="small" onClick={() => setJson({ title: `${row.name} configuration`, value: {
-            selected: { source: `${labels[row.source.kind]}: ${row.source.id}`, config: row.value },
-            overridden: row.overridden.map((item) => ({ source: `${labels[item.source.kind]}: ${item.source.id}`, config: item.value })),
+            selected: { source: `${labels[row.source.kind]}: ${row.source.id}`, config: inspectedConfig(row.source, row.value) },
+            overridden: row.overridden.map((item) => ({ source: `${labels[item.source.kind]}: ${item.source.id}`, config: inspectedConfig(item.source, item.value) })),
           } })}>View JSON</Button>
         ) },
       ]} />
@@ -80,6 +96,27 @@ const Explanation = ({ id }: { id: string }) => {
         Saved configuration only; unsaved form and RAW changes are excluded. This read-only view never applies changes.
         Source links open in a new tab.
       </Typography.Paragraph>
+      <div>
+        <Typography.Text strong>Consumer context (optional)</Typography.Text>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+          <AutoComplete value={usernameInput} onChange={setUsernameInput} onFocus={() => setLoadConsumers(true)}
+            options={(consumers.data ?? []).map((username) => ({ value: username }))}
+            filterOption={(input, option) => String(option?.value ?? '').toLowerCase().includes(input.toLowerCase())}
+            onSelect={(username) => { setUsernameInput(username); explainConsumer(username); }}
+            style={{ width: 390, maxWidth: '100%', minWidth: 0 }}>
+            <Input.Search aria-label="Consumer username" placeholder="Select or enter a username" enterButton="Explain Consumer"
+              onSearch={explainConsumer} />
+          </AutoComplete>
+          {consumerUsername && <Button onClick={() => { setUsernameInput(''); explainConsumer(''); }}>Clear Consumer</Button>}
+        </div>
+        <Typography.Paragraph type="secondary" style={{ margin: '8px 0 0' }}>
+          Assumes successful authentication. The saved Consumer Group is included automatically.
+          Private Consumer settings stay hidden in JSON inspection.
+        </Typography.Paragraph>
+        {consumers.isError && <Alert type="warning" showIcon title="Consumer suggestions unavailable"
+          description="Enter an exact username to continue, or retry loading suggestions."
+          action={<Button size="small" onClick={() => void consumers.refetch()}>Retry suggestions</Button>} />}
+      </div>
       <Space wrap>
         <Button onClick={() => setVersion((current) => current + 1)} loading={loading}>Refresh sources</Button>
         {data && <Typography.Text type="secondary">Read at {data.readAt}</Typography.Text>}
@@ -104,7 +141,7 @@ const Explanation = ({ id }: { id: string }) => {
         <div>
           <Typography.Title level={5}>Local plugin precedence</Typography.Title>
           <Typography.Paragraph>
-            Route → Plugin Config → Service. The first configuration for each plugin wins as a whole.
+            {data.consumerUsername ? 'Consumer → Consumer Group → Route → Plugin Config → Service.' : 'Route → Plugin Config → Service.'} The first configuration for each plugin wins as a whole.
             Disabled winners do not fall back to an overridden source.
           </Typography.Paragraph>
           {pluginTable(data.plugins)}
@@ -134,6 +171,7 @@ export const RouteConfigurationExplanation = ({ id }: { id: string }) => {
   return <>
     <Button size="small" onClick={() => setOpen(true)}>Explain configuration</Button>
     <Modal open={open} title="Route configuration sources" width={1080}
+      style={{ top: 24 }} styles={{ body: { maxHeight: 'calc(100dvh - 160px)', overflowY: 'auto' } }}
       onCancel={() => setOpen(false)} footer={<Button onClick={() => setOpen(false)}>Close explanation</Button>} destroyOnHidden>
       {open && <Explanation id={id} />}
     </Modal>
