@@ -95,6 +95,7 @@ async function setup(page: Page) {
     await route.fulfill({ json: { list: [], total: 0 } });
   });
   await page.goto('export_import');
+  await page.evaluate(async () => { await document.fonts.ready; });
   await page.getByRole('button', { name: 'Prepare redacted copy', exact: true }).click();
   return requests;
 }
@@ -164,6 +165,9 @@ test('clipboard failures keep a reviewed copy recoverable and narrow keyboard co
   const button = dialog(page).getByRole('button', { name: 'Download sharing copy' });
   await expect(button).toBeEnabled(); await expect(button).toBeInViewport();
   expect(await dialog(page).evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+  await page.setViewportSize({ width: 390, height: 640 });
+  await expect(button).toBeInViewport({ ratio: 1 });
+  await page.setViewportSize({ width: 390, height: 844 });
   await review(page).scrollIntoViewIfNeeded();
   await page.screenshot({ path: test.info().outputPath('sharing-redaction-narrow.png'), animations: 'disabled' });
   await page.keyboard.press('Escape');

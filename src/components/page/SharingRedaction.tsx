@@ -77,7 +77,9 @@ export function SharingRedaction() {
   return <>
     <Button size="large" onClick={() => setOpen(true)}>Prepare redacted copy</Button>
     <Modal open={open} title="Prepare a sharing copy" width={1040} onCancel={close} destroyOnHidden
-      styles={{ body: { maxHeight: 'calc(100dvh - 250px)', overflowY: 'auto' } }}
+      style={{ top: 24, paddingBottom: 0 }}
+      styles={{ container: { maxHeight: 'calc(100dvh - 48px)', display: 'flex', flexDirection: 'column' },
+        header: { flexShrink: 0 }, footer: { flexShrink: 0 }, body: { minHeight: 0, overflowY: 'auto' } }}
       footer={<Space wrap style={{ width: '100%', justifyContent: 'flex-end' }}>
         <Button onClick={close}>Close sharing preview</Button>
         <Button disabled={!ready} loading={copying} onClick={() => void copy()}>Copy redacted JSON</Button>
