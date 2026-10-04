@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Alert, Button, message, Space, Tooltip, Typography } from 'antd';
+import { Alert, Button, message, Segmented, Space, Tooltip, Typography } from 'antd';
 import type { editor } from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ZodIssue } from 'zod';
@@ -27,6 +27,7 @@ import { ConfigurationImpact } from '@/components/page/ConfigurationImpact';
 import { LocalRawDraft } from '@/components/page/LocalRawDraft';
 import { RawConflictResolver } from '@/components/page/RawConflictResolver';
 import { RawJsonNavigation } from '@/components/page/RawJsonNavigation';
+import { RelatedResources } from '@/components/page/RelatedResources';
 import { ResourceHistory } from '@/components/page/ResourceHistory';
 import { queryClient } from '@/config/global';
 import { req } from '@/config/req';
@@ -43,6 +44,7 @@ import {
   stripSystemReadonlyFields,
 } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
+import { supportsRelatedResources } from '@/utils/relatedResources';
 import {
   getAdminResourceSchema,
   getResourceConditionalRequirements,
@@ -150,6 +152,10 @@ export const AdminApiJsonEditor = ({
   onSavingChange,
 }: AdminApiJsonEditorProps) => {
   const [value, setValue] = useState('');
+  const [referencesOpen, setReferencesOpen] = useState(false);
+  const [referenceView, setReferenceView] = useState('Editor');
+  const [editorWidth, setEditorWidth] = useState(0);
+  const workspaceRef = useRef<HTMLDivElement>(null);
   const [codeEditor, setCodeEditor] = useState<editor.IStandaloneCodeEditor | null>(null);
   const [original, setOriginal] = useState('');
   const [loading, setLoading] = useState(false);
@@ -168,6 +174,14 @@ export const AdminApiJsonEditor = ({
   const formatRef = useRef<() => void>(() => {});
 
   const isDirty = value !== original;
+  const sideBySide = editorWidth >= 760;
+  useEffect(() => {
+    const element = workspaceRef.current;
+    if (!element) return;
+    const observer = new ResizeObserver(() => setEditorWidth(element.clientWidth));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
   const resourceSchema = getAdminResourceSchema(api);
   const identityPaths = getResourceIdentityPaths(api);
   const conditionalRequirements = getResourceConditionalRequirements(api);
@@ -483,7 +497,7 @@ export const AdminApiJsonEditor = ({
   }, []);
 
   return (
-    <div className={fillAvailable ? classes.fillAvailable : undefined}>
+    <div ref={workspaceRef} className={fillAvailable ? classes.fillAvailable : undefined}>
       {error && (
         <Alert
           type="error"
@@ -545,8 +559,12 @@ export const AdminApiJsonEditor = ({
         </div>
       ) : (
         <div className={fillAvailable ? classes.editorArea : undefined}>
+          {referencesOpen && !sideBySide && <Segmented className={classes.referenceSwitch} aria-label="RAW workspace view" value={referenceView}
+            options={['Editor', 'References']} onChange={setReferenceView} />}
+          <div className={classes.editorWorkspace} style={{ height: fillAvailable ? '100%' : height }}>
+          <div className={classes.editorPane} style={{ display: referencesOpen && !sideBySide && referenceView === 'References' ? 'none' : undefined }}>
           <JsonCodeEditor
-            height={fillAvailable ? '100%' : height}
+            height="100%"
             value={value}
             onChange={(nextValue) => {
               if (disabled || saving) return;
@@ -557,6 +575,11 @@ export const AdminApiJsonEditor = ({
             onMount={handleEditorMount}
             readOnly={disabled || saving}
           />
+          </div>
+          {referencesOpen && <div className={classes.referencePane} style={{ display: !sideBySide && referenceView !== 'References' ? 'none' : undefined, width: sideBySide ? '38%' : '100%' }}>
+            <RelatedResources api={api} draft={value} active={active} onClose={() => { setReferencesOpen(false); setReferenceView('Editor'); requestAnimationFrame(() => editorRef.current?.focus()); }} />
+          </div>}
+          </div>
         </div>
       )}
       {!disabled && (
@@ -575,6 +598,9 @@ export const AdminApiJsonEditor = ({
                   : 'No pending changes'}
           </Typography.Text>
           <Space wrap>
+            {supportsRelatedResources(api) && <Button size="small" aria-pressed={referencesOpen} onClick={() => {
+              setReferencesOpen((current) => !current); setReferenceView('References');
+            }}>Related resources</Button>}
             <ResourceHistory api={api} disabled={saving || loading} onRestore={(draft, latest) => {
               setResourceBase(normalizeApiResource(api, latest)); setOriginal(draft.original); setValue(draft.value);
               userEditedRef.current = true; setError(null);
