@@ -417,9 +417,9 @@ export const PluginEditorDrawer = (props: PluginEditorDrawerProps) => {
           <Alert
             type="info"
             showIcon
-            message="AI Gateway quick start"
+            title="AI Gateway quick start"
             description={
-              <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <Space orientation="vertical" size={8} style={{ width: '100%' }}>
                 <Typography.Text type="secondary">
                   Choose a provider template, then replace model, endpoint, and Secret
                   Reference placeholders for your environment.
@@ -454,7 +454,7 @@ export const PluginEditorDrawer = (props: PluginEditorDrawerProps) => {
             key={notice.key}
             type={notice.type}
             showIcon
-            message={notice.message}
+            title={notice.message}
             description={notice.description}
             style={{ marginBottom: 12 }}
           />
@@ -496,7 +496,7 @@ export const PluginEditorDrawer = (props: PluginEditorDrawerProps) => {
           <Alert
             type="warning"
             showIcon
-            message={jsonValidation.message}
+            title={jsonValidation.message}
             description={
               <ul style={{ margin: 0, paddingLeft: 18 }}>
                 {jsonValidation.issues.slice(0, MAX_LIVE_ISSUES).map((issue) => (
@@ -517,7 +517,7 @@ export const PluginEditorDrawer = (props: PluginEditorDrawerProps) => {
           <Alert
             type="error"
             showIcon
-            message={saveError}
+            title={saveError}
             action={saveErrorActions}
             closable
             onClose={() => setSaveError(null)}

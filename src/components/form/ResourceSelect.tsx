@@ -164,7 +164,7 @@ export const ResourceSelect = <T extends FieldValues>(
         loading={optionsFetching}
         notFoundContent={
           optionsError ? (
-            <Space direction="vertical" size={4} align="center">
+            <Space orientation="vertical" size={4} align="center">
               <Typography.Text type="danger">
                 {resourceLabel} options unavailable
               </Typography.Text>

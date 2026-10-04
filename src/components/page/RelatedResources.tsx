@@ -64,7 +64,7 @@ export const RelatedResources = ({ api, draft, active, onClose }: { api: string;
   return <aside className={classes.panel} aria-label="Related resource inspector">
     <Space className={classes.header} wrap><Typography.Text strong>Related resources</Typography.Text><Button size="small" onClick={onClose}>Close references</Button></Space>
     <Typography.Paragraph type="secondary" className={classes.help}>References follow your current draft. Source JSON is read-only saved data; your edits stay in the editor.</Typography.Paragraph>
-    {warnings.map((warning) => <Alert key={warning} type="warning" showIcon message={warning} />)}
+    {warnings.map((warning) => <Alert key={warning} type="warning" showIcon title={warning} />)}
     {targets.length === 0 ? <Typography.Paragraph>No linked Service, Upstream or Plugin Config IDs in this draft. Inline configuration stays in the editor.</Typography.Paragraph> : <>
       <Select aria-label="Reference to inspect" className={classes.select} value={selectedApi} onChange={setSelected} open={active && selectOpen} onOpenChange={setSelectOpen}
         options={targets.map((target) => ({ value: target.api, label: target.label }))} virtual={false} />
@@ -72,9 +72,9 @@ export const RelatedResources = ({ api, draft, active, onClose }: { api: string;
         <Button size="small" onClick={() => setRefresh((current) => current + 1)} loading={result.loading}>Refresh reference</Button>
         {selectedApi && kind && <Link to={resourceLinks[kind]} params={{ id: decodeURIComponent(selectedApi.split('/').at(-1)!) }} target="_blank" rel="noopener noreferrer">Open detail in new tab</Link>}
       </Space>
-      {service.error && selectedApi !== serviceApi && <Alert type="warning" showIcon message="Service references could not be loaded" description={service.error} />}
-      {service.value?.upstream_id != null && !inherited && <Alert type="warning" showIcon message="The saved Service upstream_id is invalid." />}
-      {result.loading ? <Spin aria-label="Loading related resource" /> : result.error ? <Alert type="error" showIcon message="Unable to inspect reference" description={result.error} /> : result.value && <>
+      {service.error && selectedApi !== serviceApi && <Alert type="warning" showIcon title="Service references could not be loaded" description={service.error} />}
+      {service.value?.upstream_id != null && !inherited && <Alert type="warning" showIcon title="The saved Service upstream_id is invalid." />}
+      {result.loading ? <Spin aria-label="Loading related resource" /> : result.error ? <Alert type="error" showIcon title="Unable to inspect reference" description={result.error} /> : result.value && <>
         <Typography.Text type="secondary" className={classes.help}>Saved source / {selectedApi} / Read at {result.at}</Typography.Text>
         <pre className={classes.json} tabIndex={0} aria-label="Related resource JSON">{JSON.stringify(sortJsonKeys(result.value), null, 2)}</pre>
       </>}

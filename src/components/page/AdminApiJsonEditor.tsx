@@ -538,7 +538,7 @@ export const AdminApiJsonEditor = ({
         <Alert
           type="error"
           showIcon
-          message={<div style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--app-font-monospace)', fontSize: 'var(--app-font-size-sm)' }}>{error}</div>}
+          title={<div style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--app-font-monospace)', fontSize: 'var(--app-font-size-sm)' }}>{error}</div>}
           action={
             !disabled && (
               <Space>
@@ -560,7 +560,7 @@ export const AdminApiJsonEditor = ({
         <Alert
           type={saveFeedback.type}
           showIcon
-          message={saveFeedback.message}
+          title={saveFeedback.message}
           description={`Time: ${saveFeedback.at}`}
           style={{ marginBottom: 12 }}
           closable
@@ -568,7 +568,7 @@ export const AdminApiJsonEditor = ({
         />
       )}
       {/^\/consumers\/[^/]+$/.test(api) && <Alert type="info" showIcon style={{ marginBottom: 12 }}
-        message="Consumers use PUT: changed fields are merged into the latest server value before saving." />}
+        title="Consumers use PUT: changed fields are merged into the latest server value before saving." />}
       {resourceSchema && value && (
         <JsonSchemaGuide
           schema={resourceSchema}

@@ -189,7 +189,7 @@ export const FormItemPlugins = <T extends FieldValues>(
           <Alert
             type="warning"
             showIcon
-            message="Plugin catalog is temporarily unavailable"
+            title="Plugin catalog is temporarily unavailable"
             description="Existing plugin settings are preserved and can still be reviewed as Plugin JSON or removed. Adding plugins is disabled until the catalog can be loaded."
             action={
               <Button size="small" onClick={() => pluginsListReq.refetch()}>
@@ -203,7 +203,7 @@ export const FormItemPlugins = <T extends FieldValues>(
           <Alert
             type="warning"
             showIcon
-            message="Some configured plugins are not available in this APISIX instance"
+            title="Some configured plugins are not available in this APISIX instance"
             description={`${unavailablePlugins.join(', ')}. Their stored configuration remains intact. Review it in Plugin JSON or remove the plugin before saving if APISIX no longer supports it.`}
             style={{ marginBottom: 12 }}
           />

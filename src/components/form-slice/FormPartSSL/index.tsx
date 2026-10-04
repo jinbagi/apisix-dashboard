@@ -127,7 +127,7 @@ const FormSectionServerNames = () => {
         <Alert
           type="warning"
           showIcon
-          message="Both SNI and SNIs are set."
+          title="Both SNI and SNIs are set."
           description="APISIX accepts a single SNI or multiple SNIs. Keep one input style active so the submitted certificate binding is unambiguous."
           style={{ marginBottom: 12 }}
         />

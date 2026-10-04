@@ -96,7 +96,7 @@ export const RawJsonNavigation = ({ codeEditor, value, original, schema, resourc
     ];
     return () => actions.forEach((action) => action.dispose());
   }, [codeEditor, copyPointer, disabled, navigate, nextProblem]);
-  return <Space direction="vertical" size={4} style={{ marginBottom: 8, flexShrink: 0 }}>
+  return <Space orientation="vertical" size={4} style={{ marginBottom: 8, flexShrink: 0 }}>
     {compact && <Space wrap size="small">
       <Button ref={toggleRef} size="small" aria-expanded={expanded} aria-controls={toolsVisible ? toolsId : undefined}
         onClick={() => setExpanded((current) => !current)}>{expanded ? 'Hide JSON tools' : 'Show JSON tools'}</Button>

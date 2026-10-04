@@ -34,9 +34,9 @@ function RouteComponent() {
   });
   return <>
     <PageHeader title="GraphQL Cost Decorations" extra={<Link to="/services/detail/$id/graphql_cost_decorations/add" params={{ id }}><Button type="primary">Add Decoration</Button></Link>} />
-    <Alert type="info" showIcon message="APISIX 3.19+ query cost controls" style={{ marginBottom: 16 }}
+    <Alert type="info" showIcon title="APISIX 3.19+ query cost controls" style={{ marginBottom: 16 }}
       description="Configure graphql-limit-count on this Service with cost_strategy complexity or node_quantifier to use these weights. The default depth strategy does not use decorations. Cost = child cost × multiplier + own cost. Configure max_cost in the plugin to reject expensive queries." />
-    {error && <Alert type="error" showIcon message="Could not load cost decorations" description={error.message} action={<Button onClick={() => { void refetch(); }}>Retry</Button>} />}
+    {error && <Alert type="error" showIcon title="Could not load cost decorations" description={error.message} action={<Button onClick={() => { void refetch(); }}>Retry</Button>} />}
     {!error && <ResourceTable<{ value: GraphqlCostDecorationType }> resourceName="Cost decorations" search={false} toolBarRender={false} headerTitle={false}
       options={{ reload: () => { void refetch(); } }} columnsState={{ persistenceKey: 'graphql-cost-decorations' }}
       cardProps={{ styles: { body: { padding: 0 } } }} scroll={{ x: 'max-content' }}

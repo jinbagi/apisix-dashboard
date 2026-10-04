@@ -92,7 +92,7 @@ const CertKeyPairList = () => {
         <Alert
           type="warning"
           showIcon
-          message="Certificate and key arrays are out of sync."
+          title="Certificate and key arrays are out of sync."
           description="Each additional certificate must have a private key at the same position. Fill the missing certificate or key below, or remove the incomplete pair."
           style={{ marginBottom: 12 }}
         />

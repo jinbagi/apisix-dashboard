@@ -114,7 +114,7 @@ const ConnectionSettings = ({ initialKey, onClose }: { initialKey: string; onClo
     footer={connected ? <Button type="primary" onClick={close}>{firstSetup ? 'Continue to dashboard' : 'Done'}</Button>
       : !firstSetup ? <Button onClick={close}>Cancel</Button> : null}>
     {firstSetup && <Alert type="info" showIcon className={classes.intro}
-      message="Connect to your APISIX gateway"
+      title="Connect to your APISIX gateway"
       description="Enter your Admin API key and test the connection to get started." />}
     <label htmlFor={id} className={classes.label}>Admin Key <span aria-hidden="true">*</span></label>
     <Typography.Paragraph id={`${id}-help`} type="secondary" className={classes.help}>
@@ -131,9 +131,9 @@ const ConnectionSettings = ({ initialKey, onClose }: { initialKey: string; onClo
         Test connection
       </Button>
     </Space.Compact>
-    {connected && <Alert type="success" showIcon message="Connected successfully" className={classes.feedback}
+    {connected && <Alert type="success" showIcon title="Connected successfully" className={classes.feedback}
       description="The verified key is now active. You can continue using the dashboard." />}
-    {errorMsg && <Alert id={`${id}-error`} type="error" showIcon message={errorMsg} className={classes.feedback}
+    {errorMsg && <Alert id={`${id}-error`} type="error" showIcon title={errorMsg} className={classes.feedback}
       description={openingKey ? 'Your previous active key has not changed.' : 'No key has been saved.'} />}
     {!firstSetup && <details className={classes.about}>
       <summary>About this dashboard</summary>

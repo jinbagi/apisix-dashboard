@@ -231,7 +231,7 @@ const FormItemNodesInner = <T extends FieldValues>(
         <Alert
           type="warning"
           showIcon
-          message="No backend nodes are configured."
+          title="No backend nodes are configured."
           description="Add at least one node here, or configure Service Discovery below."
           style={{ marginBottom: 12 }}
         />

@@ -54,7 +54,7 @@ const FormSectionStreamRouteBasic = () => {
       <Alert
         type={activeMatchers.length > 0 ? 'info' : 'warning'}
         showIcon
-        message={
+        title={
           activeMatchers.length > 0
             ? `Matching by ${activeMatchers.join(', ')}.`
             : 'No stream matching condition is set yet.'
@@ -85,7 +85,7 @@ const FormSectionStreamRouteBasic = () => {
         <Alert
           type="warning"
           showIcon
-          message="Both SNI and SNIs are set. Clear one before saving."
+          title="Both SNI and SNIs are set. Clear one before saving."
           style={{ marginBottom: 12 }}
         />
       )}
@@ -126,7 +126,7 @@ const FormSectionStreamRouteBasic = () => {
         <Alert
           type="info"
           showIcon
-          message="The upstream terminates the client TLS handshake."
+          title="The upstream terminates the client TLS handshake."
           description="Use a TCP upstream; scheme tls would start a second TLS handshake and is rejected by APISIX. For a referenced Service or Upstream, check its scheme too. Gateway mTLS and payload-inspecting plugins such as mqtt-proxy, xrpc and redis do not apply to the encrypted stream."
           style={{ marginTop: 12 }}
         />
