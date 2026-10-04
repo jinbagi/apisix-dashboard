@@ -45,6 +45,13 @@ export const JsonChangeReview = ({
       open={open}
       title={title}
       width={1000}
+      style={{ top: 24 }}
+      styles={{
+        container: { maxHeight: 'calc(100dvh - 48px)', display: 'flex', flexDirection: 'column' },
+        header: { flexShrink: 0 },
+        body: { minHeight: 0, overflowY: 'auto' },
+        footer: { flexShrink: 0 },
+      }}
       onCancel={onCancel}
       onOk={onSave}
       okText={confirmText}
@@ -56,7 +63,7 @@ export const JsonChangeReview = ({
       keyboard={!saving}
       destroyOnHidden
     >
-      <p>{description}</p>
+      <p style={{ marginTop: 0, overflowWrap: 'anywhere' }}>{description}</p>
       <div style={{ border: '1px solid var(--ant-color-border)', borderRadius: 6, overflow: 'hidden' }}>
         <DiffEditor
           height="min(55vh, 500px)"
