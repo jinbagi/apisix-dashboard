@@ -34,8 +34,9 @@ async function setup(page: Page, data: ExportData, existing: Record<string, Reco
     const path = new URL(request.url()).pathname.replace('/apisix/admin', '');
     if (request.method() === 'PUT') {
       writes.push({ path, body: request.postDataJSON() });
-      records.set(path, request.postDataJSON());
-      return route.fulfill({ json: { value: request.postDataJSON() } });
+      const value = { ...request.postDataJSON(), id: decodeURIComponent(path.split('/').pop()!) };
+      records.set(path, value);
+      return route.fulfill({ json: { value } });
     }
     if (failures.has(path)) return route.fulfill({ status: failures.get(path), json: { error_msg: 'Read unavailable' } });
     if (records.has(path)) return route.fulfill({ json: { value: records.get(path), ...(keys.has(path) ? { key: keys.get(path) } : {}) } });

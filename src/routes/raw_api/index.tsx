@@ -36,6 +36,7 @@ import { useAtomValue } from 'jotai';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ZodTypeAny } from 'zod';
 
+import { type HistoryOutcome, trackResourceWrite } from '@/apis/tracked-resource-write';
 import { JsonCodeEditor } from '@/components/form/JsonCodeEditor';
 import { JsonSchemaGuide } from '@/components/form/JsonSchemaGuide';
 import { ServicePostSchema } from '@/components/form-slice/FormPartService/schema';
@@ -43,6 +44,7 @@ import { SSLPostSchema } from '@/components/form-slice/FormPartSSL/schema';
 import { StreamRoutePostSchema } from '@/components/form-slice/FormPartStreamRoute/schema';
 import { UpstreamPostSchema } from '@/components/form-slice/FormPartUpstream/schema';
 import PageHeader from '@/components/page/PageHeader';
+import { ResourceHistory } from '@/components/page/ResourceHistory';
 import {
   API_CONSUMER_GROUPS,
   API_CONSUMERS,
@@ -438,6 +440,7 @@ function RawApiPage() {
   const [loading, setLoading] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(false);
   const [response, setResponse] = useState<ConsoleResponse | null>(null);
+  const [resourceHistoryOutcome, setResourceHistoryOutcome] = useState<HistoryOutcome | null>(null);
   const [responseError, setResponseError] = useState<string | null>(null);
   const [responseView, setResponseView] = useState<'Body' | 'Headers'>('Body');
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -497,6 +500,7 @@ function RawApiPage() {
     setLoadingExisting(true);
     setResponse(null);
     setResponseError(null);
+    setResourceHistoryOutcome(null);
     const start = performance.now();
     try {
       const res = await req.get(requestUrl, {
@@ -564,6 +568,7 @@ function RawApiPage() {
       setRequestBodyError(null);
       setResponse(null);
       setResponseError(null);
+      setResourceHistoryOutcome(null);
       setResponseView('Body');
       message.success('Request restored. Review it before sending.');
     }, hasUnsentChanges && draftFingerprint(requestSnapshot) !== draftFingerprint(currentDraft));
@@ -639,23 +644,30 @@ function RawApiPage() {
     setLastRequest(requestSnapshot);
     setResponse(null);
     setResponseError(null);
+    setResourceHistoryOutcome(null);
     const start = performance.now();
     try {
-      const res = await req.request({
-        method: activeMethod.toLowerCase(),
-        url: activeRequestUrl,
-        data: parsedBody,
-        headers: { [SKIP_INTERCEPTOR_HEADER]: CONSOLE_INTERCEPTOR_SKIPS },
-      });
-      const elapsed = Math.round(performance.now() - start);
-      setResponse({
-        status: res.status,
-        data: stringifyResponseData(res.data),
-        headers: stringifyHeaders(res.headers),
-        time: elapsed,
-      });
-      addHistoryEntry(res.status, elapsed, requestSnapshot);
-      setBaseline(requestSnapshot);
+      const execute = async () => {
+        const requestStart = performance.now();
+        const res = await req.request({
+          method: activeMethod.toLowerCase(),
+          url: activeRequestUrl,
+          data: parsedBody,
+          headers: { [SKIP_INTERCEPTOR_HEADER]: CONSOLE_INTERCEPTOR_SKIPS },
+        });
+        const elapsed = Math.round(performance.now() - requestStart);
+        setResponse({ status: res.status, data: stringifyResponseData(res.data),
+          headers: stringifyHeaders(res.headers), time: elapsed });
+        addHistoryEntry(res.status, elapsed, requestSnapshot);
+        setBaseline(requestSnapshot);
+        return res;
+      };
+      const outcome = activeMethod === 'GET' ? null : await trackResourceWrite({
+        source: 'console', method: activeMethod, api: activeRequestUrl,
+        body: parsedBody, allowUntracked: true,
+      }, execute);
+      if (!outcome) await execute();
+      setResourceHistoryOutcome(outcome?.history ?? null);
     } catch (e) {
       const failure = getErrorResponse(e, Math.round(performance.now() - start));
       setResponseError(failure.error);
@@ -944,6 +956,7 @@ function RawApiPage() {
                 setQueryString('');
                 setResponse(null);
                 setResponseError(null);
+                setResourceHistoryOutcome(null);
                 setBaseline({ method, resource: v, pathSuffix: '', queryString: '',
                   body: stringifyRequiredRequestTemplate(v, method, ''), endpoint: v });
               })}
@@ -1178,6 +1191,7 @@ function RawApiPage() {
               <Button size="small" type="text" onClick={() => {
                 setResponse(null);
                 setResponseError(null);
+                setResourceHistoryOutcome(null);
                 setResponseView('Body');
               }}>
                 Clear
@@ -1189,8 +1203,17 @@ function RawApiPage() {
               }}>Copy {responseView.toLowerCase()}</Button>
             </Space>
           )}
-          styles={{ body: { flex: 1, padding: 0, overflow: 'hidden' } }}
+          styles={{ body: { flex: 1, minHeight: 0, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' } }}
         >
+          <Typography.Paragraph type="secondary" style={{ margin: 12 }}>
+            Change history verifies exact resource writes with fresh reads. Queries and arbitrary subpaths are excluded; the Console can still execute them.
+          </Typography.Paragraph>
+          <div style={{ margin: 12 }}><ResourceHistory disabled={loading} /></div>
+          {loading && response && lastRequest?.method !== 'GET' && <Alert style={{ margin: 12 }} showIcon type="info"
+            message="Request accepted. Verifying read-back for resource history…" />}
+          {resourceHistoryOutcome && <Alert style={{ margin: 12 }} showIcon
+            type={['recorded', 'unchanged'].includes(resourceHistoryOutcome.status) ? 'success' : resourceHistoryOutcome.status === 'unverified' ? 'warning' : 'info'}
+            message={resourceHistoryOutcome.message} />}
           {responseError && response?.data && (
             <Alert
               type="error"
@@ -1206,12 +1229,14 @@ function RawApiPage() {
             </div>
           )}
           {response && (responseView === 'Headers' || response.data) ? (
-            <JsonCodeEditor
-              height="100%"
-              value={responseView === 'Body' ? response.data : response.headers}
-              readOnly
-              variant="flush"
-            />
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <JsonCodeEditor
+                height="100%"
+                value={responseView === 'Body' ? response.data : response.headers}
+                readOnly
+                variant="flush"
+              />
+            </div>
           ) : !responseError && (
             <div className={classes.emptyResponse}>
               <div className={classes.emptyResponseMark} aria-hidden="true">&gt;_</div>

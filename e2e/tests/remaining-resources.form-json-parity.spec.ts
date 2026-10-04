@@ -122,7 +122,8 @@ test('plugin metadata Fields/JSON round trip preserves values outside visual con
     if (path === '/plugins') response = { 'http-logger': { metadata_schema: { type: 'object', properties: { format: { type: 'string' } }, additionalProperties: true } } };
     if (path === '/plugin_metadata/http-logger') {
       if (request.method() === 'PUT') saved = request.postDataJSON();
-      response = { value: saved };
+      if (!saved) return route.fulfill({ status: 404, json: { error_msg: 'Not found' } });
+      response = { key: '/apisix/plugin_metadata/http-logger', value: saved };
     }
     if (path === '/plugin_metadata' && saved) response = { list: [{ key: '/plugin_metadata/http-logger', value: saved }], total: 1 };
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify(response) });

@@ -36,7 +36,10 @@ for (const entry of cases) {
       if ((path === `/${entry.resource}` || path === `/${entry.resource}/fresh`) && ['POST', 'PUT'].includes(request.method())) {
         value = { ...request.postDataJSON(), id: 'fresh', create_time: 1, update_time: 1 };
         response = { value };
-      } else if (path === `/${entry.resource}/fresh`) response = { value };
+      } else if (path === `/${entry.resource}/fresh`) {
+        if (!value) return route.fulfill({ status: 404, json: { error_msg: 'Not found' } });
+        response = { value };
+      }
       else if (path === `/${entry.resource}`) {
         reads += 1;
         response = { list: value ? [{ value }] : [], total: value ? 1 : 0 };

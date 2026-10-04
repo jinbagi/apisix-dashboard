@@ -46,6 +46,7 @@ async function mockApi(page: Page, resource: string) {
         writes.push({ path, method: request.method(), body });
         value = { ...body, id: path.slice(resource.length + 1) || 'generated', create_time: 1, update_time: 1 };
       }
+      if (request.method() === 'GET' && path !== resource && !value) return route.fulfill({ status: 404, json: { error_msg: 'Not found' } });
       response = path === resource && request.method() === 'GET'
         ? { list: value ? [{ value }] : [], total: value ? 1 : 0 }
         : { value };

@@ -20,15 +20,13 @@ import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { putConsumerReq } from '@/apis/consumers';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartConsumer } from '@/components/form-slice/FormPartConsumer';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import PageHeader from '@/components/page/PageHeader';
 import { API_CONSUMERS } from '@/config/constant';
-import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
-import { verifyAdminApiResource } from '@/utils/adminApiVerification';
-import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
@@ -39,11 +37,7 @@ const ConsumerAddForm = () => {
   const putConsumer = useMutation({
     mutationFn: async (d: APISIXType['ConsumerPut']) => {
       const payload = prepareResourceFormPayload(d);
-      const response = await putConsumerReq(req, payload);
-      await verifyAdminApiResource(
-        `${API_CONSUMERS}/${payload.username}`,
-        stripSystemReadonlyFields(payload as Record<string, unknown>)
-      );
+      const response = await putConsumerReq(formHistoryReq, payload);
       return { response, username: payload.username };
     },
     async onSuccess({ username }) {

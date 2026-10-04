@@ -414,7 +414,7 @@ export const AdminApiJsonEditor = ({
       }
 
       const verifiedResource = await verifySavedResource(api, payload);
-      recordResourceChange(api, normalizedLatest, applyBulkPatch(normalizedLatest, payload));
+      recordResourceChange(api, normalizedLatest, verifiedResource, { restoreAfter: applyBulkPatch(normalizedLatest, payload) });
       loadData(verifiedResource);
       const successMsg = 'Saved and verified changed fields in APISIX';
       showNotification({ message: successMsg, type: 'success' });

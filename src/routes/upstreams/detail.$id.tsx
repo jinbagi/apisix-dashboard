@@ -31,6 +31,7 @@ import { useEffect } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useBoolean } from 'react-use';
 
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { getUpstreamReq, putUpstreamReq } from '@/apis/upstreams';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartUpstream } from '@/components/form-slice/FormPartUpstream';
@@ -78,7 +79,7 @@ const UpstreamDetailForm = (
   });
 
   const putUpstream = useMutation({
-    mutationFn: (d: APISIXType['Upstream']) => putUpstreamReq(req, d),
+    mutationFn: (d: APISIXType['Upstream']) => putUpstreamReq(formHistoryReq, d),
     async onSuccess() {
       await refetch({ throwOnError: true });
       await refreshResourceCaches('upstreams', API_UPSTREAMS);

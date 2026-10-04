@@ -79,7 +79,7 @@ export const verifyAdminApiResource = async (
       }
 
       const mismatches = getPatchMismatchPaths(comparableExpected, actual);
-      if (mismatches.length === 0) return;
+      if (mismatches.length === 0) return actual;
 
       lastError = new Error(
         `Admin API did not return the saved value for: ${mismatches.join(', ')}`
