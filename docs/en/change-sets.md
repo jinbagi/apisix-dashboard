@@ -22,3 +22,11 @@ Drafts and outcomes are kept in this browser tab's memory and survive navigation
 ## Validation evidence
 
 Fixture-only tests cover RAW/Import staging without writes, exact identities, native custom IDs, create-only collisions, complete payload comparison, reference ordering, concurrent changes at both preflight reads, partial failure, no replay of successful or uncertain writes, and a 390 px viewport. These tests do not claim live gateway or CI validation.
+
+### Follow-up 52: stable preview action name
+
+Integration validation reproduced an enabled retry button whose accessible name remained `loading Preview destinations` after a prerequisite failed. The execution result was available, but the spinner's accessible name made the exact action name unstable. Preview now keeps its visible name as its explicit accessible label and exposes progress separately through `aria-busy`; its text, loading behavior and executor are unchanged.
+
+A held destination GET reproduces the missing exact name before the fix. The regression checks the same action while busy, after the response, and on explicit re-preview, with no gateway writes. The existing partial-failure case still requires exact action names and verifies that re-preview never replays the successful item.
+
+Local validation passed lint, TypeScript/production build, 96 affected fixture tests, and five repetitions of both the pending-name and failed-prerequisite retry cases (10/10). This follow-up changes no visible layout.

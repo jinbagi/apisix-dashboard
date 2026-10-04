@@ -126,6 +126,32 @@ test('re-preview continues untouched items after a failed prerequisite without r
   expect(controls.writes).toEqual(['/upstreams/upstream-canary', '/services/service-canary', '/routes/route-canary']);
 });
 
+test('preview retains its accessible name while busy and after the destinations are ready', async ({ page }) => {
+  const controls = await setup(page); await stage(page);
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  let held = false;
+  await page.route('**/apisix/admin/upstreams/upstream-canary', async (route) => {
+    if (!held && route.request().method() === 'GET') { held = true; await pending; }
+    await route.fallback();
+  });
+  const preview = page.getByRole('button', { name: 'Preview destinations', exact: true });
+  await preview.click();
+  try {
+    await expect(preview).toHaveAttribute('aria-busy', 'true');
+    await expect(preview).toHaveClass(/ant-btn-loading/);
+    await expect(page.getByRole('button', { name: /^Apply.*changes$/ })).toBeDisabled();
+    expect(controls.writes).toEqual([]);
+  } finally { release(); }
+  await expect(preview).toHaveAttribute('aria-busy', 'false');
+  await expect(preview).not.toHaveClass(/ant-btn-loading/);
+  await expect(page.getByRole('button', { name: 'Apply 3 changes', exact: true })).toBeEnabled();
+  await preview.click();
+  await expect(preview).toHaveAttribute('aria-busy', 'false');
+  await expect(page.getByRole('button', { name: 'Apply 3 changes', exact: true })).toBeEnabled();
+  expect(controls.writes).toEqual([]);
+});
+
 
 test('staged drafts survive navigation and retain browser unload protection outside the workspace', async ({ page }) => {
   const controls = await setup(page); await stage(page);

@@ -69,7 +69,7 @@ function ChangeSetsPage() {
       </> }]} />
       {error && <Alert type="error" showIcon title={error} />}
       <Space wrap>
-        <Button onClick={preview} loading={state.busy} disabled={!state.drafts.length}>Preview destinations</Button>
+        <Button onClick={preview} loading={state.busy} aria-label="Preview destinations" aria-busy={state.busy} disabled={!state.drafts.length}>Preview destinations</Button>
         <Button type="primary" onClick={() => setConfirming(true)} disabled={state.busy || !ready || !!blocked || needsPreview}>Apply {ready || ''} changes</Button>
         <Typography.Text>{state.drafts.length} staged · {state.drafts.filter((draft) => draft.outcome === 'verified').length} verified</Typography.Text>
       </Space>
