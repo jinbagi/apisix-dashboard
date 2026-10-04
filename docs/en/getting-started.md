@@ -105,6 +105,12 @@ column filters, and page size. Views are stored in this browser for each table;
 existing saved views continue to work. Changing a table layout never changes
 APISIX resource data.
 
+If browser storage is unavailable, layout changes still apply to the current
+page. A persistent warning replaces the saved status. **Retry save** stores the
+latest layout when storage becomes available; leaving or reloading before a
+successful retry may restore the previous layout. Named views remain unchanged
+when saving or deleting a view fails.
+
 ![Table column layout](./assets/screenshots/table-column-layout.png)
 
 ## Review a Resource
