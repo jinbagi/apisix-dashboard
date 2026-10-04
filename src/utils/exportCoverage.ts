@@ -43,22 +43,24 @@ function strings(value: unknown): value is string[] { return Array.isArray(value
 
 /** Reject contradictory new metadata; older files are handled as unknown coverage by the caller. */
 export function readExportCoverage(input: unknown, kinds: readonly ResourceKey[]): ExportCoverage {
-  if (!isRecord(input) || input.version !== 1 || !['full', 'selected', 'dependencies'].includes(String(input.mode)) ||
+  if (!isRecord(input) || input.version !== 1 || typeof input.mode !== 'string' || !['full', 'selected', 'dependencies'].includes(input.mode) ||
     !strings(input.selectedResources) || input.selectedResources.some((kind) => !kinds.includes(kind as ResourceKey)) ||
     !strings(input.rootUrls) || !isRecord(input.collections)) throw new Error('Invalid export coverage metadata.');
   for (const key of Object.keys(input.collections)) if (!kinds.includes(key as ResourceKey)) throw new Error(`Unsupported coverage collection: ${key}`);
   for (const kind of kinds) {
     const item = input.collections[kind];
-    if (!isRecord(item) || !isRecord(item.scope) || !['complete', 'incomplete', 'excluded'].includes(String(item.state)) || !Number.isSafeInteger(item.count) || Number(item.count) < 0)
+    if (!isRecord(item) || !isRecord(item.scope) || typeof item.state !== 'string' || !['complete', 'incomplete', 'excluded'].includes(item.state) || !Number.isSafeInteger(item.count) || Number(item.count) < 0)
       throw new Error(`Invalid coverage for ${kind}`);
     const scope = item.scope;
-    if (Object.keys(scope).some((key) => !(['ids', 'owners'].includes(String(scope.type)) ? ['type', 'values'] : ['type']).includes(key))) throw new Error(`Unsupported scope fields for ${kind}`);
-    if (!['all', 'ids', 'owners', 'excluded'].includes(String(scope.type)) ||
-      (['ids', 'owners'].includes(String(scope.type)) && (!strings(scope.values) || scope.values.some((url) => !validScopeUrl(kind, url, scope.type === 'owners')))))
+    if (typeof scope.type !== 'string') throw new Error(`Invalid coverage scope for ${kind}`);
+    const scopeType = scope.type;
+    if (Object.keys(scope).some((key) => !(['ids', 'owners'].includes(scopeType) ? ['type', 'values'] : ['type']).includes(key))) throw new Error(`Unsupported scope fields for ${kind}`);
+    if (!['all', 'ids', 'owners', 'excluded'].includes(scopeType) ||
+      (['ids', 'owners'].includes(scopeType) && (!strings(scope.values) || scope.values.some((url) => !validScopeUrl(kind, url, scope.type === 'owners')))))
       throw new Error(`Invalid coverage scope for ${kind}`);
     if ((scope.type === 'excluded') !== (item.state === 'excluded') || (item.state === 'excluded' && item.count !== 0) ||
       (item.state !== 'excluded') !== input.selectedResources.includes(kind)) throw new Error(`Contradictory coverage for ${kind}`);
-    if (input.mode === 'full' && scope.type !== (kind === 'pluginMetadata' ? 'ids' : 'all') || input.mode === 'selected' && !['ids', 'excluded'].includes(String(scope.type)) || input.mode === 'dependencies' && scope.type === 'all') throw new Error(`Scope does not match export mode for ${kind}`);
+    if (input.mode === 'full' && scope.type !== (kind === 'pluginMetadata' ? 'ids' : 'all') || input.mode === 'selected' && !['ids', 'excluded'].includes(scopeType) || input.mode === 'dependencies' && scope.type === 'all') throw new Error(`Scope does not match export mode for ${kind}`);
     if (Object.hasOwn(item, 'owners')) {
       const owners = item.owners;
       if (!isRecord(owners) || !strings(owners.requested) || !strings(owners.completed) || typeof owners.catalogComplete !== 'boolean' ||

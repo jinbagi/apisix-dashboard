@@ -149,6 +149,14 @@ test('matching full scope distinguishes complete emptiness from selected scope a
 test('contradictory metadata, owner claims, out-of-scope IDs and prototype-like keys cannot claim complete reads', async () => {
   details.set('/routes/__proto__', { id: '__proto__' }); const data = await exportSelectedResources('/routes', ['__proto__']);
   expect(parse(data).collections.get('routes')?.items.has('/routes/__proto__')).toBe(true);
+  for (const mutate of [
+    (value: Record<string, unknown>) => { value.mode = ['selected']; },
+    (value: Record<string, unknown>) => { (value.collections as Record<string, Record<string, unknown>>).routes.state = ['complete']; },
+    (value: Record<string, unknown>) => { ((value.collections as Record<string, Record<string, unknown>>).routes.scope as Record<string, unknown>).type = ['ids']; },
+  ]) {
+    const malformed = JSON.parse(JSON.stringify(data)); mutate(malformed.coverage);
+    expect(() => parse(malformed)).toThrow(/coverage/i);
+  }
   const invalid = structuredClone(data); invalid.coverage!.collections.routes.count = 0;
   expect(() => parse(invalid)).toThrow('Coverage count');
   invalid.coverage!.collections.routes.count = 1; invalid.coverage!.collections.routes.scope = { type: 'ids', values: ['/routes/other'] };
