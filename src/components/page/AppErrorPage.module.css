@@ -1,4 +1,6 @@
 .viewport {
+  box-sizing: border-box;
+  min-width: 0;
   display: grid;
   min-height: calc(100vh - var(--appshell-header-height, 60px) - 120px);
   place-items: center;
@@ -6,6 +8,8 @@
 }
 
 .card {
+  min-width: 0;
+  max-width: 100%;
   width: min(680px, 100%);
   border-color: var(--ant-color-border-secondary);
   box-shadow: 0 12px 36px rgba(15, 23, 42, 0.08);

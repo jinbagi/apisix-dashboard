@@ -16,7 +16,7 @@
  */
 import { Alert, Button, message, Segmented, Space, Tooltip, Typography } from 'antd';
 import type { editor } from 'monaco-editor';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { ZodIssue } from 'zod';
 
 import { applyBulkPatch } from '@/apis/bulk-patch';
@@ -173,6 +173,9 @@ export const AdminApiJsonEditor = ({
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const activeRef = useRef(active);
   activeRef.current = active;
+  const sessionId = useId();
+  const modelPath = 'inmemory:///raw/' + encodeURIComponent(sessionId);
+  const retainedModel = useRef<editor.ITextModel | null>(null);
   const viewState = useRef<editor.ICodeEditorViewState | null>(null);
   const loadSession = persistentSession || active;
   const userEditedRef = useRef(false);
@@ -492,6 +495,12 @@ export const AdminApiJsonEditor = ({
 
   const handleEditorMount = useCallback((ed: editor.IStandaloneCodeEditor) => {
     editorRef.current = ed;
+    retainedModel.current = ed.getModel();
+    // A save or refresh may finish while this tab's widget is suspended.
+    if (ed.getValue() !== valueRef.current) {
+      ed.executeEdits('raw-session', [{ range: ed.getModel()!.getFullModelRange(), text: valueRef.current }]);
+      ed.pushUndoStop();
+    }
     setCodeEditor(ed);
     if (activeRef.current) window.__monacoEditor__ = ed;
 
@@ -507,7 +516,7 @@ export const AdminApiJsonEditor = ({
   }, []);
 
   useLayoutEffect(() => {
-    if (!codeEditor || !active) return;
+    if (!codeEditor?.getModel() || !active) return;
     window.__monacoEditor__ = codeEditor;
     const frame = requestAnimationFrame(() => {
       codeEditor.layout();
@@ -518,7 +527,8 @@ export const AdminApiJsonEditor = ({
 
   useEffect(() => {
     return () => {
-      editorRef.current?.dispose();
+      if (window.__monacoEditor__ === editorRef.current) delete window.__monacoEditor__;
+      retainedModel.current?.dispose();
     };
   }, []);
 
@@ -563,7 +573,7 @@ export const AdminApiJsonEditor = ({
         <JsonSchemaGuide
           schema={resourceSchema}
           value={value}
-          title="Required fields and schema validation"
+          title={editorWidth > 0 && editorWidth < 560 ? 'Schema guidance' : 'Required fields and schema validation'}
           compact
           collapsible
           validAlertType="info"
@@ -575,7 +585,7 @@ export const AdminApiJsonEditor = ({
         />
       )}
       {!loading && <RawJsonNavigation codeEditor={codeEditor} value={value} original={original}
-        schema={resourceSchema} resourceBase={resourceBase} disabled={disabled || saving || !active} />}
+        schema={resourceSchema} resourceBase={resourceBase} disabled={disabled || saving || !active} compact={editorWidth > 0 && editorWidth < 560} />}
       {loading ? (
         <div
           className={fillAvailable ? classes.editorArea : undefined}
@@ -589,8 +599,11 @@ export const AdminApiJsonEditor = ({
             options={['Editor', 'References']} onChange={setReferenceView} />}
           <div className={classes.editorWorkspace} style={{ height: fillAvailable ? '100%' : height }}>
           <div className={classes.editorPane} style={{ display: referencesOpen && !sideBySide && referenceView === 'References' ? 'none' : undefined }}>
-          <JsonCodeEditor
+          {(!persistentSession || active) && <JsonCodeEditor
             height="100%"
+            path={persistentSession ? modelPath : undefined}
+            keepCurrentModel={persistentSession}
+            saveViewState={!persistentSession}
             value={value}
             onChange={(nextValue) => {
               if (disabled || saving) return;
@@ -601,7 +614,7 @@ export const AdminApiJsonEditor = ({
             }}
             onMount={handleEditorMount}
             readOnly={disabled || saving}
-          />
+          />}
           </div>
           {referencesOpen && <div className={classes.referencePane} style={{ display: !sideBySide && referenceView !== 'References' ? 'none' : undefined, width: sideBySide ? '38%' : '100%' }}>
             <RelatedResources api={api} draft={value} active={active} onClose={() => { setReferencesOpen(false); setReferenceView('Editor'); requestAnimationFrame(() => editorRef.current?.focus()); }} />
@@ -610,21 +623,8 @@ export const AdminApiJsonEditor = ({
         </div>
       )}
       {!disabled && (
-        <Space
-          className={fillAvailable ? classes.actionBar : undefined}
-          style={{ width: '100%', justifyContent: 'space-between', marginTop: 12 }}
-          wrap
-        >
-          <Typography.Text type={isDirty ? 'warning' : 'secondary'} aria-live="polite">
-            {saving
-              ? 'Saving and verifying with APISIX...'
-              : isDirty
-                ? 'Unsaved changes. Ctrl+S saves changed fields.'
-                : saveFeedback?.type === 'success'
-                  ? `Saved at ${saveFeedback.at}`
-                  : 'No pending changes'}
-          </Typography.Text>
-          <Space wrap>
+        <div className={classes.actionBar}>
+          <div role="group" aria-label="RAW editor tools" className={classes.secondaryActions}>
             {supportsRelatedResources(api) && <Button size="small" aria-pressed={referencesOpen} onClick={() => {
               setReferencesOpen((current) => !current); setReferenceView('References');
             }}>Related resources</Button>}
@@ -645,10 +645,10 @@ export const AdminApiJsonEditor = ({
                 setError(null);
                 setSaveFeedback({ type: 'warning', message: 'Local draft restored. Review and save to apply it to APISIX.', at: new Date().toLocaleTimeString() });
               }} />
-            <Tooltip title="Format Admin API JSON">
+            <Tooltip title="Format Admin API JSON" trigger={['hover', 'focus']}>
               <Button size="small" onClick={handleFormat} disabled={saving || loading}>Format</Button>
             </Tooltip>
-            <Tooltip title="Copy Admin API JSON">
+            <Tooltip title="Copy Admin API JSON" trigger={['hover', 'focus']}>
               <Button size="small" onClick={handleCopy}>Copy</Button>
             </Tooltip>
             <Button
@@ -658,20 +658,33 @@ export const AdminApiJsonEditor = ({
             >
               Reset
             </Button>
-            <Button onClick={handleReview} disabled={!isDirty || saving || loading}>
-              Review changes
-            </Button>
-            <Button
-              type="primary"
-              aria-label="Save Changes"
-              loading={saving}
-              onClick={handleSave}
-              disabled={!isDirty || loading}
-            >
-              Save Changes
-            </Button>
-          </Space>
-        </Space>
+          </div>
+          <div className={classes.primaryRow}>
+            <Typography.Text className={classes.saveStatus} type={isDirty ? 'warning' : 'secondary'} aria-live="polite">
+              {saving
+                ? 'Saving and verifying with APISIX...'
+                : isDirty
+                  ? 'Unsaved changes. Ctrl+S saves changed fields.'
+                  : saveFeedback?.type === 'success'
+                    ? `Saved at ${saveFeedback.at}`
+                    : 'No pending changes'}
+            </Typography.Text>
+            <div role="group" aria-label="RAW save actions" className={classes.primaryActions}>
+              <Button onClick={handleReview} disabled={!isDirty || saving || loading}>
+                Review changes
+              </Button>
+              <Button
+                type="primary"
+                aria-label="Save Changes"
+                loading={saving}
+                onClick={handleSave}
+                disabled={!isDirty || loading}
+              >
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
       {active && conflict && <RawConflictResolver
         snapshot={{ previous: conflict.previous, draft: conflict.draft, latest: stripPatchReadonlyFields(conflict.latest) }}

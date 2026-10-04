@@ -50,6 +50,7 @@ import { req } from '@/config/req';
 import type { APISIXType } from '@/types/schema/apisix';
 import { GraphqlCostDecoration } from '@/types/schema/apisix/graphql_cost_decorations';
 import { isRecord } from '@/utils/apisixEditable';
+import { assertRestorableExport } from '@/utils/sharingFormat';
 
 export const EXPORT_VERSION = 3;
 
@@ -216,6 +217,7 @@ export const buildConfigValidationPayload = (
   data: ExportData,
   selectedResources: ResourceKey[] = IMPORT_ORDER
 ): Record<string, Record<string, unknown>[]> => {
+  assertRestorableExport(data);
   const payload: Record<string, Record<string, unknown>[]> = {};
 
   for (const resourceType of selectedResources) {
@@ -237,6 +239,7 @@ export async function validateConfiguration(
   data: ExportData,
   selectedResources: ResourceKey[] = IMPORT_ORDER
 ): Promise<ConfigValidationResult> {
+  assertRestorableExport(data);
   const decorations = selectedResources.includes('graphqlCostDecorations') ? data.resources.graphqlCostDecorations ?? [] : [];
   const warnings = decorations.length ? ['GraphQL cost decorations are checked against the 3.19 schema locally. APISIX checks Service ownership and duplicate field paths when they are imported.'] : [];
   const errors: ConfigValidationError[] = [];
@@ -496,6 +499,7 @@ export async function importResources(
   onProgress?: (result: ImportResult) => void,
   beforeWrite?: (resourceType: ResourceKey, item: Record<string, unknown>, index: number) => Promise<boolean>,
 ): Promise<ImportResult[]> {
+  assertRestorableExport(data);
   const results: ImportResult[] = [];
 
   for (const resourceType of IMPORT_ORDER) {

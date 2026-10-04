@@ -27,6 +27,7 @@ import { BulkDeleteBar } from '@/components/page/BulkDeleteBar';
 import { LabelSearchInput } from '@/components/page/LabelSearchInput';
 import PageHeader from '@/components/page/PageHeader';
 import { RawDrawer } from '@/components/page/RawDrawer';
+import { RequestMatchPreview } from '@/components/page/RequestMatchPreview';
 import { ResourceSortSelect } from '@/components/page/ResourceSortSelect';
 import { ResourceTable } from '@/components/page/ResourceTable';
 import { RouteOverlapDiagnostics } from '@/components/page/RouteOverlapDiagnostics';
@@ -396,7 +397,7 @@ function RouteComponent() {
       <PageHeader
         title="Routes"
         desc="Define how incoming requests are matched, transformed, and forwarded."
-        extra={<Space wrap><RouteOverlapDiagnostics /><ToAddPageBtn label="Add Route" to="/routes/add" /></Space>}
+        extra={<Space wrap><RequestMatchPreview /><RouteOverlapDiagnostics /><ToAddPageBtn label="Add Route" to="/routes/add" /></Space>}
       />
       <RouteList
         routeKey="/routes/"

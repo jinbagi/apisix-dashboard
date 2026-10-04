@@ -1,0 +1,15 @@
+.intro { margin-bottom: 20px; }
+.label { display: block; margin-bottom: 8px; font-weight: var(--app-font-weight-strong); }
+.label span { color: var(--ant-color-error); }
+.help { margin-bottom: 12px !important; font-size: var(--app-font-size-md); }
+.inputRow { width: 100%; }
+.inputRow > :first-child { min-width: 0; }
+.feedback { margin-top: 12px; }
+.about { margin-top: 24px; border-top: 1px solid var(--ant-color-border-secondary); padding-top: 12px; }
+.about summary { cursor: pointer; margin-bottom: 8px; }
+.about summary:focus-visible { outline: 2px solid var(--ant-color-primary); outline-offset: 3px; }
+.revision { overflow-wrap: anywhere; margin-top: 4px; font-family: var(--app-font-monospace); font-size: var(--app-font-size-sm); }
+@media (max-width: 420px) {
+  .inputRow { display: flex; flex-direction: column; gap: 8px; }
+  .inputRow > * { width: 100%; border-radius: var(--ant-border-radius) !important; }
+}

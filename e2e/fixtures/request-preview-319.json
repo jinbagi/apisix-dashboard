@@ -1,0 +1,290 @@
+[
+  {
+    "name": "exact",
+    "route": {
+      "id": "exact",
+      "uri": "/a"
+    },
+    "request": {
+      "method": "GET",
+      "host": "api.example.com",
+      "path": "/a",
+      "router": "radixtree_uri"
+    },
+    "matched": true,
+    "parameters": {}
+  },
+  {
+    "name": "exact-boundary",
+    "route": {
+      "id": "exact-boundary",
+      "uri": "/a"
+    },
+    "request": {
+      "method": "GET",
+      "host": "api.example.com",
+      "path": "/ab",
+      "router": "radixtree_uri"
+    },
+    "matched": false,
+    "parameters": {}
+  },
+  {
+    "name": "prefix",
+    "route": {
+      "id": "prefix",
+      "uri": "/foo*"
+    },
+    "request": {
+      "method": "GET",
+      "host": "api.example.com",
+      "path": "/foobar",
+      "router": "radixtree_uri"
+    },
+    "matched": true,
+    "parameters": {}
+  },
+  {
+    "name": "slash-prefix",
+    "route": {
+      "id": "slash-prefix",
+      "uri": "/foo/*"
+    },
+    "request": {
+      "method": "GET",
+      "host": "api.example.com",
+      "path": "/foo",
+      "router": "radixtree_uri"
+    },
+    "matched": false,
+    "parameters": {}
+  },
+  {
+    "name": "slash-prefix-empty",
+    "route": {
+      "id": "slash-prefix-empty",
+      "uri": "/foo/*"
+    },
+    "request": {
+      "method": "GET",
+      "host": "api.example.com",
+      "path": "/foo/",
+      "router": "radixtree_uri"
+    },
+    "matched": true,
+    "parameters": {}
+  },
+  {
+    "name": "method",
+    "route": {
+      "id": "method",
+      "uri": "/a",
+      "methods": [
+        "POST"
+      ]
+    },
+    "request": {
+      "method": "GET",
+      "host": "api.example.com",
+      "path": "/a",
+      "router": "radixtree_uri"
+    },
+    "matched": false,
+    "parameters": {}
+  },
+  {
+    "name": "method-head",
+    "route": {
+      "id": "method-head",
+      "uri": "/a",
+      "methods": [
+        "GET"
+      ]
+    },
+    "request": {
+      "method": "HEAD",
+      "host": "api.example.com",
+      "path": "/a",
+      "router": "radixtree_uri"
+    },
+    "matched": false,
+    "parameters": {}
+  },
+  {
+    "name": "host",
+    "route": {
+      "id": "host",
+      "uri": "/a",
+      "host": "api.example.com"
+    },
+    "request": {
+      "method": "GET",
+      "host": "api.example.com",
+      "path": "/a",
+      "router": "radixtree_host_uri"
+    },
+    "matched": true,
+    "parameters": {}
+  },
+  {
+    "name": "host-wildcard",
+    "route": {
+      "id": "host-wildcard",
+      "uri": "/a",
+      "host": "*.example.com"
+    },
+    "request": {
+      "method": "GET",
+      "host": "nested.api.example.com",
+      "path": "/a",
+      "router": "radixtree_uri"
+    },
+    "matched": true,
+    "parameters": {}
+  },
+  {
+    "name": "host-boundary",
+    "route": {
+      "id": "host-boundary",
+      "uri": "/a",
+      "host": "*.example.com"
+    },
+    "request": {
+      "method": "GET",
+      "host": "example.com",
+      "path": "/a",
+      "router": "radixtree_uri"
+    },
+    "matched": false,
+    "parameters": {}
+  },
+  {
+    "name": "parameter",
+    "route": {
+      "id": "parameter",
+      "uri": "/blog/:name"
+    },
+    "request": {
+      "method": "GET",
+      "host": "api.example.com",
+      "path": "/blog/dog",
+      "router": "radixtree_uri_with_parameter"
+    },
+    "matched": true,
+    "parameters": {
+      "name": "dog"
+    }
+  },
+  {
+    "name": "parameter-empty",
+    "route": {
+      "id": "parameter-empty",
+      "uri": "/blog/:name"
+    },
+    "request": {
+      "method": "GET",
+      "host": "api.example.com",
+      "path": "/blog/",
+      "router": "radixtree_uri_with_parameter"
+    },
+    "matched": false,
+    "parameters": {}
+  },
+  {
+    "name": "parameter-disabled",
+    "route": {
+      "id": "parameter-disabled",
+      "uri": "/blog/:name"
+    },
+    "request": {
+      "method": "GET",
+      "host": "api.example.com",
+      "path": "/blog/dog",
+      "router": "radixtree_uri"
+    },
+    "matched": false,
+    "parameters": {}
+  },
+  {
+    "name": "parameter-literal",
+    "route": {
+      "id": "parameter-literal",
+      "uri": "/blog/:name"
+    },
+    "request": {
+      "method": "GET",
+      "host": "api.example.com",
+      "path": "/blog/:name",
+      "router": "radixtree_uri"
+    },
+    "matched": true,
+    "parameters": {}
+  },
+  {
+    "name": "named-catchall",
+    "route": {
+      "id": "named-catchall",
+      "uri": "/login/*action"
+    },
+    "request": {
+      "method": "GET",
+      "host": "api.example.com",
+      "path": "/login/a/b",
+      "router": "radixtree_uri_with_parameter"
+    },
+    "matched": true,
+    "parameters": {
+      "action": "a/b"
+    }
+  },
+  {
+    "name": "named-catchall-empty",
+    "route": {
+      "id": "named-catchall-empty",
+      "uri": "/login/*action"
+    },
+    "request": {
+      "method": "GET",
+      "host": "api.example.com",
+      "path": "/login/",
+      "router": "radixtree_uri_with_parameter"
+    },
+    "matched": true,
+    "parameters": {
+      "action": ""
+    }
+  },
+  {
+    "name": "named-catchall-missing",
+    "route": {
+      "id": "named-catchall-missing",
+      "uri": "/login/*action"
+    },
+    "request": {
+      "method": "GET",
+      "host": "api.example.com",
+      "path": "/login",
+      "router": "radixtree_uri_with_parameter"
+    },
+    "matched": false,
+    "parameters": {}
+  },
+  {
+    "name": "uri-array",
+    "route": {
+      "id": "uri-array",
+      "uris": [
+        "/one",
+        "/a"
+      ]
+    },
+    "request": {
+      "method": "GET",
+      "host": "api.example.com",
+      "path": "/a",
+      "router": "radixtree_uri"
+    },
+    "matched": true,
+    "parameters": {}
+  }
+]

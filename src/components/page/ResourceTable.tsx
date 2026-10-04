@@ -22,6 +22,7 @@ import {
   type ProTableProps,
 } from '@ant-design/pro-components';
 import {
+  Alert,
   Button,
   Empty,
   Grid,
@@ -120,6 +121,8 @@ export function ResourceTable<T extends ResourceRecord>({
     value: View;
   }>();
   const view = changedView?.key === storageKey ? changedView.value : savedView;
+  const [unsavedViewKey, setUnsavedViewKey] = useState<string>();
+  const hasUnsavedLayout = unsavedViewKey === storageKey;
   const [localFilters, setLocalFilters] = useState<NonNullable<PageSearchType['column_filters']>>({});
   const filters = tableState ? tableState.params.column_filters ?? {} : localFilters;
   const primaryKey =
@@ -199,8 +202,11 @@ export function ResourceTable<T extends ResourceRecord>({
     setChangedView({ key: storageKey, value });
     try {
       localStorage.setItem(storageKey, JSON.stringify(value));
+      setUnsavedViewKey(undefined);
     } catch {
-      /* Storage is optional. */
+      // Keep the current layout usable and one persistent warning instead of a
+      // new toast for every width, order, pin, or spacing adjustment.
+      setUnsavedViewKey(storageKey);
     }
   };
   const clearFilters = () => {
@@ -330,11 +336,12 @@ export function ResourceTable<T extends ResourceRecord>({
       </Radio.Group>
       <strong>Columns and layout</strong>
       <TableColumnLayout columns={orderedKeys.map((key) => ({ key, title: typeof columns.find((column) => String(column.key) === key)?.title === 'string' ? String(columns.find((column) => String(column.key) === key)?.title) : key, width: columnWidth(key) }))} view={view} visibleKeys={visibleKeys} primaryKey={primaryKey} onChange={updateView} />
-      {optionalPins.length > 0 && !optionalPinsActive && <span role="status" className="resource-table-muted">Your pins are saved and will return when this table has more room.</span>}
+      {optionalPins.length > 0 && !optionalPinsActive && <span role="status" className="resource-table-muted">Your pins will return when this table has more room.</span>}
       <div className="resource-table-view-footer">
-        <span className="resource-table-muted">Saved for this table in this browser.</span>
+        <span className={hasUnsavedLayout ? 'resource-table-storage-status' : 'resource-table-muted'}>{hasUnsavedLayout ? 'Changes apply now, but are not saved in this browser.' : 'Saved for this table in this browser.'}</span>
         <div>
           <Button onClick={() => updateView({ density: 'middle' })}>Reset view</Button>
+          {hasUnsavedLayout && <Button onClick={() => updateView(view)}>Retry save</Button>}
           <Button type="primary" onClick={() => { setViewOpen(false); viewButtonRef.current?.focus(); }}>Done</Button>
         </div>
       </div>
@@ -398,6 +405,9 @@ export function ResourceTable<T extends ResourceRecord>({
           </Popover>
         </div>
       </div>
+      {hasUnsavedLayout && <Alert className="resource-table-storage-warning" type="warning" showIcon title="Table layout is not saved"
+        description="Your changes apply to this page. Browser storage is unavailable; they may be lost when you leave or reload."
+        action={<Button size="small" onClick={() => updateView(view)}>Retry save</Button>} />}
       {tableState && snapshot && (
         <SavedTableViews
           key={storageKey}
