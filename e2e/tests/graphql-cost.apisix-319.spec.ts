@@ -69,6 +69,7 @@ test('creates, edits, reloads and deletes decoration with ' + (inputId || 'autom
         writes.push(body);
         values.set(id || 'generated', { ...body, id: id || 'generated', service_id: 'service-a', create_time: 1, update_time: 2 });
       }
+      if (request.method() === 'GET' && id && !values.has(id)) return route.fulfill({ status: 404, json: { error_msg: 'Not found' } });
       response = (id || ['POST', 'PUT'].includes(request.method())) ? { value: values.get(id || 'generated') } : { list: [...values.values()].map((value) => ({ value })), total: values.size };
     } else if (path === '/services/service-a') response = { value: { id: 'service-a', name: 'GraphQL backend' } };
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify(response) });

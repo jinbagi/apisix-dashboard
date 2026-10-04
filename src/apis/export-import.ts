@@ -27,6 +27,7 @@ import { getSecretListReq } from '@/apis/secrets';
 import { getServiceListReq } from '@/apis/services';
 import { getSSLListReq } from '@/apis/ssls';
 import { getStreamRouteListReq } from '@/apis/stream_routes';
+import { trackResourceWrite } from '@/apis/tracked-resource-write';
 import { getUpstreamListReq } from '@/apis/upstreams';
 import {
   API_CONFIG_VALIDATE,
@@ -523,7 +524,8 @@ export async function importResources(
           continue;
         }
         // Use PUT with ID to create or update
-        await req.put(request.url, request.body);
+        await trackResourceWrite({ source: 'import', method: 'PUT', api: request.url, body: request.body },
+          () => req.put(request.url, request.body));
         result.success++;
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);

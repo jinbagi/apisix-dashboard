@@ -63,7 +63,8 @@ test('plugin JSON rejects syntax errors and saves a corrected draft in productio
     if (path === '/plugins') response = { 'http-logger': { metadata_schema: { type: 'object', properties: { log_format: { type: 'object', additionalProperties: { type: 'string' } } } } } };
     if (path === '/plugin_metadata/http-logger') {
       if (request.method() === 'PUT') saved = request.postDataJSON();
-      response = { value: saved };
+      if (request.method() === 'GET' && !saved) return route.fulfill({ status: 404, json: { error_msg: 'Not found' } });
+      response = { value: saved, key: '/apisix/plugin_metadata/http-logger' };
     }
     if (path === '/plugin_metadata' && saved) response = { list: [{ key: '/plugin_metadata/http-logger', value: saved }], total: 1 };
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify(response) });

@@ -18,6 +18,7 @@ import { expect, type Page, test } from '@playwright/test';
 
 async function mockApi(page: Page) {
   let value: Record<string, unknown> = { id: 'draft', uri: '/draft', desc: 'Saved description', create_time: 1, update_time: 1 };
+  let deleted = false;
   const writes: Record<string, unknown>[] = [];
   await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('test-admin-key')));
   await page.route('**/apisix/admin/**', async (route) => {
@@ -25,12 +26,14 @@ async function mockApi(page: Page) {
     const path = new URL(request.url()).pathname.replace('/apisix/admin', '');
     let response: unknown = { list: [], total: 0 };
     if (path === '/routes/draft' || (path === '/routes' && request.method() === 'POST')) {
+      if (request.method() === 'DELETE') { deleted = true; return route.fulfill({ json: { deleted: 1 } }); }
+      if (request.method() === 'GET' && deleted) return route.fulfill({ status: 404, json: { error_msg: 'Not found' } });
       if (['PUT', 'PATCH', 'POST'].includes(request.method())) {
         writes.push(request.postDataJSON());
         value = { ...value, ...request.postDataJSON(), update_time: Number(value.update_time) + 1 };
       }
       response = { value };
-    } else if (path === '/routes') response = { list: [{ value }], total: 1 };
+    } else if (path === '/routes') response = { list: deleted ? [] : [{ value }], total: deleted ? 0 : 1 };
     else if (path === '/plugins/list') response = [];
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify(response) });
   });

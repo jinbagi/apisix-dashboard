@@ -21,15 +21,14 @@ import { nanoid } from 'nanoid';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { putSecretReq } from '@/apis/secrets';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartSecret } from '@/components/form-slice/FormPartSecret';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import PageHeader from '@/components/page/PageHeader';
 import { API_SECRETS } from '@/config/constant';
-import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
-import { verifyAdminApiExists } from '@/utils/adminApiVerification';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
@@ -40,10 +39,7 @@ const SecretAddForm = () => {
   const putSecret = useMutation({
     mutationFn: async (d: APISIXType['Secret']) => {
       const payload = prepareResourceFormPayload(d);
-      const response = await putSecretReq(req, payload);
-      await verifyAdminApiExists(
-        `${API_SECRETS}/${payload.manager}/${payload.id}`
-      );
+      const response = await putSecretReq(formHistoryReq, payload);
       return response;
     },
     async onSuccess() {

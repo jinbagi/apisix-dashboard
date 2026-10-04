@@ -23,15 +23,14 @@ import { z } from 'zod';
 
 import { getServiceQueryOptions } from '@/apis/hooks';
 import { postServiceReq, type ServicePostType } from '@/apis/services';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartService } from '@/components/form-slice/FormPartService';
 import { ServicePostSchema } from '@/components/form-slice/FormPartService/schema';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import PageHeader from '@/components/page/PageHeader';
 import { API_SERVICES } from '@/config/constant';
-import { req } from '@/config/req';
 import { SERVICE_REQUIRED_TEMPLATE } from '@/config/resourceTemplates';
-import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
@@ -44,14 +43,8 @@ const ServiceAddForm = ({ defaultValues }: { defaultValues?: ServicePostType }) 
     mutationFn: async (d: ServicePostType) => {
       const payload = prepareResourceFormPayload(d);
       const response = await postServiceReq(
-        req,
+        formHistoryReq,
         payload
-      );
-      const id = response.data.value.id;
-      await verifyAdminApiResource(
-        `${API_SERVICES}/${id}`,
-        stripSystemReadonlyFields(payload as Record<string, unknown>),
-        { ignoredPaths: ['upstream.tls.client_key'] }
       );
       return response;
     },

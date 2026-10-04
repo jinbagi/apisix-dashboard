@@ -20,6 +20,7 @@ import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { postSSLReq } from '@/apis/ssls';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartSSL } from '@/components/form-slice/FormPartSSL';
 import {
@@ -30,8 +31,6 @@ import {
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import PageHeader from '@/components/page/PageHeader';
 import { API_SSLS } from '@/config/constant';
-import { req } from '@/config/req';
-import { verifyAdminApiExists } from '@/utils/adminApiVerification';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
 
@@ -40,8 +39,7 @@ const SSLAddForm = () => {
   const postSSL = useMutation({
     mutationFn: async (d: SSLPostType) => {
       const payload = produceSSLSubmitPayload(d);
-      const response = await postSSLReq(req, payload);
-      await verifyAdminApiExists(`${API_SSLS}/${response.data.value.id}`);
+      const response = await postSSLReq(formHistoryReq, payload);
       return response;
     },
     async onSuccess() {

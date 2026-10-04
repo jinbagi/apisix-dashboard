@@ -18,9 +18,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Button, Switch, Tag } from 'antd';
 import { useEffect, useState } from 'react';
 
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { queryClient } from '@/config/global';
 import { req } from '@/config/req';
-import { verifyAdminApiField } from '@/utils/adminApiVerification';
 import { showNotification } from '@/utils/notification';
 
 export const StatusTag = ({ status }: { status?: 0 | 1 }) => {
@@ -103,8 +103,7 @@ export const StatusSwitch = ({ status: statusProp, api }: StatusSwitchProps) => 
     const nextStatus = checked ? 1 : 0;
     setLoading(true);
     try {
-      await req.patch(api, { status: nextStatus });
-      await verifyAdminApiField(api, 'status', nextStatus);
+      await formHistoryReq.patch(api, { status: nextStatus });
       setConfirmedStatus(nextStatus);
       await queryClient.invalidateQueries();
       showNotification({

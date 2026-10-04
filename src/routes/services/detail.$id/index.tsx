@@ -28,6 +28,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 
 import { getServiceQueryOptions } from '@/apis/hooks';
 import { putServiceReq } from '@/apis/services';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartService } from '@/components/form-slice/FormPartService';
 import { ServicePutSchema } from '@/components/form-slice/FormPartService/schema';
@@ -38,7 +39,6 @@ import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
 import { ReverseReferences } from '@/components/page/ReverseReferences';
 import { API_SERVICES } from '@/config/constant';
-import { req } from '@/config/req';
 import type { APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
@@ -66,7 +66,7 @@ const ServiceDetailForm = () => {
   const putService = useMutation({
     mutationFn: (d: APISIXType['Service']) =>
       putServiceReq(
-        req,
+        formHistoryReq,
         prepareResourceFormPayload(d)
       ),
     async onSuccess() {

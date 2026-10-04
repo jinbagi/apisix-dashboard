@@ -21,15 +21,14 @@ import { useRouter } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
-import { graphqlCostDecorationsApi, prepareGraphqlCostDecoration, saveGraphqlCostDecoration } from '@/apis/graphql_cost_decorations';
+import { graphqlCostDecorationsApi, saveGraphqlCostDecoration } from '@/apis/graphql_cost_decorations';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormItemNumberInput } from '@/components/form/NumberInput';
 import { FormItemTagsInput } from '@/components/form/TagInput';
 import { FormItemTextInput } from '@/components/form/TextInput';
 import { queryClient } from '@/config/global';
-import { req } from '@/config/req';
 import { GraphqlCostDecorationForm, type GraphqlCostDecorationType } from '@/types/schema/apisix/graphql_cost_decorations';
-import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
@@ -56,9 +55,8 @@ export const GraphqlCostDecorationEditor = ({ serviceId, initialData }: { servic
   const save = useMutation({
     mutationFn: async (data: GraphqlCostDecorationType) => {
       const payload = prepareResourceFormPayload({ ...data, ...(initialData?.id ? { id: initialData.id } : {}) });
-      const response = await saveGraphqlCostDecoration(req, serviceId, payload);
+      const response = await saveGraphqlCostDecoration(formHistoryReq, serviceId, payload);
       const id = String(response.data.value.id);
-      await verifyAdminApiResource(`${graphqlCostDecorationsApi(serviceId)}/${encodeURIComponent(id)}`, prepareGraphqlCostDecoration(payload));
       await refreshResourceCaches(['graphql_cost_decorations', serviceId], graphqlCostDecorationsApi(serviceId));
       queryClient.setQueryData(['graphql_cost_decoration', serviceId, id], response.data);
       form.reset(response.data.value);

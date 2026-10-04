@@ -28,6 +28,7 @@ import { useBoolean } from 'react-use';
 
 import { getStreamRouteQueryOptions } from '@/apis/hooks';
 import { putStreamRouteReq } from '@/apis/stream_routes';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartStreamRoute } from '@/components/form-slice/FormPartStreamRoute';
 import { StreamRoutePutSchema } from '@/components/form-slice/FormPartStreamRoute/schema';
@@ -37,7 +38,6 @@ import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
 import { StreamRoutesErrorComponent } from '@/components/page-slice/stream_routes/ErrorComponent';
 import { API_STREAM_ROUTES } from '@/config/constant';
-import { req } from '@/config/req';
 import type { APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
@@ -71,7 +71,7 @@ const StreamRouteDetailForm = (props: Props) => {
 
   const putStreamRoute = useMutation({
     mutationFn: (d: APISIXType['StreamRoute']) =>
-      putStreamRouteReq(req, prepareResourceFormPayload(d)),
+      putStreamRouteReq(formHistoryReq, prepareResourceFormPayload(d)),
     async onSuccess() {
       await refetch({ throwOnError: true });
       await refreshResourceCaches('stream_routes', API_STREAM_ROUTES);

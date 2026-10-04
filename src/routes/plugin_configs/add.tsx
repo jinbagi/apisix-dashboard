@@ -21,16 +21,14 @@ import { nanoid } from 'nanoid';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { putPluginConfigReq } from '@/apis/plugin_configs';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartPluginConfig } from '@/components/form-slice/FormPartPluginConfig';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import PageHeader from '@/components/page/PageHeader';
 import { API_PLUGIN_CONFIGS } from '@/config/constant';
-import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
-import { verifyAdminApiResource } from '@/utils/adminApiVerification';
-import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
@@ -41,11 +39,7 @@ const PluginConfigAddForm = () => {
   const putPluginConfig = useMutation({
     mutationFn: async (d: APISIXType['PluginConfigPut']) => {
       const payload = prepareResourceFormPayload(d);
-      const response = await putPluginConfigReq(req, payload);
-      await verifyAdminApiResource(
-        `${API_PLUGIN_CONFIGS}/${payload.id}`,
-        stripSystemReadonlyFields(payload as Record<string, unknown>)
-      );
+      const response = await putPluginConfigReq(formHistoryReq, payload);
       return response;
     },
     async onSuccess(response) {

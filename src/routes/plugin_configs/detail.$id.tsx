@@ -28,6 +28,7 @@ import { useBoolean } from 'react-use';
 
 import { getPluginConfigQueryOptions } from '@/apis/hooks';
 import { putPluginConfigReq } from '@/apis/plugin_configs';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartPluginConfig } from '@/components/form-slice/FormPartPluginConfig';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
@@ -36,7 +37,6 @@ import { ConfigurationImpact } from '@/components/page/ConfigurationImpact';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
 import { API_PLUGIN_CONFIGS } from '@/config/constant';
-import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
@@ -57,7 +57,7 @@ const PluginConfigDetailForm = (props: Props) => {
 
   const putPluginConfig = useMutation({
     mutationFn: (d: APISIXType['PluginConfigPut']) =>
-      putPluginConfigReq(req, prepareResourceFormPayload({ ...d, id })),
+      putPluginConfigReq(formHistoryReq, prepareResourceFormPayload({ ...d, id })),
     async onSuccess() {
       await pluginConfigQuery.refetch({ throwOnError: true });
       await refreshResourceCaches('plugin_configs', API_PLUGIN_CONFIGS);

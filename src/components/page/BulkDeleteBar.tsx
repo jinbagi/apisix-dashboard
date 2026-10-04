@@ -18,11 +18,10 @@ import { Button, message, Modal, Space, Tooltip, Typography } from 'antd';
 import { useState } from 'react';
 
 import { exportSelectedResources, getExportResourceKey } from '@/apis/export-import';
+import { bulkHistoryReq } from '@/apis/tracked-resource-write';
 import { BulkRawEdit } from '@/components/page/BulkRawEdit';
 import { DependencyExport } from '@/components/page/DependencyExport';
 import { queryClient } from '@/config/global';
-import { req } from '@/config/req';
-import { verifyAdminApiField } from '@/utils/adminApiVerification';
 import { checkDependenciesForIds } from '@/utils/checkDependencies';
 import { downloadJson } from '@/utils/downloadJson';
 import { showNotification } from '@/utils/notification';
@@ -134,7 +133,7 @@ export const BulkDeleteBar = ({
 
         for (const id of selectedIds) {
           try {
-            await req.delete(`${apiBase}/${id}`);
+            await bulkHistoryReq.delete(`${apiBase}/${id}`);
             successCount++;
           } catch (error) {
             errors.push({
@@ -183,8 +182,7 @@ export const BulkDeleteBar = ({
 
         for (const id of selectedIds) {
           try {
-            await req.patch(`${apiBase}/${id}`, { status });
-            await verifyAdminApiField(`${apiBase}/${id}`, 'status', status);
+            await bulkHistoryReq.patch(`${apiBase}/${id}`, { status });
             successCount++;
           } catch (error) {
             errors.push({
