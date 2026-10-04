@@ -95,7 +95,7 @@ const SSLDetailForm = (props: { id: string }) => {
           rawData={sslData}
           adminApi={`${API_SSLS}/${id}`}
         >
-          <SSLReplacement id={id} disabled={form.formState.isDirty || putSSL.isPending} onSaved={() => refetch({ throwOnError: true })} />
+          <SSLReplacement key={id} id={id} disabled={form.formState.isDirty || putSSL.isPending} onSaved={() => refetch({ throwOnError: true })} />
           <FormSectionGeneral readOnly />
           <FormPartSSL showID={false} />
         </FormJsonTabs>

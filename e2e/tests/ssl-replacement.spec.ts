@@ -40,7 +40,7 @@ let ec: Pair;
 test.beforeAll(async () => { [current, next, ec] = await Promise.all([generatePair('Current certificate'), generatePair('Replacement certificate'), generatePair('EC replacement', true)]); });
 
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'Replace SSL certificate: fixture-ssl', exact: true });
-async function setup(page: Page, options: { additional?: boolean; masked?: boolean } = {}) {
+async function setup(page: Page, options: { additional?: boolean; masked?: boolean; viaList?: boolean } = {}) {
   const initial: Record<string, unknown> = { id: 'fixture-ssl', cert: current.cert, key: current.key, snis: ['api.example.com'], status: 1, type: 'server', labels: { env: 'fixture' }, ssl_protocols: ['TLSv1.2', 'TLSv1.3'], create_time: 1, update_time: 1, validity_start: 1, validity_end: 2,
     ...(options.additional ? { certs: [ec.cert], keys: [options.masked ? '******' : ec.key] } : {}) };
   const state = { value: structuredClone(initial), writes: [] as Record<string, unknown>[], reads: 0, failRead: false, wrongIdentity: false, failAfter: false, staleAfter: false, maskAfter: false };
@@ -63,7 +63,10 @@ async function setup(page: Page, options: { additional?: boolean; masked?: boole
     if (path === '/plugins') return route.fulfill({ json: {} });
     return route.fulfill({ json: { list: [], total: 0 } });
   });
-  await page.goto('ssls/detail/fixture-ssl');
+  if (options.viaList) {
+    await page.goto('ssls');
+    await page.getByRole('link', { name: 'api.example.com', exact: true }).click();
+  } else await page.goto('ssls/detail/fixture-ssl');
   await page.getByRole('button', { name: 'Replace certificate', exact: true }).click();
   await expect(dialog(page).getByRole('region', { name: 'Current certificate' })).toContainText('Current certificate');
   await expect(dialog(page).getByRole('button', { name: 'Refresh current SSL' })).toBeEnabled();
@@ -255,4 +258,20 @@ test('replacement starts from Configuration only and preserves unsaved form valu
   await page.getByRole('tab', { name: 'Configuration', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Description', exact: true })).toHaveValue('Unsaved SSL description');
   await expect(launch).toBeDisabled();
+});
+
+test('browser back preserves pending PEM until explicit discard and forward starts a fresh dialog', async ({ page }) => {
+  const state = await setup(page, { viaList: true }); await fill(page);
+  await page.goBack();
+  const leave = page.getByRole('dialog', { name: 'Discard certificate replacement and leave?', exact: true });
+  await expect(leave).toBeVisible();
+  await leave.getByRole('button', { name: 'Stay here', exact: true }).click();
+  await expect(dialog(page).getByLabel('Replacement private key PEM', { exact: true })).toHaveValue(next.key);
+  await page.goBack();
+  await leave.getByRole('button', { name: 'Discard and leave', exact: true }).click();
+  await expect(page).toHaveURL(/\/ssls\/?(?:\?.*)?$/);
+  await page.goForward();
+  await page.getByRole('button', { name: 'Replace certificate', exact: true }).click();
+  await expect(dialog(page).getByLabel('Replacement private key PEM', { exact: true })).toHaveValue('');
+  expect(state.writes).toHaveLength(0);
 });

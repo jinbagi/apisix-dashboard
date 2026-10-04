@@ -185,7 +185,7 @@ function ReplacementDialog({ id, onClose, onSaved }: { id: string; onClose: () =
       </div>
     </Modal>
     <Modal open={navigation.status === 'blocked'} title={saving ? 'Wait for certificate saving' : 'Discard certificate replacement and leave?'}
-      okText="Discard and leave" okButtonProps={{ disabled: saving }} cancelText="Stay here" onCancel={() => navigation.reset?.()} onOk={() => navigation.proceed?.()}>
+      okText="Discard and leave" okButtonProps={{ disabled: saving }} cancelText="Stay here" onCancel={() => navigation.reset?.()} onOk={() => { onClose(); navigation.proceed?.(); }}>
       {saving ? 'The request is still being verified. Keep this page open.' : 'The replacement inputs will be cleared from memory.'}
     </Modal>
   </>;
