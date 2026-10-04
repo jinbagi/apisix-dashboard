@@ -1,0 +1,27 @@
+{
+  "before": {
+    "zoom": 1,
+    "innerWidth": 1424,
+    "innerHeight": 985,
+    "outerWidth": 1440,
+    "outerHeight": 1080,
+    "dpr": 1,
+    "visualScale": 1,
+    "cssZoom": "1",
+    "boxWidth": 100
+  },
+  "after": {
+    "zoom": 2,
+    "innerWidth": 712,
+    "innerHeight": 492,
+    "outerWidth": 1440,
+    "outerHeight": 1080,
+    "dpr": 2,
+    "visualScale": 1,
+    "cssZoom": "1",
+    "boxWidth": 100
+  },
+  "nativeZoomVerified": true,
+  "browserVersion": "143.0.7499.4",
+  "fixtureOnly": true
+}
