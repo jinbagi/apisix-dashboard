@@ -96,7 +96,7 @@ export const Navbar = () => {
   }, [setCollapsed]);
 
   const selectedKey =
-    ['/dashboard', '/topology', '/export_import', '/raw_api']
+    ['/dashboard', '/topology', '/export_import', '/raw_api', '/change_sets']
       .find((p) => currentPath.startsWith(p))
     ?? navRoutes.find((r) => currentPath.startsWith(r.to))?.to
     ?? '';
@@ -231,6 +231,10 @@ export const Navbar = () => {
             type: 'group',
             label: 'Tools',
             children: [
+              {
+                key: '/change_sets', icon: <IconDataObject />, label: 'Change sets',
+                onClick: () => navigate({ to: '/change_sets' as Parameters<typeof navigate>[0]['to'] }),
+              },
               {
                 key: '/export_import',
                 icon: <IconExportNotes />,

@@ -33,16 +33,25 @@ import {
   APPSHELL_HEADER_HEIGHT,
   APPSHELL_NAVBAR_WIDTH,
 } from '@/config/constant';
+import { changeSetAtom } from '@/stores/changeSets';
 import { sidebarCollapsedAtom, useThemeMode } from '@/stores/global';
 
 const AppShell = ({ children }: { children: ReactNode }) => {
   const { mode } = useThemeMode();
   const collapsed = useAtomValue(sidebarCollapsedAtom);
+  const stagedCount = useAtomValue(changeSetAtom).drafts.length;
   const sidebarWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : APPSHELL_NAVBAR_WIDTH;
 
   useEffect(() => {
     document.documentElement.dataset.theme = mode;
   }, [mode]);
+
+  useEffect(() => {
+    if (!stagedCount) return;
+    const protectDrafts = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', protectDrafts);
+    return () => window.removeEventListener('beforeunload', protectDrafts);
+  }, [stagedCount]);
 
   return (
     <>

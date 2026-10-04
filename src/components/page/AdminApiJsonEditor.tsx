@@ -29,6 +29,7 @@ import { RawConflictResolver } from '@/components/page/RawConflictResolver';
 import { RawJsonNavigation } from '@/components/page/RawJsonNavigation';
 import { RelatedResources } from '@/components/page/RelatedResources';
 import { ResourceHistory } from '@/components/page/ResourceHistory';
+import { StageRawChange } from '@/components/page/StageRawChange';
 import { queryClient } from '@/config/global';
 import { req } from '@/config/req';
 import { recordResourceChange } from '@/stores/resourceHistory';
@@ -645,6 +646,7 @@ export const AdminApiJsonEditor = ({
                 setError(null);
                 setSaveFeedback({ type: 'warning', message: 'Local draft restored. Review and save to apply it to APISIX.', at: new Date().toLocaleTimeString() });
               }} />
+            <StageRawChange api={api} original={original} value={value} disabled={!isDirty || saving || loading} />
             <Tooltip title="Format Admin API JSON" trigger={['hover', 'focus']}>
               <Button size="small" onClick={handleFormat} disabled={saving || loading}>Format</Button>
             </Tooltip>
