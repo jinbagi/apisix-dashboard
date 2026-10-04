@@ -44,6 +44,6 @@ Before this fix, dark RAW/tab text was 3.18473 and selected sidebar text 3.58726
 
 Solid and filled fixture button crops are saved for each theme in `*-contrast-{solid,filled}-{default,hover,active,focus}.png`. They show actual browser pointer/focus states, not an illustrated palette.
 
-## Integration status
+## Combined integration evidence
 
-Prepared as a focused local task 47 change on task 46 base `5afbc4a4094cfd1dcc5a99dc4e83531fe9dd7857`. Publication waits for task 46's canonical master merge and coordinator approval. The central backlog is deliberately untouched; this document records task 47's local evidence.
+The measurements and screenshots above preserve the original standalone task 47 check on task 46 base `5afbc4a4094cfd1dcc5a99dc4e83531fe9dd7857`. The placeholder color preservation statement describes that standalone scope. Task 47 and task 48 were subsequently integrated on canonical master `cd2e9a3c5a5c4328a71ad0dc8fc3a7e4661895f7`; see the [combined validation and final screenshots](../interactive-control-contrast/README.md) for the submitted change. The central backlog is unchanged.

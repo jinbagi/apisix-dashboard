@@ -16,6 +16,8 @@
  */
 import { expect, type Locator, type Page, test } from '@playwright/test';
 
+import { textContrast } from '../utils/textContrast';
+
 async function measure(locator: Locator, placeholder = false) {
   await expect(locator).toBeVisible();
   await locator.evaluate(async element => {
@@ -24,32 +26,7 @@ async function measure(locator: Locator, placeholder = false) {
     await Promise.all(animations.filter(animation => animation.effect?.getTiming().iterations !== Infinity)
       .map(animation => animation.finished.catch(() => undefined)));
   });
-  return locator.evaluate((element, placeholder) => {
-    const rgba = (value: string): number[] => {
-      const numbers = value.match(/[\d.]+/g)?.map(Number);
-      if (!numbers || numbers.length < 3) throw new Error(`Unsupported color: ${value}`);
-      const scale = value.startsWith('color(srgb ') ? 255 : 1;
-      return [numbers[0] * scale, numbers[1] * scale, numbers[2] * scale, numbers[3] ?? 1];
-    };
-    const composite = (front: number[], back: number[]) => {
-      const alpha = front[3] + back[3] * (1 - front[3]);
-      return [0, 1, 2].map(i => (front[i] * front[3] + back[i] * back[3] * (1 - front[3])) / alpha).concat(alpha);
-    };
-    const luminance = (color: number[]) => color.slice(0, 3).map(value => value / 255)
-      .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
-      .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
-    const layers: number[][] = [];
-    for (let node: Element | null = element; node; node = node.parentElement) {
-      const style = getComputedStyle(node);
-      if (style.backgroundImage !== 'none' || style.opacity !== '1') throw new Error('This assertion needs a solid, unmasked text surface.');
-      layers.unshift(rgba(style.backgroundColor));
-    }
-    const background = layers.reduce((back, front) => composite(front, back), [255, 255, 255, 1]);
-    const color = getComputedStyle(element, placeholder ? '::placeholder' : null).color;
-    const foreground = composite(rgba(color), background);
-    const [bright, dark] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
-    return { color, background, ratio: (bright + 0.05) / (dark + 0.05) };
-  }, placeholder);
+  return textContrast(locator, placeholder);
 }
 
 async function readable(locator: Locator, placeholder = false) {

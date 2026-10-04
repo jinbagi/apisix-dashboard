@@ -53,6 +53,10 @@ Validation:
 Additional 390px states: [light TextArea](after-light-390-textarea.png), [dark TextArea](after-dark-390-textarea.png), [light disabled SNI](after-light-390-disabled-input.png), [dark disabled SNI](after-dark-390-disabled-input.png).
 
 
+## Combined integration evidence
+
+The standalone baseline, failed-before checks and screenshots above remain the evidence for task 48 by itself. Task 48 is now submitted with task 47 on canonical master `cd2e9a3c5a5c4328a71ad0dc8fc3a7e4661895f7`. The [combined validation and final screenshots](../interactive-control-contrast/README.md) cover both enabled action and placeholder colors. The statement that action colors are unchanged applies to task 48's standalone scope, not the combined change.
+
 ## Separate follow-up 50: SSL hostname tag is lost on Tab
 
 While exercising the actual SNI/SNIs disabled transitions, a separate existing form issue was reproduced in a fixture-only unsaved SSL draft. It is not changed by this placeholder CSS work.

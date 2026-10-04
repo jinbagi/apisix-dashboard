@@ -16,8 +16,8 @@
  */
 import type { Locator } from '@playwright/test';
 
-export async function textContrast(locator: Locator) {
-  return locator.evaluate((element) => {
+export async function textContrast(locator: Locator, placeholder = false) {
+  return locator.evaluate((element, placeholder) => {
     const rgba = (value: string): number[] => {
       const numbers = value.match(/[\d.]+/g)?.map(Number);
       if (!numbers || numbers.length < 3) throw new Error(`Unsupported color: ${value}`);
@@ -38,10 +38,10 @@ export async function textContrast(locator: Locator) {
       layers.unshift(rgba(style.backgroundColor));
     }
     const background = layers.reduce((back, front) => composite(front, back), [255, 255, 255, 1]);
-    const color = getComputedStyle(element).color;
+    const color = getComputedStyle(element, placeholder ? '::placeholder' : null).color;
     const foreground = composite(rgba(color), background);
     const [bright, dark] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
     return { text: element.textContent, color, background, fontSize: getComputedStyle(element).fontSize, fontWeight: getComputedStyle(element).fontWeight, focusVisible: element.matches(':focus-visible'), ratio: (bright + 0.05) / (dark + 0.05) };
-  });
+  }, placeholder);
 }
 
