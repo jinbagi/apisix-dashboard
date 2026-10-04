@@ -6,6 +6,8 @@ Dependency bundles use the same exact-path validator before adding a resource or
 
 Numeric IDs, URL-encoded IDs, Secret composite IDs and Consumer usernames remain supported. Returned envelope keys, when present, must match the requested canonical path under the configured etcd prefix. Plugin Metadata is the exception that requires a matching envelope key because its value may omit `id`. Unknown JSON properties and explicit own special keys are preserved after verification.
 
+External references checked during environment import also use the exact-path validator, both in preview and immediately before a write. Array/object IDs that stringify to a matching ID and inconsistent envelope keys remain unresolved; their returned content is not exposed.
+
 This validation does not turn sequential reads into an atomic gateway snapshot, expand dependency scope or alter import payloads. The shared `validateExactResourceSnapshot` utility is also used by import verification.
 
 ## Verification
