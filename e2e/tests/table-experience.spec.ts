@@ -591,3 +591,104 @@ test('status filters include implicitly enabled routes and clear without losing 
     page.getByRole('link', { name: 'Catalog route 03', exact: true }),
   ).toBeVisible();
 });
+
+
+test('column order, width and pins persist in named views without changing resources', async ({ page }, testInfo) => {
+  const { writes } = await mockAdmin(page);
+  await page.setViewportSize({ width: 1440, height: 1080 });
+  await page.goto('routes');
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  const settings = page.getByRole('dialog', { name: 'Table view settings' });
+  await settings.getByRole('button', { name: 'Move Target earlier', exact: true }).focus();
+  await settings.getByRole('button', { name: 'Move Target earlier', exact: true }).press('Enter');
+  let headers = await page.getByRole('columnheader').allTextContents();
+  expect(headers.indexOf('Target')).toBeLessThan(headers.indexOf('URI'));
+  await settings.getByRole('spinbutton', { name: 'URI width', exact: true }).fill('320');
+  await settings.getByRole('spinbutton', { name: 'URI width', exact: true }).press('Tab');
+  await expect(settings.getByRole('spinbutton', { name: 'URI width', exact: true })).toHaveValue('320');
+  await settings.getByRole('checkbox', { name: 'Host', exact: true }).check();
+  await settings.getByRole('combobox', { name: 'Host pin', exact: true }).click();
+  await page.getByRole('option', { name: 'Right', exact: true }).click();
+  await expect(page.getByRole('columnheader', { name: 'Host', exact: true })).toHaveClass(/ant-table-cell-fix-end/);
+  const width = await page.getByRole('columnheader', { name: 'URI', exact: true }).boundingBox();
+  expect(width!.width).toBeCloseTo(320, 0);
+  await expect(page.getByRole('option', { name: 'Right', exact: true })).toBeHidden();
+  await page.screenshot({ path: testInfo.outputPath('table-layout-desktop.png') });
+  await settings.getByRole('spinbutton', { name: 'URI width', exact: true }).press('Escape');
+  await page.getByRole('button', { name: 'Save view', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Save table view' });
+  await dialog.getByRole('textbox', { name: 'View name' }).fill('Routing layout');
+  await dialog.getByRole('button', { name: 'Save view', exact: true }).click();
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  await settings.getByRole('button', { name: 'Reset view' }).click();
+  await settings.getByRole('button', { name: 'Reset view' }).press('Escape');
+  await expect(page.getByRole('columnheader', { name: 'Host', exact: true })).toHaveCount(0);
+  await expect(page.getByText('Modified', { exact: true })).toBeVisible();
+  await page.reload();
+  await page.getByRole('combobox', { name: 'Saved views', exact: true }).click();
+  await page.getByRole('option', { name: 'Routing layout', exact: true }).click();
+  await expect(page.getByText('Modified', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('columnheader', { name: 'Host', exact: true })).toHaveClass(/ant-table-cell-fix-end/);
+  headers = await page.getByRole('columnheader').allTextContents();
+  expect(headers.indexOf('Target')).toBeLessThan(headers.indexOf('URI'));
+  expect(headers.indexOf('Name')).toBe(headers.indexOf('RAW') + 1);
+  expect((await page.getByRole('columnheader', { name: 'URI', exact: true }).boundingBox())!.width).toBeCloseTo(320, 0);
+  expect(writes).toEqual([]);
+});
+
+test('legacy saved views retain filters and visibility with default column layout', async ({ page }) => {
+  await mockAdmin(page);
+  await page.addInitScript(() => {
+    localStorage.setItem('resource-table:saved-views:v1:resource-table:v1:table-v6:routes', JSON.stringify([{ name: 'Legacy view', snapshot: { search: { q: 'Catalog', sort_by: 'name', sort_order: 'desc', page_size: 10, column_filters: {} }, presentation: { density: 'small', columns: ['raw', 'name', 'host', 'uri'] } } }]));
+  });
+  await page.goto('routes');
+  await page.getByRole('combobox', { name: 'Saved views', exact: true }).click();
+  await page.getByRole('option', { name: 'Legacy view', exact: true }).click();
+  await expect(page.getByRole('searchbox', { name: 'Search', exact: true })).toHaveValue('Catalog');
+  await expect(page.getByRole('columnheader', { name: 'Host', exact: true })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Target', exact: true })).toHaveCount(0);
+  await expect(page.locator('.ant-table-small')).toBeVisible();
+  await expect(page.getByText('Modified', { exact: true })).toHaveCount(0);
+});
+
+test('invalid widths and pins recover while unknown or duplicate column keys cannot displace RAW', async ({ page }) => {
+  await mockAdmin(page);
+  await page.addInitScript(() => {
+    localStorage.setItem('resource-table:v1:table-v6:routes', JSON.stringify({ density: 'small', columns: ['host', 'uri'], order: ['host', 'host', 'missing', 'raw', 'name'], widths: { uri: -100 }, pins: { host: 'invalid' } }));
+  });
+  await page.goto('routes');
+  await expect(page.getByRole('columnheader', { name: 'RAW', exact: true })).toBeVisible();
+  const headers = await page.getByRole('columnheader').allTextContents();
+  expect(headers.indexOf('Name')).toBe(headers.indexOf('RAW') + 1);
+  await expect(page.getByRole('columnheader', { name: 'Host', exact: true })).toHaveCount(1);
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  const settings = page.getByRole('dialog', { name: 'Table view settings' });
+  await expect(settings.getByRole('spinbutton', { name: 'URI width', exact: true })).toHaveValue('200');
+  await expect(settings.getByRole('button', { name: 'Move RAW later', exact: true })).toBeDisabled();
+  await expect(settings.getByRole('checkbox', { name: 'Name', exact: true })).toBeDisabled();
+});
+
+test('saved pins release on narrow tables and return on resize while settings remain usable', async ({ page }, testInfo) => {
+  const { writes } = await mockAdmin(page);
+  await page.addInitScript(() => {
+    localStorage.setItem('resource-table:v1:table-v6:routes', JSON.stringify({ density: 'middle', pins: { uri: 'left', status: 'right' }, widths: { uri: 260 } }));
+  });
+  await page.goto('routes');
+  await expect(page.getByRole('columnheader', { name: 'URI', exact: true })).toHaveClass(/ant-table-cell-fix-start/);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole('columnheader', { name: 'URI', exact: true })).not.toHaveClass(/ant-table-cell-fix-start/);
+  await expect(page.getByRole('columnheader', { name: 'RAW', exact: true })).toHaveClass(/ant-table-cell-fix-start/);
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  const settings = page.getByRole('dialog', { name: 'Table view settings' });
+  await expect(settings).toBeVisible();
+  await expect.poll(async () => { const bounds = await settings.boundingBox(); return Boolean(bounds && bounds.x >= 0 && bounds.x + bounds.width <= 390 && bounds.y + bounds.height <= 832); }).toBe(true);
+  await expect(settings.getByText('Your pins are saved and will return when this table has more room.')).toBeAttached();
+  await page.screenshot({ path: testInfo.outputPath('table-layout-narrow.png') });
+  await settings.getByRole('spinbutton', { name: 'URI width', exact: true }).fill('300');
+  await settings.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'View', exact: true })).toBeFocused();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await expect(page.getByRole('columnheader', { name: 'URI', exact: true })).toHaveClass(/ant-table-cell-fix-start/);
+  expect(writes).toEqual([]);
+});
