@@ -59,28 +59,28 @@ function ChangeSetsPage() {
   const needsPreview = state.plan?.some((row) => row.result !== undefined && !row.draft.outcome);
   return <>
     <PageHeader title="Change sets" desc="Review related changes before applying them" />
-    <Space direction="vertical" size="middle" style={{ width: '100%', minWidth: 0 }}>
-      <Alert type="info" showIcon message="Drafts stay in this tab"
+    <Space orientation="vertical" size="middle" style={{ width: '100%', minWidth: 0 }}>
+      <Alert type="info" showIcon title="Drafts stay in this tab"
         description={<>Stage changes from RAW or an Import preview. Reloading or closing this tab clears them. <Link to="/export_import">Open Import / Export</Link></>} />
       <Collapse size="small" items={[{ key: 'scope', label: 'How staging and verification work', children: <>
         <Typography.Paragraph>Nothing is applied until you preview and confirm. Changes use explicit-ID PUT: create a new resource or replace its writable configuration. Absent fields may be removed. Create-only drafts must still target a missing resource.</Typography.Paragraph>
         <Typography.Paragraph>References checked: native Service, Upstream, Plugin Config, Consumer Group and child owners; grpc-transcode Proto and traffic-split Upstream IDs. Other plugin references are not inferred.</Typography.Paragraph>
         <Typography.Paragraph style={{ marginBottom: 0 }}>Writes are sequential and can partially succeed; execution stops at the first failure. Fresh reads detect observed conflicts, but are not an atomic transaction or lock.</Typography.Paragraph>
       </> }]} />
-      {error && <Alert type="error" showIcon message={error} />}
+      {error && <Alert type="error" showIcon title={error} />}
       <Space wrap>
         <Button onClick={preview} loading={state.busy} disabled={!state.drafts.length}>Preview destinations</Button>
         <Button type="primary" onClick={() => setConfirming(true)} disabled={state.busy || !ready || !!blocked || needsPreview}>Apply {ready || ''} changes</Button>
         <Typography.Text>{state.drafts.length} staged · {state.drafts.filter((draft) => draft.outcome === 'verified').length} verified</Typography.Text>
       </Space>
-      {attempted && <Alert type={blocked ? 'warning' : 'success'} showIcon message={blocked ? 'Execution stopped. Remaining items were not applied.' : 'Execution finished.'}
+      {!state.busy && attempted && <Alert type={blocked ? 'warning' : 'success'} showIcon title={blocked ? 'Execution stopped. Remaining items were not applied.' : 'Execution finished.'}
         description="Each outcome is shown below. Previously verified items will not be sent again. Uncertain writes require inspection before discarding or restaging. Preview again to review remaining items." />}
       {!state.drafts.length && <Empty description="No staged changes yet" />}
       {(state.plan ?? state.drafts.map((draft) => ({ draft, url: changeUrl(draft), resourceType: draft.resourceType }))).map((entry) => {
         const row = 'status' in entry ? entry as ChangeSetRow : undefined;
         const draft = entry.draft;
         return <Card key={entry.url} size="small" styles={{ body: { overflowWrap: 'anywhere' } }}>
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <Space wrap><Typography.Text strong>{row?.order ? `${row.order}. ` : ''}{RESOURCE_LABELS[entry.resourceType]}</Typography.Text>
               <Tag color={row?.status === 'Blocked' || row?.result === 'Uncertain' || row?.result === 'Blocked' ? 'red' : draft.outcome === 'verified' ? 'green' : 'blue'}>{row?.result ?? row?.status ?? (draft.outcome === 'verified' ? 'Previously verified' : 'Staged')}</Tag>
               {draft.baseline === null && <Tag>Create only</Tag>}
