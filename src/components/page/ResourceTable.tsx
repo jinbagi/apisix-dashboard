@@ -23,7 +23,6 @@ import {
 } from '@ant-design/pro-components';
 import {
   Button,
-  Checkbox,
   Empty,
   Grid,
   Popover,
@@ -43,7 +42,9 @@ import {
 
 import { CopyableID } from '@/components/CopyableID';
 import { SavedTableViews, type TableViewSnapshot } from '@/components/page/SavedTableViews';
+import { TableColumnLayout } from '@/components/page/TableColumnLayout';
 import type { PageSearchType } from '@/types/schema/pageSearch';
+import { orderTableColumns, type TablePresentation as View, tablePresentationSchema } from '@/utils/tablePresentation';
 import IconChevronRight from '~icons/material-symbols/chevron-right';
 import IconRefresh from '~icons/material-symbols/refresh';
 import IconViewColumn from '~icons/material-symbols/view-column-outline';
@@ -57,7 +58,6 @@ type ResourceRecord = {
     update_time?: number;
   };
 };
-type View = { columns?: string[]; density: 'small' | 'middle' | 'large' };
 type Props<T extends ResourceRecord> = ProTableProps<
   T,
   Record<string, unknown>
@@ -78,17 +78,8 @@ type Props<T extends ResourceRecord> = ProTableProps<
 
 const readView = (key: string): View => {
   try {
-    const value = JSON.parse(
-      localStorage.getItem(key) ?? 'null',
-    ) as View | null;
-    if (
-      value &&
-      ['small', 'middle', 'large'].includes(value.density) &&
-      (value.columns === undefined ||
-        (Array.isArray(value.columns) &&
-          value.columns.every((column) => typeof column === 'string')))
-    )
-      return value;
+    const parsed = tablePresentationSchema.safeParse(JSON.parse(localStorage.getItem(key) ?? 'null'));
+    if (parsed.success) return parsed.data;
   } catch {
     /* Storage is optional. */
   }
@@ -118,6 +109,7 @@ export function ResourceTable<T extends ResourceRecord>({
   const viewRef = useRef<HTMLDivElement>(null);
   const viewButtonRef = useRef<HTMLButtonElement>(null);
   const [viewOpen, setViewOpen] = useState(false);
+  const [tableWidth, setTableWidth] = useState(0);
   const identityId = (record: T) =>
     `${tableId}-${encodeURIComponent(String(typeof props.rowKey === 'function' ? props.rowKey(record) : (record.value.id ?? record.value.username)))}`;
   const screens = Grid.useBreakpoint();
@@ -196,9 +188,10 @@ export function ResourceTable<T extends ResourceRecord>({
         scroller.removeAttribute('aria-label');
       }
     };
-    const observer = new ResizeObserver(update);
+    const resize = () => { update(); setTableWidth(scroller.clientWidth); };
+    const observer = new ResizeObserver(resize);
     observer.observe(scroller);
-    update();
+    resize();
     return () => observer.disconnect();
   }, [dataSource, resourceName, view]);
 
@@ -228,6 +221,21 @@ export function ResourceTable<T extends ResourceRecord>({
     },
     presentation: { ...view, columns: [...visibleKeys].sort() },
   };
+  const columnWidth = (key: string) => {
+    if (key === 'raw') return 80;
+    const specified = view.widths?.[key];
+    if (specified !== undefined) return Math.max(key === primaryKey ? 180 : 80, specified);
+    if (key === primaryKey) return primaryKey === 'name' ? 260 : 220;
+    if (key === 'create_time' || key === 'update_time') return 132;
+    const width = columns.find((column) => String(column.key) === key)?.width;
+    return typeof width === 'number' ? width : 170;
+  };
+  const orderedKeys = orderTableColumns(columns.map((column) => String(column.key)), view, primaryKey);
+  const auxiliaryWidth = (rowSelection ? 44 : 0) + (props.expandable ? 44 : 0) + (hasRawAction ? 80 : 0);
+  const primaryPinned = Boolean(screens.md) && auxiliaryWidth + columnWidth(primaryKey) <= tableWidth - 240;
+  const optionalPins = orderedKeys.filter((key) => !requiredKeys.includes(key) && visibleKeys.includes(key) && view.pins?.[key] && view.pins[key] !== 'none');
+  const pinsFit = auxiliaryWidth + (primaryPinned ? columnWidth(primaryKey) : 0) + optionalPins.reduce((total, key) => total + columnWidth(key), 0) <= tableWidth - 240;
+  const optionalPinsActive = primaryPinned && pinsFit;
   const tableColumns: ProColumns<T>[] = columns
     .map((column) => {
       const key = String(column.key);
@@ -241,18 +249,13 @@ export function ResourceTable<T extends ResourceRecord>({
         filteredValue: filters[key] ?? null,
         // Filter the complete collection before paginating and counting it.
         onFilter: undefined,
-        fixed:
-          key === 'raw' || (key === primaryKey && screens.md)
-            ? 'left'
-            : undefined,
+        fixed: key === 'raw' || (key === primaryKey && primaryPinned)
+          ? 'left'
+          : optionalPinsActive && optionalPins.includes(key) ? view.pins?.[key] === 'right' ? 'right' : 'left' : undefined,
         className: key === 'raw' ? 'resource-table-raw' : column.className,
-        width:
-          key === 'raw'
-            ? 80
-            : (column.width ?? (key === primaryKey ? 240 : 170)),
+        width: columnWidth(key),
       };
       if (key === primaryKey) {
-        next.width = primaryKey === 'name' ? 260 : 220;
         next.render = (dom, record, index, action, schema) => {
           const rendered =
             column.render?.(dom, record, index, action, schema) ?? dom;
@@ -274,7 +277,6 @@ export function ResourceTable<T extends ResourceRecord>({
         };
       }
       if (key === 'create_time' || key === 'update_time') {
-        next.width = 132;
         next.valueType = 'text';
         next.render = (_, record) => {
           const timestamp = record.value[key];
@@ -297,11 +299,7 @@ export function ResourceTable<T extends ResourceRecord>({
       }
       return next;
     })
-    .sort((a, b) => {
-      const order = (key: unknown) =>
-        key === 'raw' ? -2 : key === primaryKey ? -1 : key === 'option' ? 1 : 0;
-      return order(a.key) - order(b.key);
-    });
+    .sort((a, b) => orderedKeys.indexOf(String(a.key)) - orderedKeys.indexOf(String(b.key)));
 
   const viewSettings = (
     <div
@@ -330,37 +328,16 @@ export function ResourceTable<T extends ResourceRecord>({
         <Radio.Button value="middle">Default</Radio.Button>
         <Radio.Button value="large">Roomy</Radio.Button>
       </Radio.Group>
-      <strong>Visible columns</strong>
-      <div className="resource-table-columns">
-        {columns.map((column) => (
-          <Checkbox
-            key={String(column.key)}
-            checked={
-              requiredKeys.includes(String(column.key)) ||
-              visibleKeys.includes(String(column.key))
-            }
-            disabled={requiredKeys.includes(String(column.key))}
-            onChange={(event) =>
-              updateView({
-                ...view,
-                columns: event.target.checked
-                  ? [...visibleKeys, String(column.key)]
-                  : visibleKeys.filter((key) => key !== String(column.key)),
-              })
-            }
-          >
-            {typeof column.title === 'string'
-              ? column.title
-              : String(column.key)}
-          </Checkbox>
-        ))}
+      <strong>Columns and layout</strong>
+      <TableColumnLayout columns={orderedKeys.map((key) => ({ key, title: typeof columns.find((column) => String(column.key) === key)?.title === 'string' ? String(columns.find((column) => String(column.key) === key)?.title) : key, width: columnWidth(key) }))} view={view} visibleKeys={visibleKeys} primaryKey={primaryKey} onChange={updateView} />
+      {optionalPins.length > 0 && !optionalPinsActive && <span role="status" className="resource-table-muted">Your pins are saved and will return when this table has more room.</span>}
+      <div className="resource-table-view-footer">
+        <span className="resource-table-muted">Saved for this table in this browser.</span>
+        <div>
+          <Button onClick={() => updateView({ density: 'middle' })}>Reset view</Button>
+          <Button type="primary" onClick={() => { setViewOpen(false); viewButtonRef.current?.focus(); }}>Done</Button>
+        </div>
       </div>
-      <Button block onClick={() => updateView({ density: 'middle' })}>
-        Reset view
-      </Button>
-      <span className="resource-table-muted">
-        Saved for this table on this browser.
-      </span>
     </div>
   );
 
@@ -396,8 +373,9 @@ export function ResourceTable<T extends ResourceRecord>({
           </Button>
           <Popover
             trigger="click"
-            placement="bottomRight"
+            placement={screens.sm ? 'bottomRight' : 'bottom'}
             title="Table view"
+            classNames={{ root: 'resource-table-view-popover' }}
             content={viewSettings}
             open={viewOpen}
             onOpenChange={setViewOpen}
@@ -478,7 +456,9 @@ export function ResourceTable<T extends ResourceRecord>({
         pagination={pagination ? { ...pagination, total, current: currentPage } : pagination}
         className="resource-table-grid"
         columns={tableColumns}
-        columnsState={undefined}
+        tableLayout="fixed"
+        scroll={{ ...props.scroll, x: auxiliaryWidth - (hasRawAction ? 80 : 0) + tableColumns.filter((column) => !column.hideInTable).reduce((total, column) => total + Number(column.width), 0) }}
+        columnsState={{ value: Object.fromEntries(tableColumns.map((column, order) => [String(column.key), { show: !column.hideInTable, fixed: column.fixed === 'left' || column.fixed === 'right' ? column.fixed : undefined, order }])) }}
         size={view.density}
         options={false}
         headerTitle={false}

@@ -19,6 +19,7 @@ import { useId, useState } from 'react';
 import { z } from 'zod';
 
 import { columnFiltersSchema } from '@/types/schema/pageSearch';
+import { tablePresentationSchema } from '@/utils/tablePresentation';
 
 const snapshotSchema = z.object({
   search: z.object({
@@ -31,10 +32,7 @@ const snapshotSchema = z.object({
     page_size: z.number().int().min(10).max(500),
     column_filters: columnFiltersSchema,
   }),
-  presentation: z.object({
-    columns: z.array(z.string()),
-    density: z.enum(['small', 'middle', 'large']),
-  }),
+  presentation: tablePresentationSchema.extend({ columns: z.array(z.string()).transform((keys) => [...new Set(keys)].sort()) }),
 });
 const savedViewSchema = z.object({
   name: z.string().trim().min(1).max(64),
@@ -150,7 +148,7 @@ export function SavedTableViews({
         okButtonProps={{ disabled: !trimmedName }}
         destroyOnHidden
       >
-        <p>Keep search, labels, sorting, column filters, visible columns, row spacing, and page size together. Views are saved in this browser for this table.</p>
+        <p>Keep search, labels, sorting, column filters, column visibility, order, widths, pins, row spacing, and page size together. Views are saved in this browser for this table.</p>
         <label htmlFor={id}>View name</label>
         <Input id={id} value={name} maxLength={64} showCount onChange={(event) => setName(event.target.value)} onPressEnter={save} autoFocus />
         {replacing && <p>This will replace the saved settings for “{trimmedName}”.</p>}

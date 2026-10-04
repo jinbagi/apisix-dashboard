@@ -90,6 +90,23 @@ From this screen you can:
 Routes are still APISIX resources. The UI does not create dashboard-only fields;
 it presents the Admin API payload with friendlier controls.
 
+## Customize Resource Tables
+
+Open **View** above a resource list to adjust row spacing and column visibility.
+Use the up/down buttons to reorder columns within a pin group, enter a width in
+pixels, or choose **Left**, **Scroll**, or **Right**. RAW and the resource identity
+remain first so common actions stay easy to find. Additional pins temporarily
+release when the table is too narrow; your choices return when more room is
+available. **Reset view** restores the default layout, and **Done** closes the
+panel. All controls work with the keyboard; Escape returns focus to **View**.
+
+Use **Save view** to keep the layout together with search, labels, sorting,
+column filters, and page size. Views are stored in this browser for each table;
+existing saved views continue to work. Changing a table layout never changes
+APISIX resource data.
+
+![Table column layout](./assets/screenshots/table-column-layout.png)
+
 ## Review a Resource
 
 Open a route detail page to inspect its identity, lifecycle, relationships, and
