@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { settledLayout } from '@e2e/utils/nativeBrowserZoom';
 import { expect, type Page, test } from '@playwright/test';
 
 import { StreamRoutePostSchema, StreamRoutePutSchema } from '@/components/form-slice/FormPartStreamRoute/schema';
@@ -85,9 +86,15 @@ async function fillPayloadJson(page: Page, value: unknown) {
   await editor.getByRole('textbox').press('ControlOrMeta+V');
 }
 
-async function saveDetail(page: Page) {
+async function saveDetail(page: Page, pointerHold = 0) {
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Review Changes Before Saving' }).getByRole('button', { name: 'Confirm & Save' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Review Changes Before Saving' });
+  await expect(dialog.locator('.monaco-diff-editor')).toBeVisible();
+  // Ant's pre-animation frames can look stable before entry motion starts.
+  await settledLayout(page);
+  await expect(dialog).toHaveCSS('transform', 'none');
+  await dialog.getByRole('button', { name: 'Confirm & Save' }).click({ delay: pointerHold });
+  await expect(dialog).toBeHidden();
 }
 
 test('Stream Route visual SNIs and TLS passthrough survive a Payload JSON round trip and create request', async ({ page }) => {
@@ -167,4 +174,22 @@ test('Stream Route JSON submission preserves explicit false', async ({ page }) =
   await page.getByRole('tabpanel', { name: 'Payload JSON' }).getByRole('button', { name: 'Add', exact: true }).click();
   await expect.poll(() => writes.length).toBe(1);
   expect(writes[0]).toMatchObject({ snis: ['api.example.com'], tls_passthrough: false });
+});
+
+test('Stream Route review finishes entry motion before a held pointer confirms the exact PUT', async ({ page }) => {
+  const writes = await mockStreamApi(page, { ...basePayload, snis: ['api.example.com'], tls_passthrough: true });
+  await page.goto('stream_routes/detail/stream319');
+  const tls = page.getByRole('switch', { name: 'TLS Passthrough', exact: true });
+  await expect(tls).toBeChecked();
+  // Widen the real Ant entry animation's initially stable frame; no geometry/opacity is injected.
+  await page.addStyleTag({ content: '.ant-modal { animation-delay: 150ms !important; animation-duration: 1s !important; }' });
+  await tls.click();
+  await saveDetail(page, 200);
+  await expect.poll(() => writes.length).toBe(1);
+  expect(writes[0]).toEqual({ tls_passthrough: false, snis: ['api.example.com'], server_port: 9100, upstream, plugins: {} });
+  expect(writes[0]).not.toHaveProperty('id');
+  expect(writes[0]).not.toHaveProperty('create_time');
+  expect(writes[0]).not.toHaveProperty('update_time');
+  await expect(page.getByText('Stream Route saved and reloaded from APISIX', { exact: true })).toBeVisible();
+  await expect(tls).not.toBeChecked();
 });
