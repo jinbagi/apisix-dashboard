@@ -189,7 +189,12 @@ export function SavedTableViews({
         onCancel={() => setOpen(false)}
         onOk={save}
         okText={replacing ? 'Update view' : 'Save view'}
-        okButtonProps={{ disabled: !trimmedName || busy, loading: busy }}
+        okButtonProps={{
+          disabled: !trimmedName || busy,
+          loading: busy,
+          'aria-label': replacing ? 'Update view' : 'Save view',
+          'aria-busy': busy,
+        }}
         destroyOnHidden
       >
         <p>Keep search, labels, sorting, column filters, column visibility, order, widths, pins, row spacing, and page size together. Views are saved in this browser for this table.</p>
