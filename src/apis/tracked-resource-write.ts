@@ -57,7 +57,7 @@ export class UnverifiedResourceWriteError extends Error {
   constructor() { super('The write was accepted, but read-back could not verify it. No verified history entry was added. Refresh the resource before retrying.'); }
 }
 export async function trackResourceWrite<T extends AxiosResponse>(
-  options: { source: HistorySource; method: string; api: string; body?: unknown; allowUntracked?: boolean },
+  options: { source: HistorySource; method: string; api: string; body?: unknown; allowUntracked?: boolean; beforeWrite?: (before: Record<string, unknown> | null) => void | Promise<void> },
   write: () => Promise<T>,
 ): Promise<{ response: T; history: HistoryOutcome }> {
   const { source, api, body } = options;
@@ -78,6 +78,8 @@ export async function trackResourceWrite<T extends AxiosResponse>(
       beforeReadable = false;
     }
   }
+  if (options.beforeWrite && !beforeReadable) throw new Error('The latest resource could not be read. No write was sent.');
+  await options.beforeWrite?.(before);
   const response = await write();
   if (!beforeReadable) return { response, history: { status: 'unverified', message: 'The write was accepted. Its previous state could not be read, so no verified resource history was recorded. Refresh before retrying.' } };
   let detailApi = api;

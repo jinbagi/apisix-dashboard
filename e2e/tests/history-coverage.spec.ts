@@ -24,7 +24,7 @@ import { getHistoryTarget } from '@/utils/historyResource';
 const payload = { name: 'History fixture', uri: '/history/*', desc: 'Before', upstream: { nodes: { '127.0.0.1:1980': 1 } } };
 async function setup(page: Page, initial: Record<string, Record<string, unknown>> = {}) {
   const records = new Map(Object.entries(initial).map(([path, value]) => [path, { create_time: 1, update_time: 1, ...value }]));
-  const controls = { records, ignoreWrites: false, failAfterWrite: false, readBarrier: undefined as Promise<void> | undefined, failedReads: new Set<string>(), writes: [] as { method: string; path: string; body: unknown }[] };
+  const controls = { records, readSequence: new Map<string, Array<Record<string, unknown> | null | number>>(), ignoreWrites: false, failAfterWrite: false, readBarrier: undefined as Promise<void> | undefined, failedReads: new Set<string>(), writes: [] as { method: string; path: string; body: unknown }[] };
   await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('history-fixture-key')));
   await page.route('**/apisix/admin/**', async (route) => {
     const request = route.request();
@@ -40,6 +40,12 @@ async function setup(page: Page, initial: Record<string, Record<string, unknown>
       }
       if (controls.failAfterWrite) controls.failedReads.add(key);
       return route.fulfill({ json: { value: records.get(key) ?? {} } });
+    }
+    const sequence = controls.readSequence.get(path);
+    if (sequence?.length) {
+      const next = sequence.shift();
+      if (typeof next === 'number') return route.fulfill({ status: next, json: { error_msg: 'Fixture unavailable' } });
+      if (next === null) records.delete(path); else records.set(path, next!);
     }
     if (controls.writes.length && controls.records.has(path)) await controls.readBarrier;
     if (controls.failedReads.has(path)) return route.fulfill({ status: 503, json: { error_msg: 'Fixture unavailable' } });
@@ -232,3 +238,32 @@ test('Console displays the accepted response while read-back is pending', async 
   await page.getByRole('button', { name: 'Change history', exact: true }).click();
   await expect(history(page).getByRole('button', { name: 'Compare change' })).toHaveCount(1);
 });
+
+
+const reviewedPrerequisite = { id: 'final-preflight', uri: '/before' };
+for (const fixture of [
+  { scenario: 'changed', initial: reviewedPrerequisite, final: { id: 'final-preflight', uri: '/concurrent-edit' }, status: 'Changed' },
+  { scenario: 'created', initial: null, final: { id: 'final-preflight', uri: '/concurrent-edit' }, status: 'New' },
+  { scenario: 'deleted', initial: reviewedPrerequisite, final: null, status: 'Changed' },
+  { scenario: 'unreadable', initial: reviewedPrerequisite, final: 503, status: 'Changed' },
+]) {
+  const initial = fixture.initial ? { '/routes/final-preflight': fixture.initial } : {};
+
+  test(`direct Import blocks a ${fixture.scenario} final tracked prerequisite without a write or history`, async ({ page }) => {
+    const api = '/routes/final-preflight';
+    const controls = await setup(page, initial);
+    await page.goto('export_import');
+    const resources = { routes: [{ id: 'final-preflight', uri: '/intended' }], services: [], upstreams: [], streamRoutes: [], consumers: [], credentials: [], consumerGroups: [], ssls: [], globalRules: [], pluginConfigs: [], pluginMetadata: [], protos: [], secrets: [] };
+    await page.locator('input[type="file"]').setInputFiles({ name: 'preflight.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ version: 3, exportedAt: '2026-10-04T00:00:00Z', resources })) });
+    await page.getByRole('button', { name: 'Import Selected Resources', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Confirm Import', exact: true });
+    await expect(dialog.getByRole('row').filter({ hasText: api })).toContainText(fixture.status);
+    // Initial import preflight still sees the reviewed state; only the final history GET differs.
+    controls.readSequence.set(api, [fixture.initial, fixture.final]);
+    await dialog.getByRole('button', { name: 'Import', exact: true }).click();
+    await expect(page.getByText('Import Complete: 0 succeeded, 1 failed', { exact: true })).toBeVisible();
+    expect(controls.readSequence.get(api)).toEqual([]); expect(controls.writes).toEqual([]);
+    await openGlobalHistory(page);
+    await expect(history(page).getByRole('button', { name: 'Compare change', exact: true })).toHaveCount(0);
+  });
+}

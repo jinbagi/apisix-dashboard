@@ -111,3 +111,29 @@ test('selection export remains reachable on narrow screens and clears with the s
   await page.getByRole('button', { name: 'Clear', exact: true }).click();
   await expect(exportButton).toBeHidden();
 });
+
+
+for (const [resource, badValue, badKey] of [
+  ['routes', { id: 'other', uri: '/wrong', desc: 'wrong-resource-private-content' }, undefined],
+  ['routes', { id: 'first' }, '/apisix/routes/other'],
+  ['consumers', { username: 'other' }, undefined],
+  ['secrets', { id: 'first', manager: 'aws' }, undefined],
+] as const) {
+  const path = resource === 'secrets' ? 'vault/first' : 'first';
+
+  test(`${resource}: wrong detail identity or key never produces a selected download (${badKey ?? 'value'})`, async ({ page }) => {
+    const writes = await mockApi(page, resource);
+    await page.route(`**/apisix/admin/${resource}/${path}`, (route) => route.fulfill({ json: { value: badValue, key: badKey } }));
+    const downloads: string[] = [];
+    page.on('download', (download) => downloads.push(download.suggestedFilename()));
+    await page.goto(resource);
+    await page.getByRole('checkbox', { name: 'Select row', exact: true }).first().check();
+    await page.getByRole('button', { name: 'Export selected' }).click();
+    await expect(page.getByText(`Could not read ${path}. No file was exported. Retry after refreshing the list.`)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Export selected' })).toBeEnabled();
+    await expect(page.getByRole('region', { name: 'Selected resource actions' })).toContainText('Selected 1 item(s)');
+    await expect(page.locator('body')).not.toContainText('wrong-resource-private-content');
+    expect(downloads).toEqual([]); expect(writes).toEqual([]);
+    await page.screenshot({ path: test.info().outputPath('selected-export-identity-blocked.png'), animations: 'disabled' });
+  });
+}

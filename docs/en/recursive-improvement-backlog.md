@@ -64,6 +64,7 @@ Owner: this development thread. Scope approved by the user: implement all 20 pro
 | 38 | P1 | Full-export paging trusts the first total, and child exports may read only one page or treat an unverified owner404 as empty. | Validate complete page sequences and exact owners before claiming complete coverage; preserve explicitly incomplete endpoint skips. | Implementing with 32 |
 
 | 40 | P2 | After a verified Console write, preparing a new variable-resolved draft clears the response but leaves the old verified-history result visible. | Clear stale response/history feedback without sending the new draft or deleting actual history; fail-before/pass-after browser regression. | Integrated with task16 / PR105 locally; awaits final combined CI |
+| 43 | P1 | Direct Import checks the preview before the history tracker performs another prerequisite GET; a concurrent edit or newly occupied ID could then be overwritten and recorded as successful. | Compare the final identity-verified snapshot with the preview, distinguish a supplied404 from an omitted snapshot, and block writes/history for changed, created, deleted or unreadable destinations. | Implemented in [PR 97](https://github.com/jinbagi/apisix-dashboard/pull/97), CI pending; fail-before reproduced, 87 Import/history/RAW/sharing fixtures plus lint/build passed |
 
 ## Execution log
 
