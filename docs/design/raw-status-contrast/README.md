@@ -46,3 +46,5 @@ All six scenarios recorded exactly `{ "desc": "Prepared contrast change" }` as t
 
 The light390 dirty, light native200 saving, dark native200 dirty and light1440 saving captures were directly visually inspected. The footer wording is readable and the actions remain visible; native zoom reduces the editor's CSS height while retaining its scroll area. These captures are unedited full surfaces.
 Independent read-only review found no blocker in the scoped CSS, both specs, the state measurements and the selected narrow/native screenshots; the reviewer also confirmed the runtime/test diff stayed identical after rebase. Final measurement files and captures above were refreshed from the canonical-master run.
+
+Follow-up 57 addresses a later CI measurement race without changing this CSS fix: [native Drawer transition readiness and no-retry evidence](motion-readiness.md).

@@ -1,0 +1,231 @@
+{
+  "testedBase": "97f121424013f3897f8455ebc5b55768c7508310",
+  "distIndexSha256": "0802b6e97a977146db9c44f80aaad5078c3a735b58560c340d9fa5e789c9f0dd",
+  "nativeCases": [
+    {
+      "case": "native-browser-zoom-native-52e6d-th-a-slow-drawer-transition-chromium",
+      "theme": "dark",
+      "slowDrawer": true,
+      "opacity": {
+        "flow": "raw-drawer-opacity",
+        "before": "0.703102",
+        "after": "1"
+      },
+      "contrast": {
+        "flow": "raw-dirty-status",
+        "text": "Unsaved changes. Ctrl+S saves changed fields.",
+        "color": "rgb(216, 150, 20)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "focusVisible": false,
+        "ratio": 7.2746435493623425
+      }
+    },
+    {
+      "case": "native-browser-zoom-native-52e6d-th-a-slow-drawer-transition-chromium-repeat1",
+      "theme": "dark",
+      "slowDrawer": true,
+      "opacity": {
+        "flow": "raw-drawer-opacity",
+        "before": "0.70095",
+        "after": "1"
+      },
+      "contrast": {
+        "flow": "raw-dirty-status",
+        "text": "Unsaved changes. Ctrl+S saves changed fields.",
+        "color": "rgb(216, 150, 20)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "focusVisible": false,
+        "ratio": 7.2746435493623425
+      }
+    },
+    {
+      "case": "native-browser-zoom-native-52e6d-th-a-slow-drawer-transition-chromium-repeat2",
+      "theme": "dark",
+      "slowDrawer": true,
+      "opacity": {
+        "flow": "raw-drawer-opacity",
+        "before": "0.701484",
+        "after": "1"
+      },
+      "contrast": {
+        "flow": "raw-dirty-status",
+        "text": "Unsaved changes. Ctrl+S saves changed fields.",
+        "color": "rgb(216, 150, 20)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "focusVisible": false,
+        "ratio": 7.2746435493623425
+      }
+    },
+    {
+      "case": "native-browser-zoom-native-72ff3-and-review-actions-in-light-chromium",
+      "theme": "light",
+      "slowDrawer": false,
+      "opacity": {
+        "flow": "raw-drawer-opacity",
+        "before": "0.929432",
+        "after": "1"
+      },
+      "contrast": {
+        "flow": "raw-dirty-status",
+        "text": "Unsaved changes. Ctrl+S saves changed fields.",
+        "color": "rgb(135, 77, 0)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "focusVisible": false,
+        "ratio": 6.792313216479324
+      }
+    },
+    {
+      "case": "native-browser-zoom-native-72ff3-and-review-actions-in-light-chromium-repeat1",
+      "theme": "light",
+      "slowDrawer": false,
+      "opacity": {
+        "flow": "raw-drawer-opacity",
+        "before": "0.750318",
+        "after": "1"
+      },
+      "contrast": {
+        "flow": "raw-dirty-status",
+        "text": "Unsaved changes. Ctrl+S saves changed fields.",
+        "color": "rgb(135, 77, 0)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "focusVisible": false,
+        "ratio": 6.792313216479324
+      }
+    },
+    {
+      "case": "native-browser-zoom-native-72ff3-and-review-actions-in-light-chromium-repeat2",
+      "theme": "light",
+      "slowDrawer": false,
+      "opacity": {
+        "flow": "raw-drawer-opacity",
+        "before": "0.747616",
+        "after": "1"
+      },
+      "contrast": {
+        "flow": "raw-dirty-status",
+        "text": "Unsaved changes. Ctrl+S saves changed fields.",
+        "color": "rgb(135, 77, 0)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "focusVisible": false,
+        "ratio": 6.792313216479324
+      }
+    },
+    {
+      "case": "native-browser-zoom-native-b9e58--and-review-actions-in-dark-chromium",
+      "theme": "dark",
+      "slowDrawer": false,
+      "opacity": {
+        "flow": "raw-drawer-opacity",
+        "before": "0.750441",
+        "after": "1"
+      },
+      "contrast": {
+        "flow": "raw-dirty-status",
+        "text": "Unsaved changes. Ctrl+S saves changed fields.",
+        "color": "rgb(216, 150, 20)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "focusVisible": false,
+        "ratio": 7.2746435493623425
+      }
+    },
+    {
+      "case": "native-browser-zoom-native-b9e58--and-review-actions-in-dark-chromium-repeat1",
+      "theme": "dark",
+      "slowDrawer": false,
+      "opacity": {
+        "flow": "raw-drawer-opacity",
+        "before": "0.726717",
+        "after": "1"
+      },
+      "contrast": {
+        "flow": "raw-dirty-status",
+        "text": "Unsaved changes. Ctrl+S saves changed fields.",
+        "color": "rgb(216, 150, 20)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "focusVisible": false,
+        "ratio": 7.2746435493623425
+      }
+    },
+    {
+      "case": "native-browser-zoom-native-b9e58--and-review-actions-in-dark-chromium-repeat2",
+      "theme": "dark",
+      "slowDrawer": false,
+      "opacity": {
+        "flow": "raw-drawer-opacity",
+        "before": "0.750612",
+        "after": "1"
+      },
+      "contrast": {
+        "flow": "raw-dirty-status",
+        "text": "Unsaved changes. Ctrl+S saves changed fields.",
+        "color": "rgb(216, 150, 20)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "focusVisible": false,
+        "ratio": 7.2746435493623425
+      }
+    }
+  ]
+}
