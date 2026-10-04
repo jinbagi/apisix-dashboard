@@ -29,7 +29,7 @@ test('can auth with admin key', { tag: '@auth' }, async ({ page }) => {
 
   const checkSettingsModal = async () => {
     await expect(settingsModal).toBeVisible();
-    await expect(page.getByText('UI Commit SHA')).toBeVisible();
+    await expect(settingsModal.getByText('Connect to your APISIX gateway')).toBeVisible();
   };
 
   await test.step('fill wrong admin key, settings modal always be visible', async () => {
@@ -43,8 +43,11 @@ test('can auth with admin key', { tag: '@auth' }, async ({ page }) => {
       .getByRole('button', { name: 'Test' })
       .click();
 
+    await expect(failedMsg).toBeVisible();
     await page.reload();
     await checkSettingsModal();
+    await expect(adminKeyInput).toBeEmpty();
+    await adminKeyInput.fill('wrong-admin-key');
     await page
       .getByRole('dialog')
       .filter({ hasText: 'Admin Key' })
@@ -67,6 +70,7 @@ test('can auth with admin key', { tag: '@auth' }, async ({ page }) => {
       .getByRole('button', { name: 'Test' })
       .click();
 
+    await expect(settingsModal.getByText('Connected successfully')).toBeVisible();
     await page.reload();
     await expect(failedMsg).toBeHidden();
   });
