@@ -116,10 +116,10 @@ test('invalid ID maps and duplicate mapped destinations cannot be applied', asyn
 });
 
 test('mapped destinations are checked again before applying selected changes', async ({ page }) => {
-  const controls = await setup(page, makeData([{ id: 'dev', uri: '/new' }]), { '/routes/prod': { uri: '/before' } });
+  const controls = await setup(page, makeData([{ id: 'dev', uri: '/new' }]), { '/routes/prod': { id: 'prod', uri: '/before' } });
   await page.getByText('Environment ID mappings (optional)', { exact: true }).click();
   await page.getByRole('textbox', { name: 'Environment ID mappings' }).fill('{"routes":{"dev":"prod"}}');
-  await preview(page); controls.records.set('/routes/prod', { uri: '/concurrent' });
+  await preview(page); controls.records.set('/routes/prod', { id: 'prod', uri: '/concurrent' });
   await modal(page).getByRole('button', { name: 'Import', exact: true }).click();
   await expect(page.getByText('Import Complete: 0 succeeded, 1 failed')).toBeVisible();
   expect(controls.writes).toEqual([]);

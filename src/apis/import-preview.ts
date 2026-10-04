@@ -18,6 +18,7 @@ import { type ExportData, getImportRequest, IMPORT_ORDER, type ResourceKey } fro
 import { SKIP_INTERCEPTOR_HEADER } from '@/config/constant';
 import { req } from '@/config/req';
 import { isDeepEqual, isRecord } from '@/utils/apisixEditable';
+import { validateExactResourceSnapshot } from '@/utils/resourceIdentity';
 
 export type ImportPreviewItem = {
   key: string; resourceType: ResourceKey; index: number; id: string;
@@ -26,16 +27,22 @@ export type ImportPreviewItem = {
 };
 const errorText = (cause: unknown) => cause instanceof Error ? cause.message : 'Unable to read current APISIX configuration';
 
-async function currentBody(resourceType: ResourceKey, item: Record<string, unknown>, url: string) {
+async function currentBody(resourceType: ResourceKey, url: string) {
   try {
-    const response = await req.get(url, { headers: { [SKIP_INTERCEPTOR_HEADER]: ['404'] } });
-    if (!isRecord(response.data?.value)) throw new Error('Admin API returned no resource value');
-    // Export-only owner metadata is absent from child endpoint responses.
-    const identity: Record<string, unknown> = { id: item.id };
-    if (resourceType === 'credentials' || resourceType === 'consumers') identity.username = item.username;
-    if (resourceType === 'graphqlCostDecorations') identity.service_id = item.service_id;
-    if (resourceType === 'secrets') identity.manager = item.manager;
-    return getImportRequest(resourceType, { ...identity, ...response.data.value }).body;
+    const response = await req.get(url, { timeout: 15_000, headers: { [SKIP_INTERCEPTOR_HEADER]: ['404'] } });
+    const value: unknown = response.data?.value;
+    validateExactResourceSnapshot(url, value, response.data?.key);
+    // Normalize verified response identities for the existing import payload contract.
+    // The raw response is preserved; only export-only owner metadata is supplied.
+    const segments = url.split('/').slice(1).map(decodeURIComponent);
+    const copy = { ...value };
+    if (resourceType === 'credentials') { copy.id = segments.at(-1); copy.username = segments[1]; }
+    if (resourceType === 'secrets') { copy.id = segments.at(-1); copy.manager = segments[1]; }
+    if (resourceType === 'graphqlCostDecorations') copy.service_id = segments[1];
+    if (resourceType === 'pluginMetadata') copy.id = segments.at(-1);
+    const current = getImportRequest(resourceType, copy);
+    if (current.url !== url) throw new Error(`Admin API resource identity could not be verified for ${url}`);
+    return current.body;
   } catch (cause) {
     if ((cause as { response?: { status?: number } }).response?.status === 404) return null;
     throw cause;
@@ -44,7 +51,6 @@ async function currentBody(resourceType: ResourceKey, item: Record<string, unkno
 
 export async function previewImport(data: ExportData, selected: ResourceKey[]): Promise<ImportPreviewItem[]> {
   const plan: ImportPreviewItem[] = [];
-  const inputs = new Map<string, Record<string, unknown>>();
   for (const resourceType of IMPORT_ORDER.filter((key) => selected.includes(key))) {
     const items: unknown = data.resources[resourceType] ?? [];
     if (!Array.isArray(items)) throw new Error(`${resourceType} must be an array`);
@@ -58,7 +64,6 @@ export async function previewImport(data: ExportData, selected: ResourceKey[]): 
         if (!isRecord(item)) throw new Error('Resource must be a JSON object');
         const request = getImportRequest(resourceType, item);
         Object.assign(row, { url: request.url, after: request.body });
-        inputs.set(row.key, item);
       } catch (cause) { row.error = errorText(cause); }
       plan.push(row);
     });
@@ -70,7 +75,7 @@ export async function previewImport(data: ExportData, selected: ResourceKey[]): 
   for (let start = 0; start < readable.length; start += 4) {
     await Promise.all(readable.slice(start, start + 4).map(async (row) => {
       try {
-        row.before = await currentBody(row.resourceType, inputs.get(row.key)!, row.url!);
+        row.before = await currentBody(row.resourceType, row.url!);
         row.status = row.before === null ? 'New' : isDeepEqual(row.before, row.after) ? 'Unchanged' : 'Changed';
       } catch (cause) { row.error = errorText(cause); }
     }));
@@ -81,8 +86,9 @@ export async function previewImport(data: ExportData, selected: ResourceKey[]): 
 /** A fresh read prevents overwriting changes observed after the preview. This is not atomic CAS. */
 export async function verifyImportPreview(row: ImportPreviewItem | undefined, item: Record<string, unknown>) {
   if (!row || row.status === 'Blocked' || !row.url) throw new Error(row?.error ?? 'No valid preview for this resource');
+  if (getImportRequest(row.resourceType, item).url !== row.url) throw new Error('Import destination changed after preview. Preview again before importing.');
   if (row.status === 'Unchanged') return false;
-  const current = await currentBody(row.resourceType, item, row.url);
+  const current = await currentBody(row.resourceType, row.url);
   if (!isDeepEqual(current, row.before)) throw new Error('Resource changed after preview. Preview again before importing.');
   return true;
 }
