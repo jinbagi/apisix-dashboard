@@ -21,8 +21,8 @@ import { environmentMappingRows, mapImportEnvironment, parseIdMappings, updateId
 import { type ExportData, RESOURCE_LABELS } from '@/apis/export-import';
 import { downloadJson } from '@/utils/downloadJson';
 
-export const EnvironmentIdMapping = ({ data, text, onChange, disabled }: {
-  data: ExportData; text: string; onChange: (text: string) => void; disabled: boolean;
+export const EnvironmentIdMapping = ({ data, text, onChange, disabled, fixedIds = [] }: {
+  data: ExportData; text: string; onChange: (text: string) => void; disabled: boolean; fixedIds?: string[];
 }) => {
   const screens = Grid.useBreakpoint();
   const narrow = !screens.md;
@@ -43,8 +43,8 @@ export const EnvironmentIdMapping = ({ data, text, onChange, disabled }: {
       columns={narrow ? [{ title: 'ID mapping', key: 'mapping', render: (_, row) => <Space orientation="vertical" size={6} style={{ width: '100%' }}>
         <Typography.Text strong>{RESOURCE_LABELS[row.kind]}</Typography.Text>
         <Typography.Text style={{ overflowWrap: 'anywhere' }}>Source: {row.source}</Typography.Text>
-        <Input aria-label={`Destination ${row.kind}/${row.source}`} value={row.destination} placeholder={`Keep ${row.source}`}
-          disabled={disabled} onChange={(event) => onChange(updateIdMapping(text, row.kind, row.source, event.target.value))} />
+        <Input aria-label={`Destination ${row.kind}/${row.source}`} value={fixedIds.includes(row.key) ? row.source : row.destination} placeholder={`Keep ${row.source}`}
+          disabled={disabled || fixedIds.includes(row.key)} onChange={(event) => onChange(updateIdMapping(text, row.kind, row.source, event.target.value))} />
         <Typography.Text type="secondary">{row.contexts.includes('Resource in file') ? 'Resource in file' : 'Reference or explicit mapping'}</Typography.Text>
       </Space> }] : [
         { title: 'Resource', key: 'kind', width: 130, render: (_, row) => RESOURCE_LABELS[row.kind] },
@@ -53,10 +53,10 @@ export const EnvironmentIdMapping = ({ data, text, onChange, disabled }: {
           <Typography.Text type="secondary">{row.contexts.includes('Resource in file') ? 'Resource in file' : 'Reference or explicit mapping'}</Typography.Text>
         </Space> },
         { title: 'Destination ID', key: 'destination', width: 230, render: (_, row) => <Input
-          aria-label={`Destination ${row.kind}/${row.source}`} value={row.destination} placeholder={row.source}
-          disabled={disabled} onChange={(event) => onChange(updateIdMapping(text, row.kind, row.source, event.target.value))} /> },
+          aria-label={`Destination ${row.kind}/${row.source}`} value={fixedIds.includes(row.key) ? row.source : row.destination} placeholder={row.source}
+          disabled={disabled || fixedIds.includes(row.key)} onChange={(event) => onChange(updateIdMapping(text, row.kind, row.source, event.target.value))} /> },
         { title: 'Mapping', key: 'mapping', width: 90, render: (_, row) => <Tag color={row.destination && row.destination !== row.source ? 'blue' : 'default'}>
-          {row.destination && row.destination !== row.source ? 'Remapped' : 'Keep ID'}
+          {fixedIds.includes(row.key) ? 'Reuse original' : row.destination && row.destination !== row.source ? 'Remapped' : 'Keep ID'}
         </Tag> },
       ]} />
     <Space wrap>
