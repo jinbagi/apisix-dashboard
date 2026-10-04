@@ -28,6 +28,7 @@ import { useBoolean } from 'react-use';
 
 import { getProtoQueryOptions } from '@/apis/hooks';
 import { putProtoReq } from '@/apis/protos';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartProto } from '@/components/form-slice/FormPartProto';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
@@ -35,7 +36,6 @@ import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
 import { API_PROTOS } from '@/config/constant';
-import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
@@ -62,7 +62,7 @@ const ProtoDetailForm = ({ id, readOnly }: ProtoFormProps) => {
   });
 
   const putProto = useMutation({
-    mutationFn: (d: APISIXType['Proto']) => putProtoReq(req, prepareResourceFormPayload(d)),
+    mutationFn: (d: APISIXType['Proto']) => putProtoReq(formHistoryReq, prepareResourceFormPayload(d)),
     async onSuccess() {
       await refetch({ throwOnError: true });
       await refreshResourceCaches('protos', API_PROTOS);

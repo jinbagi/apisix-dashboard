@@ -17,8 +17,9 @@
 import { Button, type ButtonProps, Modal, Typography } from 'antd';
 import axios, { type AxiosResponse } from 'axios';
 
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { queryClient } from '@/config/global';
-import { getRequestErrorMessage, req } from '@/config/req';
+import { getRequestErrorMessage } from '@/config/req';
 import { checkDependencies } from '@/utils/checkDependencies';
 import { notifyResourceDeleted } from '@/utils/formNavigation';
 import { useCallbackRef } from '@/utils/hooks';
@@ -102,7 +103,7 @@ export const DeleteResourceBtn = (props: DeleteResourceProps) => {
       onOk: async () => {
         let response: AxiosResponse<unknown, unknown>;
         try {
-          response = await req.delete(api);
+          response = await formHistoryReq.delete(api);
         } catch (error) {
           const detail = axios.isAxiosError(error)
             ? getRequestErrorMessage(error)
@@ -110,7 +111,7 @@ export const DeleteResourceBtn = (props: DeleteResourceProps) => {
               ? error.message
               : String(error);
           showNotification({
-            message: `${name} could not be deleted. ${detail}`,
+            message: `${name} deletion was not confirmed. ${detail}`,
             type: 'error',
           });
           throw error;

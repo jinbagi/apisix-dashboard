@@ -28,6 +28,7 @@ import { useBoolean } from 'react-use';
 
 import { putGlobalRuleReq } from '@/apis/global_rules';
 import { getGlobalRuleQueryOptions } from '@/apis/hooks';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartGlobalRules } from '@/components/form-slice/FormPartGlobalRules';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
@@ -35,7 +36,6 @@ import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
 import { API_GLOBAL_RULES } from '@/config/constant';
-import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
@@ -66,7 +66,7 @@ const GlobalRuleDetailForm = (props: Props) => {
   }, [detailReq.data, form]);
 
   const putGlobalRule = useMutation({
-    mutationFn: (d: APISIXType['GlobalRulePut']) => putGlobalRuleReq(req, d),
+    mutationFn: (d: APISIXType['GlobalRulePut']) => putGlobalRuleReq(formHistoryReq, d),
     async onSuccess() {
       await detailReq.refetch({ throwOnError: true });
       await refreshResourceCaches('global_rules', API_GLOBAL_RULES);

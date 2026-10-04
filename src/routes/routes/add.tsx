@@ -23,6 +23,7 @@ import { z } from 'zod';
 
 import { getRouteQueryOptions } from '@/apis/hooks';
 import { postRouteReq } from '@/apis/routes';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartRoute } from '@/components/form-slice/FormPartRoute';
 import {
@@ -33,10 +34,8 @@ import { produceRoute } from '@/components/form-slice/FormPartRoute/util';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import PageHeader from '@/components/page/PageHeader';
 import { API_ROUTES } from '@/config/constant';
-import { req } from '@/config/req';
 import { ROUTE_REQUIRED_TEMPLATE } from '@/config/resourceTemplates';
 import type { APISIXType } from '@/types/schema/apisix';
-import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
@@ -53,13 +52,7 @@ export const RouteAddForm = (props: Props) => {
   const postRoute = useMutation({
     mutationFn: async (d: RoutePostType) => {
       const payload = produceRoute({ ...d, ...enforcedValues });
-      const response = await postRouteReq(req, payload);
-      const id = response.data.value.id;
-      await verifyAdminApiResource(
-        `${API_ROUTES}/${id}`,
-        stripSystemReadonlyFields(payload as Record<string, unknown>),
-        { ignoredPaths: ['upstream.tls.client_key'] }
-      );
+      const response = await postRouteReq(formHistoryReq, payload);
       return response;
     },
     async onSuccess(response) {

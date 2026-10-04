@@ -17,10 +17,11 @@
 import { SKIP_INTERCEPTOR_HEADER } from '@/config/constant';
 import { req } from '@/config/req';
 import { getPatchMismatchPaths, isRecord } from '@/utils/apisixEditable';
+import { validateExactResourceSnapshot } from '@/utils/resourceIdentity';
 
 const wait = (delayMs: number) =>
   new Promise<void>((resolve) => {
-    window.setTimeout(resolve, delayMs);
+    setTimeout(resolve, delayMs);
   });
 
 const stripVerificationPaths = (
@@ -78,8 +79,9 @@ export const verifyAdminApiResource = async (
         throw new Error('Admin API returned no resource value');
       }
 
+      validateExactResourceSnapshot(api, actual, response.data?.key);
       const mismatches = getPatchMismatchPaths(comparableExpected, actual);
-      if (mismatches.length === 0) return;
+      if (mismatches.length === 0) return actual;
 
       lastError = new Error(
         `Admin API did not return the saved value for: ${mismatches.join(', ')}`

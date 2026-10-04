@@ -23,15 +23,13 @@ import {
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { postProtoReq } from '@/apis/protos';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartProto } from '@/components/form-slice/FormPartProto';
 import PageHeader from '@/components/page/PageHeader';
 import { API_PROTOS } from '@/config/constant';
-import { req } from '@/config/req';
 import type { APISIXType } from '@/types/schema/apisix';
 import { APISIXProtos } from '@/types/schema/apisix/protos';
-import { verifyAdminApiResource } from '@/utils/adminApiVerification';
-import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
@@ -46,11 +44,7 @@ const ProtoAddForm = () => {
   const postProto = useMutation({
     mutationFn: async (d: APISIXType['ProtoPost']) => {
       const payload = prepareResourceFormPayload(d);
-      const response = await postProtoReq(req, payload);
-      await verifyAdminApiResource(
-        `${API_PROTOS}/${response.data.value.id}`,
-        stripSystemReadonlyFields(payload as Record<string, unknown>)
-      );
+      const response = await postProtoReq(formHistoryReq, payload);
       return response;
     },
     async onSuccess(response) {

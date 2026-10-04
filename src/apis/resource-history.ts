@@ -16,16 +16,20 @@
  */
 import { applyBulkPatch } from '@/apis/bulk-patch';
 import { req } from '@/config/req';
-import type { ResourceHistoryEntry } from '@/stores/resourceHistory';
-import { buildPatchPayload, getPatchConflictPaths, isRecord, stripPatchReadonlyFields } from '@/utils/apisixEditable';
+import { historyRestoreReason, type ResourceHistoryEntry } from '@/stores/resourceHistory';
+import { buildPatchPayload, getPatchConflictPaths, stripPatchReadonlyFields } from '@/utils/apisixEditable';
+import { validateExactResourceSnapshot } from '@/utils/resourceIdentity';
 
 export async function prepareHistoryRestore(entry: ResourceHistoryEntry) {
+  const reason = historyRestoreReason(entry);
+  if (reason || !entry.before || !entry.after) throw new Error(reason ?? 'This event cannot be restored.');
   const response = await req.get(entry.api, { timeout: 15_000 });
   const latest: unknown = response.data?.value;
-  if (!isRecord(latest)) throw new Error('The latest resource could not be read. Nothing was restored.');
+  validateExactResourceSnapshot(entry.api, latest, response.data?.key);
   const current = stripPatchReadonlyFields(latest);
-  const reverse = buildPatchPayload(entry.before, entry.after);
-  const conflicts = getPatchConflictPaths(reverse, entry.after, current);
+  const intendedAfter = entry.restoreAfter ?? entry.after;
+  const reverse = buildPatchPayload(entry.before, intendedAfter);
+  const conflicts = getPatchConflictPaths(reverse, intendedAfter, current);
   if (conflicts.length) throw new Error(`Restore blocked: these fields changed again: ${conflicts.join(', ')}.`);
   return { latest, original: JSON.stringify(current, null, 2), value: JSON.stringify(applyBulkPatch(current, reverse), null, 2) };
 }
