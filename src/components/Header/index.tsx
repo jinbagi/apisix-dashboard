@@ -43,6 +43,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   dashboard: 'Dashboard',
   topology: 'Topology',
   export_import: 'Import / Export',
+  change_sets: 'Change sets',
   raw_api: 'API Console',
   plugin_inventory: 'Plugin inventory',
   services: 'Services',

@@ -27,6 +27,7 @@ import { Route as Export_importIndexRouteImport } from './routes/export_import/i
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as ConsumersIndexRouteImport } from './routes/consumers/index'
 import { Route as Consumer_groupsIndexRouteImport } from './routes/consumer_groups/index'
+import { Route as Change_setsIndexRouteImport } from './routes/change_sets/index'
 import { Route as UpstreamsAddRouteImport } from './routes/upstreams/add'
 import { Route as Stream_routesAddRouteImport } from './routes/stream_routes/add'
 import { Route as SslsAddRouteImport } from './routes/ssls/add'
@@ -152,6 +153,11 @@ const ConsumersIndexRoute = ConsumersIndexRouteImport.update({
 const Consumer_groupsIndexRoute = Consumer_groupsIndexRouteImport.update({
   id: '/consumer_groups/',
   path: '/consumer_groups/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Change_setsIndexRoute = Change_setsIndexRouteImport.update({
+  id: '/change_sets/',
+  path: '/change_sets/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UpstreamsAddRoute = UpstreamsAddRouteImport.update({
@@ -361,6 +367,7 @@ export interface FileRoutesByFullPath {
   '/ssls/add': typeof SslsAddRoute
   '/stream_routes/add': typeof Stream_routesAddRoute
   '/upstreams/add': typeof UpstreamsAddRoute
+  '/change_sets/': typeof Change_setsIndexRoute
   '/consumer_groups/': typeof Consumer_groupsIndexRoute
   '/consumers/': typeof ConsumersIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -417,6 +424,7 @@ export interface FileRoutesByTo {
   '/ssls/add': typeof SslsAddRoute
   '/stream_routes/add': typeof Stream_routesAddRoute
   '/upstreams/add': typeof UpstreamsAddRoute
+  '/change_sets': typeof Change_setsIndexRoute
   '/consumer_groups': typeof Consumer_groupsIndexRoute
   '/consumers': typeof ConsumersIndexRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -472,6 +480,7 @@ export interface FileRoutesById {
   '/ssls/add': typeof SslsAddRoute
   '/stream_routes/add': typeof Stream_routesAddRoute
   '/upstreams/add': typeof UpstreamsAddRoute
+  '/change_sets/': typeof Change_setsIndexRoute
   '/consumer_groups/': typeof Consumer_groupsIndexRoute
   '/consumers/': typeof ConsumersIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -530,6 +539,7 @@ export interface FileRouteTypes {
     | '/ssls/add'
     | '/stream_routes/add'
     | '/upstreams/add'
+    | '/change_sets/'
     | '/consumer_groups/'
     | '/consumers/'
     | '/dashboard/'
@@ -586,6 +596,7 @@ export interface FileRouteTypes {
     | '/ssls/add'
     | '/stream_routes/add'
     | '/upstreams/add'
+    | '/change_sets'
     | '/consumer_groups'
     | '/consumers'
     | '/dashboard'
@@ -640,6 +651,7 @@ export interface FileRouteTypes {
     | '/ssls/add'
     | '/stream_routes/add'
     | '/upstreams/add'
+    | '/change_sets/'
     | '/consumer_groups/'
     | '/consumers/'
     | '/dashboard/'
@@ -697,6 +709,7 @@ export interface RootRouteChildren {
   SslsAddRoute: typeof SslsAddRoute
   Stream_routesAddRoute: typeof Stream_routesAddRoute
   UpstreamsAddRoute: typeof UpstreamsAddRoute
+  Change_setsIndexRoute: typeof Change_setsIndexRoute
   Consumer_groupsIndexRoute: typeof Consumer_groupsIndexRoute
   ConsumersIndexRoute: typeof ConsumersIndexRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -853,6 +866,13 @@ declare module '@tanstack/react-router' {
       path: '/consumer_groups'
       fullPath: '/consumer_groups/'
       preLoaderRoute: typeof Consumer_groupsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/change_sets/': {
+      id: '/change_sets/'
+      path: '/change_sets'
+      fullPath: '/change_sets/'
+      preLoaderRoute: typeof Change_setsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/upstreams/add': {
@@ -1181,6 +1201,7 @@ const rootRouteChildren: RootRouteChildren = {
   SslsAddRoute: SslsAddRoute,
   Stream_routesAddRoute: Stream_routesAddRoute,
   UpstreamsAddRoute: UpstreamsAddRoute,
+  Change_setsIndexRoute: Change_setsIndexRoute,
   Consumer_groupsIndexRoute: Consumer_groupsIndexRoute,
   ConsumersIndexRoute: ConsumersIndexRoute,
   DashboardIndexRoute: DashboardIndexRoute,

@@ -56,6 +56,7 @@ import { ImportChangePreview } from '@/components/page/ImportChangePreview';
 import PageHeader from '@/components/page/PageHeader';
 import { SharingRedaction } from '@/components/page/SharingRedaction';
 import { SnapshotComparison } from '@/components/page/SnapshotComparison';
+import { stageChanges } from '@/stores/changeSets';
 import { downloadJson } from '@/utils/downloadJson';
 import { assertRestorableExport } from '@/utils/sharingFormat';
 import IconDownload from '~icons/material-symbols/download';
@@ -412,6 +413,14 @@ function ImportSection() {
             okButtonProps={{ disabled: !selectedItems.length || missingDependencies.length > 0 }}>
             {preview && <>
               <Typography.Paragraph>{selectedItems.length} item(s) selected for application. Unselected changes remain untouched.</Typography.Paragraph>
+              <Button disabled={importing || !selectedItems.length || missingDependencies.length > 0} onClick={() => {
+                try {
+                  stageChanges(preview.items.filter((row) => selectedItems.includes(row.key) && ['New', 'Changed'].includes(row.status)).map((row) => ({
+                    resourceType: row.resourceType, item: preview.data.resources[row.resourceType]![row.index], baseline: row.before,
+                  })));
+                  message.success('Selected drafts added to Change sets. Nothing was imported.'); setPreview(null);
+                } catch (error) { message.error(error instanceof Error ? error.message : 'Could not stage selected changes.'); }
+              }}>Stage selected</Button>
               {missingDependencies.length > 0 && <Alert type="error" showIcon title="Select required new dependencies"
                 description={missingDependencies.join(', ')} />}
               <ImportChangePreview items={preview.items} selectedKeys={selectedItems} onSelectionChange={setSelectedItems} disabled={importing} />

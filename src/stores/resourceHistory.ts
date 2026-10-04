@@ -20,7 +20,7 @@ import { z } from 'zod';
 import { isDeepEqual, isRecord, stripPatchReadonlyFields } from '@/utils/apisixEditable';
 import { getHistoryTarget, hasHistoryProtectedFields } from '@/utils/historyResource';
 
-const historySourceSchema = z.enum(['raw', 'bulk', 'form', 'import', 'console', 'legacy']);
+const historySourceSchema = z.enum(['raw', 'bulk', 'form', 'import', 'console', 'changeset', 'legacy']);
 export type HistorySource = z.infer<typeof historySourceSchema>;
 // Zod record parsing drops an own __proto__ property; configuration keys are data.
 const snapshotSchema = z.custom<Record<string, unknown>>((value) => isRecord(value) &&
