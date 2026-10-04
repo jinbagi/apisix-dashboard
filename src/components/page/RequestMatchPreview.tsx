@@ -80,8 +80,9 @@ export const RequestMatchPreview = () => {
         {result && <>
           <Typography.Text role="status">{result.rows.filter((row) => row.status === 'Candidate').length} candidate(s) / {result.rows.filter((row) => row.status === 'Needs runtime check').length} runtime check(s) / {result.rows.filter((row) => row.status === 'Excluded' || row.status === 'Disabled').length} excluded / Read {result.rows.length} Routes at {result.at}</Typography.Text>
           <Checkbox checked={showExcluded} onChange={(event) => setShowExcluded(event.target.checked)}>Show excluded and disabled Routes</Checkbox>
-          {rows.length === 0 && <Alert type="info" title="No candidates in the supported conditions" description="Show excluded Routes to inspect reasons. Live routing is not verified by this result." />}
-          <Table<MatchResult> size="small" rowKey={(row) => String(row.route.id)} dataSource={rows} pagination={{ pageSize: 6, showSizeChanger: false }} columns={!screens.md ? [
+          {rows.length === 0 && result.rows.length > 0 && <Alert type="info" title="No candidates in the supported conditions" description="Show excluded Routes to inspect reasons. Live routing is not verified by this result." />}
+          <Table<MatchResult> size="small" rowKey={(row) => String(row.route.id)} dataSource={rows} pagination={{ pageSize: 6, showSizeChanger: false }}
+            locale={{ emptyText: <Typography.Text type="secondary">{result.rows.length ? 'No candidates for these request inputs.' : 'No saved HTTP Routes to preview.'}</Typography.Text> }} columns={!screens.md ? [
             { title: 'Route / matching evidence', key: 'all', render: (_, row) => <Space orientation="vertical"><Typography.Text strong style={{ overflowWrap: 'anywhere' }}>{label(row.route)}</Typography.Text>{evidence(row)}<Button onClick={() => inspect(row.route)}>Open RAW</Button></Space> },
           ] : [
             { title: 'Route', key: 'route', width: '24%', render: (_, row) => <Space orientation="vertical"><Typography.Text strong style={{ overflowWrap: 'anywhere' }}>{label(row.route)}</Typography.Text><Typography.Text type="secondary">Priority: {typeof row.route.priority === 'number' ? row.route.priority : 0}</Typography.Text></Space> },

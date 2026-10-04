@@ -63,6 +63,8 @@ Owner: this development thread. Scope approved by the user: implement all 20 pro
 
 | 38 | P1 | Full-export paging trusts the first total, and child exports may read only one page or treat an unverified owner404 as empty. | Validate complete page sequences and exact owners before claiming complete coverage; preserve explicitly incomplete endpoint skips. | Implementing with 32 |
 
+| 42 | P2 | Request matching, overlap and reference diagnostics inherit an empty-table prompt to use a nonexistent Add button; zero findings can also be mistaken for no resources. | Use context-specific empty states, distinguish incomplete reference reads, and retain filter recovery without writes. | Implemented locally; 6 fail-before / pass-after cases plus 50 diagnostic and performance checks; PR review pending |
+
 ## Execution log
 
 - Baseline: master 4b8216f5. Existing local changes remain preserved.

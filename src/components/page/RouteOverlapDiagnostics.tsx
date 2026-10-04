@@ -76,7 +76,7 @@ export const RouteOverlapDiagnostics = () => {
             <Typography.Text role="status">{report.candidates.length} candidate(s) / {report.compared} other enabled Route(s) compared / {report.disabled} disabled Route(s) excluded</Typography.Text>
             {report.candidates.length === 0 && <Alert type="info" title="No overlaps found in the checked scope" description="This does not verify live routing or conditions outside the comparison scope." />}
             <Table<RouteOverlap> size="small" rowKey={(row) => String(row.route.id)} dataSource={report.candidates} pagination={{ pageSize: 8, showSizeChanger: false }}
-              columns={!screens.md ? [{ title: 'Candidates', key: 'candidate', render: (_, row) => <Space orientation="vertical" style={{ width: '100%' }}>
+              locale={{ emptyText: <Typography.Text type="secondary">No overlap candidates in the checked conditions.</Typography.Text> }} columns={!screens.md ? [{ title: 'Candidates', key: 'candidate', render: (_, row) => <Space orientation="vertical" style={{ width: '100%' }}>
                 <Typography.Text strong style={{ overflowWrap: 'anywhere' }}>{routeName(row.route)}</Typography.Text>{comparison(row)}
                 <Button onClick={() => inspect(row.route)}>Open RAW</Button>
               </Space> }] : [
