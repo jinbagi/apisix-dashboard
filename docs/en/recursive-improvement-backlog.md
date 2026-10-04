@@ -63,6 +63,8 @@ Owner: this development thread. Scope approved by the user: implement all 20 pro
 
 | 38 | P1 | Full-export paging trusts the first total, and child exports may read only one page or treat an unverified owner404 as empty. | Validate complete page sequences and exact owners before claiming complete coverage; preserve explicitly incomplete endpoint skips. | Implementing with 32 |
 
+| 44 | P2 | After a rejected concurrent saved-view write, an AntD loading icon can remain in its leave transition and change the retry button accessible name to loading Save view, causing repeatable CI failures. | Keep Save/Update names stable with explicit labels and separate aria-busy state; preserve strict native-lock fixtures and explicit retry. | Verified locally: 46 table fixtures, 30 repeated lock/a11y checks, baseline reproduction; focused PR preparation |
+
 ## Execution log
 
 - Baseline: master 4b8216f5. Existing local changes remain preserved.
