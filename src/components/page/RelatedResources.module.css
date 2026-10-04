@@ -1,0 +1,7 @@
+.panel { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; height: 100%; overflow: auto; padding: 12px; border: 1px solid var(--ant-color-border); border-radius: 8px; box-sizing: border-box; }
+.header { justify-content: space-between; }
+.help { margin: 0 !important; font-size: var(--app-font-size-sm); overflow-wrap: anywhere; }
+.select { width: 100%; }
+.actions { flex: 0 0 auto; }
+.json { flex: 1; min-height: 120px; margin: 0; padding: 10px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--ant-color-fill-tertiary); border-radius: 6px; font-family: var(--app-font-monospace); font-size: var(--app-font-size-sm); }
+.json:focus-visible { outline: 2px solid var(--ant-color-primary); outline-offset: -2px; }
