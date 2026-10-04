@@ -42,6 +42,8 @@ import { ServicePostSchema } from '@/components/form-slice/FormPartService/schem
 import { SSLPostSchema } from '@/components/form-slice/FormPartSSL/schema';
 import { StreamRoutePostSchema } from '@/components/form-slice/FormPartStreamRoute/schema';
 import { UpstreamPostSchema } from '@/components/form-slice/FormPartUpstream/schema';
+import { ConsolePresets } from '@/components/page/ConsolePresets';
+import { ConsoleVariables } from '@/components/page/ConsoleVariables';
 import PageHeader from '@/components/page/PageHeader';
 import {
   API_CONSUMER_GROUPS,
@@ -74,6 +76,7 @@ import {
   sortJsonKeys,
   stripPatchReadonlyFields,
 } from '@/utils/apisixEditable';
+import { MAX_REQUEST_PRESETS, parseRequestPresets, presetCollection, presetIdentity, type RequestPreset } from '@/utils/consoleTemplates';
 import { createRequiredJsonTemplate } from '@/utils/jsonRequiredTemplate';
 import {
   formatJsonSchemaPath,
@@ -138,17 +141,6 @@ type RequestHistoryEntry = {
   time: number;
   createdAt: number;
 };
-type RequestPreset = {
-  id: string;
-  name: string;
-  method: string;
-  resource: string;
-  pathSuffix: string;
-  queryString: string;
-  body: string;
-  endpoint: string;
-  createdAt: number;
-};
 type ConsoleRequestSnapshot = {
   method: string;
   resource: string;
@@ -169,7 +161,6 @@ type RequestBodyError = {
 const REQUEST_HISTORY_KEY = 'api-console:session-history';
 const REQUEST_PRESETS_KEY = 'api-console:session-presets';
 const MAX_REQUEST_HISTORY = 25;
-const MAX_REQUEST_PRESETS = 20;
 const CONSOLE_INTERCEPTOR_SKIPS = [
   'network',
   '400',
@@ -197,7 +188,7 @@ const readRequestHistory = (): RequestHistoryEntry[] => {
 const readRequestPresets = (): RequestPreset[] => {
   try {
     const value = JSON.parse(sessionStorage.getItem(REQUEST_PRESETS_KEY) ?? '[]');
-    return Array.isArray(value) ? value.slice(0, MAX_REQUEST_PRESETS) : [];
+    return parseRequestPresets(value);
   } catch {
     return [];
   }
@@ -442,8 +433,10 @@ function RawApiPage() {
   const [responseView, setResponseView] = useState<'Body' | 'Headers'>('Body');
   const [historyOpen, setHistoryOpen] = useState(false);
   const [presetsOpen, setPresetsOpen] = useState(false);
+  const [variablesOpen, setVariablesOpen] = useState(false);
   const [savePresetOpen, setSavePresetOpen] = useState(false);
   const [presetName, setPresetName] = useState('');
+  const [presetGroup, setPresetGroup] = useState('');
   const [loadedBodyNotice, setLoadedBodyNotice] =
     useState<LoadedBodyNotice | null>(null);
   const [requestBodyError, setRequestBodyError] =
@@ -454,6 +447,7 @@ function RawApiPage() {
   const [requestPresets, setRequestPresets] = useState<RequestPreset[]>(
     readRequestPresets
   );
+  const replacingPreset = requestPresets.some((item) => presetIdentity(item.name, item.collection) === presetIdentity(presetName, presetCollection(presetGroup)));
   const [lastRequest, setLastRequest] = useState<ConsoleRequestSnapshot | null>(null);
   const [baseline, setBaseline] = useState<ConsoleRequestSnapshot>(() => ({
     method: 'PUT', resource: API_ROUTES, pathSuffix: '', queryString: '',
@@ -726,12 +720,12 @@ function RawApiPage() {
     const handleShortcut = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
         event.preventDefault();
-        if (!loading && !loadingExisting && !pendingReplacement && navigationBlocker.status !== 'blocked') handleExecute();
+        if (!loading && !loadingExisting && !pendingReplacement && !variablesOpen && !presetsOpen && !savePresetOpen && navigationBlocker.status !== 'blocked') handleExecute();
       }
     };
     window.addEventListener('keydown', handleShortcut);
     return () => window.removeEventListener('keydown', handleShortcut);
-  }, [handleExecute, loading, loadingExisting, navigationBlocker.status, pendingReplacement]);
+  }, [handleExecute, loading, loadingExisting, navigationBlocker.status, pendingReplacement, variablesOpen, presetsOpen, savePresetOpen]);
 
   const formatRequestBody = useCallback(() => {
     try {
@@ -774,9 +768,14 @@ function RawApiPage() {
       message.warning('Enter a preset name');
       return;
     }
+    const enteredCollection = presetCollection(presetGroup);
+    const collection = requestPresets.find((item) => item.collection.toLowerCase() === enteredCollection.toLowerCase())?.collection ?? enteredCollection;
+    const remaining = requestPresets.filter((item) => presetIdentity(item.name, item.collection) !== presetIdentity(name, collection));
+    if (remaining.length >= MAX_REQUEST_PRESETS) { message.error('The 20-preset limit is reached. Delete a preset or replace one with the same name and collection.'); return; }
     const preset: RequestPreset = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       name,
+      collection,
       method,
       resource,
       pathSuffix: normalizedPathSuffix,
@@ -788,7 +787,7 @@ function RawApiPage() {
     try {
       const next = [
         preset,
-        ...requestPresets.filter((item) => item.name.toLowerCase() !== name.toLowerCase()),
+        ...remaining,
       ].slice(0, MAX_REQUEST_PRESETS);
       sessionStorage.setItem(REQUEST_PRESETS_KEY, JSON.stringify(next));
       setRequestPresets(next);
@@ -808,6 +807,7 @@ function RawApiPage() {
     normalizedPathSuffix,
     normalizedQueryString,
     presetName,
+    presetGroup,
     requestUrl,
     requestPresets,
     resource,
@@ -818,12 +818,9 @@ function RawApiPage() {
     setPresetsOpen(false);
   }, [restoreRequest]);
 
-  const deletePreset = useCallback((id: string) => {
-    setRequestPresets((current) => {
-      const next = current.filter((preset) => preset.id !== id);
-      sessionStorage.setItem(REQUEST_PRESETS_KEY, JSON.stringify(next));
-      return next;
-    });
+  const updatePresets = useCallback((next: RequestPreset[]) => {
+    try { sessionStorage.setItem(REQUEST_PRESETS_KEY, JSON.stringify(next)); setRequestPresets(next); return true; }
+    catch { message.error('Could not save preset changes. The existing list is unchanged.'); return false; }
   }, []);
 
   const handleCopyCurl = useCallback(async () => {
@@ -885,7 +882,12 @@ function RawApiPage() {
           </div>
         }
         extra={
-          <Space size={6}>
+          <Space size={6} wrap>
+            <ConsoleVariables template={currentDraft} disabled={busy} onOpenChange={setVariablesOpen} onResolved={(value) => {
+              setPathSuffix(value.pathSuffix); setQueryString(value.queryString); setBody(value.body);
+              setLoadedBodyNotice(null); setRequestBodyError(null); setResponse(null); setResponseError(null);
+              message.success('Resolved draft ready. Review and send when ready.');
+            }} />
             <Button size="small" type="text" disabled={busy} onClick={() => setSavePresetOpen(true)}>
               Save preset
             </Button>
@@ -1276,50 +1278,7 @@ function RawApiPage() {
         )}
       </Drawer>
 
-      <Drawer
-        title="Session presets"
-        open={presetsOpen}
-        onClose={() => setPresetsOpen(false)}
-        styles={{ wrapper: { width: 440 } }}
-      >
-        <Typography.Paragraph type="secondary" className={classes.drawerIntro}>
-          Presets are stored only in this browser tab and are removed when the
-          session ends.
-        </Typography.Paragraph>
-        {requestPresets.length ? (
-          <div className={classes.historyList}>
-            {requestPresets.map((preset) => (
-              <div key={preset.id} className={classes.presetItem}>
-                <button
-                  type="button"
-                  className={classes.presetRestore}
-                  onClick={() => restorePreset(preset)}
-                >
-                  <div className={classes.presetName}>{preset.name}</div>
-                  <div className={classes.historyHeading}>
-                    <Tag color={METHOD_COLORS[preset.method]}>{preset.method}</Tag>
-                    <Typography.Text code ellipsis>{preset.endpoint}</Typography.Text>
-                  </div>
-                </button>
-                <Button
-                  size="small"
-                  type="text"
-                  danger
-                  onClick={() => deletePreset(preset.id)}
-                  aria-label={`Delete preset ${preset.name}`}
-                >
-                  Delete
-                </Button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="Save the current request to create a session preset."
-          />
-        )}
-      </Drawer>
+      <ConsolePresets open={presetsOpen} presets={requestPresets} onClose={() => setPresetsOpen(false)} onRestore={restorePreset} onChange={updatePresets} />
 
       <Modal
         title="Replace request draft?"
@@ -1349,7 +1308,7 @@ function RawApiPage() {
       <Modal
         title="Save session preset"
         open={savePresetOpen}
-        okText="Save preset"
+        okText={replacingPreset ? 'Replace preset' : 'Save preset'}
         okButtonProps={{ disabled: !presetName.trim() }}
         onOk={savePreset}
         onCancel={() => {
@@ -1362,12 +1321,18 @@ function RawApiPage() {
           for this browser tab.
         </Typography.Paragraph>
         <Input
+          aria-label="Preset name"
+          maxLength={128}
           value={presetName}
           onChange={(event) => setPresetName(event.target.value)}
           onPressEnter={savePreset}
           placeholder="Preset name"
           autoFocus
         />
+        <label htmlFor="save-preset-collection" style={{ display: 'block', marginTop: 12 }}>Collection (optional)</label>
+        <AutoComplete placement="topLeft" filterOption={(input, option) => String(option?.value ?? '').toLowerCase().includes(input.toLowerCase())} id="save-preset-collection" aria-label="Preset collection" value={presetGroup} onChange={setPresetGroup} maxLength={64} style={{ width: '100%' }} placeholder="Unfiled"
+          options={[...new Set(requestPresets.map((item) => item.collection).filter(Boolean))].map((value) => ({ value }))} />
+        {replacingPreset && <Typography.Paragraph role="status" style={{ marginTop: 12, marginBottom: 0 }}>This replaces the existing preset with the same name in this collection.</Typography.Paragraph>}
       </Modal>
     </div>
   );

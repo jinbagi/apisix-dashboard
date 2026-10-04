@@ -180,7 +180,7 @@ test('saves and restores session presets without executing them', async ({ page 
   });
 
   await page.getByRole('button', { name: 'Presets (1)' }).click();
-  await page.getByRole('button', { name: /Paged routes GET/ }).click();
+  await page.getByRole('button', { name: 'Load preset Paged routes', exact: true }).click();
   await page.getByRole('dialog', { name: 'Replace request draft?' }).getByRole('button', { name: 'Discard and replace' }).click();
 
   await expect(queryInput).toHaveValue('page=2&page_size=25');
