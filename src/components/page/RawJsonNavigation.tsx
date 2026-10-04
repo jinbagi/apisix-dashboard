@@ -17,7 +17,7 @@
 import { Button, message, Select, Space, Tooltip, Typography } from 'antd';
 import { getLocation, type ParseError, parseTree, printParseErrorCode } from 'jsonc-parser';
 import type { editor } from 'monaco-editor';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ZodTypeAny } from 'zod';
 
 import { restorePatchReadonlyFields } from '@/utils/apisixEditable';
@@ -26,10 +26,14 @@ import { monaco } from '@/utils/monaco';
 
 const { KeyCode, KeyMod } = monaco;
 
-export const RawJsonNavigation = ({ codeEditor, value, original, schema, resourceBase, disabled }: {
+export const RawJsonNavigation = ({ codeEditor, value, original, schema, resourceBase, disabled, compact = false }: {
   codeEditor: editor.IStandaloneCodeEditor | null; value: string; original: string;
-  schema?: ZodTypeAny | null; resourceBase: Record<string, unknown>; disabled: boolean;
+  schema?: ZodTypeAny | null; resourceBase: Record<string, unknown>; disabled: boolean; compact?: boolean;
 }) => {
+  const [expanded, setExpanded] = useState(false);
+  const toolsId = useId();
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const toolsVisible = !compact || expanded;
   const [pointer, setPointer] = useState('');
   const [selected, setSelected] = useState<string>();
   const [problemIndex, setProblemIndex] = useState(-1);
@@ -93,7 +97,16 @@ export const RawJsonNavigation = ({ codeEditor, value, original, schema, resourc
     return () => actions.forEach((action) => action.dispose());
   }, [codeEditor, copyPointer, disabled, navigate, nextProblem]);
   return <Space direction="vertical" size={4} style={{ marginBottom: 8, flexShrink: 0 }}>
-    <Space wrap size="small">
+    {compact && <Space wrap size="small">
+      <Button ref={toggleRef} size="small" aria-expanded={expanded} aria-controls={toolsVisible ? toolsId : undefined}
+        onClick={() => setExpanded((current) => !current)}>{expanded ? 'Hide JSON tools' : 'Show JSON tools'}</Button>
+      {problems.length > 0
+        ? <Tooltip title="F8 jumps to the next JSON or schema problem" trigger={['hover', 'focus']}><Button size="small" danger disabled={disabled} onClick={nextProblem}>Next problem ({problems.length})</Button></Tooltip>
+        : <Typography.Text type="secondary">{changes.length} changed field{changes.length === 1 ? '' : 's'}</Typography.Text>}
+    </Space>}
+    {toolsVisible && <Space id={toolsId} wrap size="small" onKeyDown={(event) => {
+      if (compact && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setExpanded(false); toggleRef.current?.focus(); }
+    }}>
       <Select aria-label="Changed JSON field" placeholder={`Changed fields (${changes.length})`} showSearch optionFilterProp="label"
         style={{ width: 240, maxWidth: '100%' }} disabled={disabled || !changes.length}
         value={changes.some((path) => toJsonPointer(path) === selected) ? selected : undefined}
@@ -102,13 +115,13 @@ export const RawJsonNavigation = ({ codeEditor, value, original, schema, resourc
         <Space.Compact><Button disabled={disabled || !changes.length} onClick={() => navigate(-1)}>Previous field</Button>
           <Button disabled={disabled || !changes.length} onClick={() => navigate(1)}>Next field</Button></Space.Compact>
       </Tooltip>
-      <Tooltip title="F8 jumps to the next JSON or schema problem. Missing properties jump to their parent.">
+      {(!compact || problems.length === 0) && <Tooltip title="F8 jumps to the next JSON or schema problem. Missing properties jump to their parent.">
         <Button disabled={disabled || !problems.length} onClick={nextProblem}>Next problem ({problems.length})</Button>
-      </Tooltip>
+      </Tooltip>}
       <Tooltip title={`Alt+Shift+C / RFC 6901 pointer: ${pointer || '(root: empty string)'}`}>
         <Button disabled={!codeEditor || disabled} onClick={() => void copyPointer()}>Copy JSON path</Button>
       </Tooltip>
-    </Space>
+    </Space>}
     {problemMessage && problems.length > 0 && <Typography.Text type="danger" role="status">{problemMessage}</Typography.Text>}
   </Space>;
 };

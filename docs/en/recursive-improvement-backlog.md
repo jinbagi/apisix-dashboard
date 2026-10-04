@@ -26,10 +26,10 @@ Owner: this development thread. Scope approved by the user: implement all 20 pro
 | 10 | P2 | Overlap/shadow candidates: compare route host/URI/method/priority and explain supported overlap findings and unknown conditions. | Merged | [PR 94](https://github.com/jinbagi/apisix-dashboard/pull/94); 7 production-preview tests, lint, tsc, build, desktop/narrow screenshots |
 | 11 | P2 | Request matching preview: inputs and router mode, candidate routes with reasons, explicit unsupported conditions; validate against APISIX 3.19. | Merged | [PR 98](https://github.com/jinbagi/apisix-dashboard/pull/98); 23 production fixtures, 18 APISIX 3.19 radixtree golden cases and complete CI |
 | 12 | P2 | Consumer-aware configuration explanation: chosen Consumer/Group sources and whole-plugin precedence, runtime conditions distinguished. | Merged | [PR 87](https://github.com/jinbagi/apisix-dashboard/pull/87); 24 local tests, lint, tsc, build |
-| 13 | P2 | Sharing redaction: preview masked sensitive fields for copy/export; mark redacted artifacts incomplete for restoration. | PR / CI pending | [PR 100](https://github.com/jinbagi/apisix-dashboard/pull/100); reviewed sharing copy and import guards |
+| 13 | P2 | Sharing redaction: preview masked sensitive fields for copy/export; mark redacted artifacts incomplete for restoration. | Merged | [PR 100](https://github.com/jinbagi/apisix-dashboard/pull/100); code, narrow UI and complete CI verified |
 | 14 | P2 | Dependency clone: choose shared versus cloned dependencies, explicit new IDs, remap refs, collision checks and per-item outcome. | Implementing | codex/recursive-dependency-clone; explicit IDs, create-only preconditions and dependency choices |
 | 15 | P2 | Plugin inventory/comparison: find configured instances, compare values and transition selected resources into existing bulk editing. | PR / CI pending | [PR 101](https://github.com/jinbagi/apisix-dashboard/pull/101); 28 inventory/bulk fixtures, lint, build |
-| 16 | P3 | Console collections: organize existing presets and substitute named non-secret variables with a reviewable request preview. | Verified locally / PR preparation | codex/recursive-console-collections; collection organization, reviewed variable substitution, storage preservation and narrow UI |
+| 16 | P3 | Console collections: organize existing presets and substitute named non-secret variables with a reviewable request preview. | PR / CI pending | [PR 105](https://github.com/jinbagi/apisix-dashboard/pull/105); 18 Console fixtures, lint, build, short narrow UI |
 | 17 | P3 | SSL replacement helper: inspect old/new names/validity and key match, review payload changes and verify save without exposing key material. | Implementing | codex/recursive-ssl-replacement; certificate/key checks and explicit reviewed save |
 | 18 | P3 | Table layout: configurable optional column order/width/pinning, keyboard controls, saved views migration and narrow screen behavior. | Merged | [PR 86](https://github.com/jinbagi/apisix-dashboard/pull/86); 33 production-preview tests, lint, tsc, build |
 | 19 | P3 | Consistent actions/status/accessibility: Add/RAW/Save hierarchy, loading/success/error feedback, keyboard/focus and zoom/narrow screen verification. | Connection and footer merged; mobile follow-up CI pending | [PR 89](https://github.com/jinbagi/apisix-dashboard/pull/89), [PR 99](https://github.com/jinbagi/apisix-dashboard/pull/99), [PR 104](https://github.com/jinbagi/apisix-dashboard/pull/104) |
@@ -53,13 +53,15 @@ Owner: this development thread. Scope approved by the user: implement all 20 pro
 | 31 | P2 | Combined RAW tabs and reference inspector can push Save Changes onto a separate toolbar row at 960px. | Keep Save Changes predictably positioned; group secondary tools; verify keyboard and narrow layouts without losing draft actions. | Merged in PR 99 |
 
 | 32 | P2 | Selected and dependency exports lack machine-readable coverage, so missing resources cannot prove whole-gateway removal. | Add explicit export scope and preserve legacy uncertainty in snapshot comparison. | Backlog |
-| 33 | P2 | Saved views read the list only at mount and can overwrite another browser tab's later changes. | Fresh reads before writes, storage-event synchronization and concurrent add/delete fixtures. | Backlog |
+| 33 | P2 | Saved views read the list only at mount and can overwrite another browser tab's later changes. | Fresh reads before writes, storage-event synchronization and concurrent add/delete fixtures. | Verified locally / PR preparation; 44 table fixtures |
 
 | 34 | P2 | At 390px, RAW guidance and navigation consume much of the editing height even after footer repair. | Compact or collapsible phone navigation that retains shortcuts, validation guidance and draft controls. | PR 104 / CI pending |
 | 35 | P1 | Selected export detail reads overwrite response identity with the requested ID, allowing a wrong-resource response to be mislabeled. | Validate exact response identity before export normalization; mismatches prevent downloads; cover dependency detail reads too. | PR 103 / CI pending |
 
 | 36 | P2 | Console saving a 21st preset silently evicts an earlier request, while failed deletion/organization can misrepresent persistence. Collection suggestions can obscure Save. | Preserve the list on capacity/storage failure, explicitly identify replacements, and keep save controls reachable. | Implemented with 16; production fixture validation |
 | 37 | P1 | Import external reference reads accept array identities and ignore a conflicting response key. | Use exact response validation in preview and immediate preflight; wrong identity prevents writes. | PR 103 / CI pending |
+
+| 38 | P1 | Full-export paging trusts the first total, and child exports may read only one page or treat an unverified owner404 as empty. | Validate complete page sequences and exact owners before claiming complete coverage; preserve explicitly incomplete endpoint skips. | Implementing with 32 |
 
 ## Execution log
 
@@ -79,3 +81,6 @@ Owner: this development thread. Scope approved by the user: implement all 20 pro
 
 - PRs 96, 98, 89 and 99 merged after complete CI. The corrected connection probe passed the isolated gateway suite.
 - Console collections and reviewed non-secret variables include keyboard-send isolation, memory-only variables, storage-failure preservation and a non-evicting preset limit.
+
+- PR100 merged after complete CI. PRs101/102 exposed a shared Import fixture missing its GraphQL owner; corrected the fixture, retained production validation, reran13 Import cases and restarted CI. The same correction is included in103/104/105.
+- History97 CI found stale DELETE/Plugin Metadata mock lifecycles and an SSL navigation assertion race; fixture corrections are being verified before another CI run.
