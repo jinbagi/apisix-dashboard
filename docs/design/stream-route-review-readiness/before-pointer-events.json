@@ -1,0 +1,90 @@
+[
+  {
+    "i": 0,
+    "rate": 1,
+    "writes": [],
+    "events": [
+      {
+        "type": "pointerdown",
+        "time": 1465.4000000953674,
+        "x": 1109.5400390625,
+        "y": 960.6500244140625,
+        "target": "<span>Confirm &amp; Save</span>",
+        "button": {
+          "x": 1095.8843994140625,
+          "y": 956.859375,
+          "width": 27.3155517578125,
+          "height": 7.5999755859375
+        },
+        "transform": "matrix(0.2, 0, 0, 0.2, 0, 0)",
+        "loading": false,
+        "diff": true
+      },
+      {
+        "type": "mousedown",
+        "time": 1465.6000000238419,
+        "x": 1109,
+        "y": 960,
+        "target": "<span>Confirm &amp; Save</span>",
+        "button": {
+          "x": 1095.8843994140625,
+          "y": 956.859375,
+          "width": 27.3155517578125,
+          "height": 7.5999755859375
+        },
+        "transform": "matrix(0.2, 0, 0, 0.2, 0, 0)",
+        "loading": false,
+        "diff": true
+      },
+      {
+        "type": "pointerup",
+        "time": 1670.1000000238419,
+        "x": 1109.5400390625,
+        "y": 960.6500244140625,
+        "target": "<div class=\"ant-modal-wrap\"><div role=\"dialog\" aria-labelledby=\"_r_36_\" aria-modal=\"true\" class=\"ant-modal css-xsuzon ant-zoom-appear ant-zoom-appear-active ant-zoom\" tabindex=\"-1\" style=\"top: 24px; w",
+        "button": {
+          "x": 1192.412841796875,
+          "y": 799.14013671875,
+          "width": 79.1339111328125,
+          "height": 22.017333984375
+        },
+        "transform": "matrix(0.579404, 0, 0, 0.579404, 0, 0)",
+        "loading": false,
+        "diff": true
+      },
+      {
+        "type": "mouseup",
+        "time": 1670.5,
+        "x": 1109,
+        "y": 960,
+        "target": "<div class=\"ant-modal-wrap\"><div role=\"dialog\" aria-labelledby=\"_r_36_\" aria-modal=\"true\" class=\"ant-modal css-xsuzon ant-zoom-appear ant-zoom-appear-active ant-zoom\" tabindex=\"-1\" style=\"top: 24px; w",
+        "button": {
+          "x": 1192.412841796875,
+          "y": 799.14013671875,
+          "width": 79.1339111328125,
+          "height": 22.017333984375
+        },
+        "transform": "matrix(0.579404, 0, 0, 0.579404, 0, 0)",
+        "loading": false,
+        "diff": true
+      },
+      {
+        "type": "click",
+        "time": 1670.8000000715256,
+        "x": 1109,
+        "y": 960,
+        "target": "<div class=\"ant-modal-wrap\"><div role=\"dialog\" aria-labelledby=\"_r_36_\" aria-modal=\"true\" class=\"ant-modal css-xsuzon ant-zoom-appear ant-zoom-appear-active ant-zoom\" tabindex=\"-1\" style=\"top: 24px; w",
+        "button": {
+          "x": 1192.412841796875,
+          "y": 799.14013671875,
+          "width": 79.1339111328125,
+          "height": 22.017333984375
+        },
+        "transform": "matrix(0.579404, 0, 0, 0.579404, 0, 0)",
+        "loading": false,
+        "diff": true
+      }
+    ],
+    "failure": "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: 1\nReceived: 0\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate"
+  }
+]

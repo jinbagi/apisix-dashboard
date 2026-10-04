@@ -1,0 +1,106 @@
+[
+  {
+    "i": 0,
+    "rate": 1,
+    "writes": [
+      {
+        "server_port": 9100,
+        "upstream": {
+          "type": "roundrobin",
+          "scheme": "tcp",
+          "nodes": {
+            "127.0.0.1:9443": 1
+          }
+        },
+        "snis": [
+          "api.example.com"
+        ],
+        "tls_passthrough": false,
+        "plugins": {}
+      }
+    ],
+    "events": [
+      {
+        "type": "pointerdown",
+        "time": 4007.3000000715256,
+        "x": 1367.7099609375,
+        "y": 643.2899780273438,
+        "target": "<span>Confirm &amp; Save</span>",
+        "button": {
+          "x": 1299.421875,
+          "y": 624.296875,
+          "width": 136.578125,
+          "height": 38
+        },
+        "transform": "none",
+        "loading": false,
+        "diff": true
+      },
+      {
+        "type": "mousedown",
+        "time": 4007.5,
+        "x": 1367,
+        "y": 643,
+        "target": "<span>Confirm &amp; Save</span>",
+        "button": {
+          "x": 1299.421875,
+          "y": 624.296875,
+          "width": 136.578125,
+          "height": 38
+        },
+        "transform": "none",
+        "loading": false,
+        "diff": true
+      },
+      {
+        "type": "pointerup",
+        "time": 4215.899999976158,
+        "x": 1367.7099609375,
+        "y": 643.2899780273438,
+        "target": "<span>Confirm &amp; Save</span>",
+        "button": {
+          "x": 1299.421875,
+          "y": 624.296875,
+          "width": 136.578125,
+          "height": 38
+        },
+        "transform": "none",
+        "loading": false,
+        "diff": true
+      },
+      {
+        "type": "mouseup",
+        "time": 4216.200000047684,
+        "x": 1367,
+        "y": 643,
+        "target": "<span>Confirm &amp; Save</span>",
+        "button": {
+          "x": 1299.421875,
+          "y": 624.296875,
+          "width": 136.578125,
+          "height": 38
+        },
+        "transform": "none",
+        "loading": false,
+        "diff": true
+      },
+      {
+        "type": "click",
+        "time": 4216.399999976158,
+        "x": 1367,
+        "y": 643,
+        "target": "<span>Confirm &amp; Save</span>",
+        "button": {
+          "x": 1299.421875,
+          "y": 624.296875,
+          "width": 136.578125,
+          "height": 38
+        },
+        "transform": "none",
+        "loading": false,
+        "diff": true
+      }
+    ],
+    "failure": null
+  }
+]
