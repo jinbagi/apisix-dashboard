@@ -14,13 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createRouter } from '@tanstack/react-router';
+import { createContext, useContext } from 'react';
 
-import { RawWorkspaceProvider } from '@/components/page/RawWorkspace';
-import { routeTree } from '@/routeTree.gen';
-
-import { BASE_PATH } from './constant';
-
-export const router = createRouter({ routeTree, basepath: BASE_PATH, InnerWrap: RawWorkspaceProvider });
-
-export type Router = typeof router;
+export type RawTabRequest = {
+  api: string;
+  title: string;
+  initialData?: Record<string, unknown>;
+  onSaved?: () => void | Promise<void>;
+};
+export type RawWorkspaceTab = RawTabRequest & { id: string; dirty: boolean; saving: boolean };
+export type RawWorkspaceContextValue = {
+  tabs: RawWorkspaceTab[];
+  activeId: string;
+  open: boolean;
+  openTab: (request: RawTabRequest) => void;
+  show: () => void;
+};
+export const RawWorkspaceContext = createContext<RawWorkspaceContextValue | null>(null);
+export const useRawWorkspace = () => {
+  const context = useContext(RawWorkspaceContext);
+  if (!context) throw new Error('RAW workspace provider is missing');
+  return context;
+};

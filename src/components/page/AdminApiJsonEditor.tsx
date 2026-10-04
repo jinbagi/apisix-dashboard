@@ -16,7 +16,7 @@
  */
 import { Alert, Button, message, Segmented, Space, Tooltip, Typography } from 'antd';
 import type { editor } from 'monaco-editor';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ZodIssue } from 'zod';
 
 import { applyBulkPatch } from '@/apis/bulk-patch';
@@ -74,6 +74,8 @@ type SaveFeedback = {
 export type AdminApiJsonEditorProps = {
   api: string;
   active?: boolean;
+  /** Keep this resource session loaded while another workspace tab is active. */
+  persistentSession?: boolean;
   disabled?: boolean;
   autoFetch?: boolean;
   height?: string;
@@ -142,6 +144,7 @@ const verifySavedResource = async (
 export const AdminApiJsonEditor = ({
   api,
   active = true,
+  persistentSession = false,
   disabled = false,
   autoFetch = false,
   height = '500px',
@@ -166,7 +169,12 @@ export const AdminApiJsonEditor = ({
   const [saveFeedback, setSaveFeedback] = useState<SaveFeedback | null>(null);
   const [resourceBase, setResourceBase] = useState<Record<string, unknown>>({});
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const viewState = useRef<editor.ICodeEditorViewState | null>(null);
+  const loadSession = persistentSession || active;
   const userEditedRef = useRef(false);
+  const revisionRef = useRef(0);
 
   const valueRef = useRef(value);
   const originalRef = useRef(original);
@@ -202,6 +210,7 @@ export const AdminApiJsonEditor = ({
   }, [onSavingChange, saving]);
 
   const loadData = useCallback((data: Record<string, unknown>) => {
+    revisionRef.current += 1;
     const normalizedResource = normalizeApiResource(api, data);
     const json = toJson(stripPatchReadonlyFields(normalizedResource));
     setResourceBase(normalizedResource);
@@ -213,6 +222,7 @@ export const AdminApiJsonEditor = ({
   }, [api]);
 
   const handleResetDraft = useCallback(() => {
+    revisionRef.current += 1;
     userEditedRef.current = false;
     setValue(original);
     setError(null);
@@ -244,7 +254,7 @@ export const AdminApiJsonEditor = ({
   }, [api, loadData, saving]);
 
   useEffect(() => {
-    if (!active || !api) return;
+    if (!loadSession || !api) return;
 
     if (initialData) {
       if (userEditedRef.current && valueRef.current !== originalRef.current) {
@@ -266,6 +276,7 @@ export const AdminApiJsonEditor = ({
     setError(null);
     setSaveFeedback(null);
     let cancelled = false;
+    const startedAtRevision = revisionRef.current;
 
     req
       .get(api)
@@ -274,7 +285,7 @@ export const AdminApiJsonEditor = ({
         const data = res.data?.value as Record<string, unknown> | undefined;
         if (!data) return;
 
-        if (userEditedRef.current && valueRef.current !== originalRef.current) {
+        if (revisionRef.current !== startedAtRevision || (userEditedRef.current && valueRef.current !== originalRef.current)) {
           setSaveFeedback({
             type: 'warning',
             message: 'Latest API data arrived after editing started, so the editor was not overwritten.',
@@ -296,7 +307,7 @@ export const AdminApiJsonEditor = ({
     return () => {
       cancelled = true;
     };
-  }, [active, api, autoFetch, initialData, loadData]);
+  }, [loadSession, api, autoFetch, initialData, loadData]);
 
   const handleSave = useCallback(async () => {
     if (saving || loading || disabled) return;
@@ -477,18 +488,28 @@ export const AdminApiJsonEditor = ({
   const handleEditorMount = useCallback((ed: editor.IStandaloneCodeEditor) => {
     editorRef.current = ed;
     setCodeEditor(ed);
-    window.__monacoEditor__ = ed;
+    if (activeRef.current) window.__monacoEditor__ = ed;
 
     // Ctrl+S / Cmd+S keybinding for Saving Changes
     ed.addCommand(2048 | 49, () => {
-      if (valueRef.current !== originalRef.current) saveRef.current();
+      if (activeRef.current && valueRef.current !== originalRef.current) saveRef.current();
     });
 
     // Shift+Alt+F / Shift+Option+F keybinding for Formatting JSON
     ed.addCommand(1024 | 512 | 36, () => {
-      formatRef.current();
+      if (activeRef.current) formatRef.current();
     });
   }, []);
+
+  useLayoutEffect(() => {
+    if (!codeEditor || !active) return;
+    window.__monacoEditor__ = codeEditor;
+    const frame = requestAnimationFrame(() => {
+      codeEditor.layout();
+      if (viewState.current) codeEditor.restoreViewState(viewState.current);
+    });
+    return () => { cancelAnimationFrame(frame); viewState.current = codeEditor.saveViewState(); };
+  }, [active, codeEditor]);
 
   useEffect(() => {
     return () => {
@@ -549,7 +570,7 @@ export const AdminApiJsonEditor = ({
         />
       )}
       {!loading && <RawJsonNavigation codeEditor={codeEditor} value={value} original={original}
-        schema={resourceSchema} resourceBase={resourceBase} disabled={disabled || saving} />}
+        schema={resourceSchema} resourceBase={resourceBase} disabled={disabled || saving || !active} />}
       {loading ? (
         <div
           className={fillAvailable ? classes.editorArea : undefined}
@@ -568,6 +589,7 @@ export const AdminApiJsonEditor = ({
             value={value}
             onChange={(nextValue) => {
               if (disabled || saving) return;
+              revisionRef.current += 1;
               userEditedRef.current = true;
               setValue(nextValue ?? '');
               setSaveFeedback(null);
@@ -602,6 +624,7 @@ export const AdminApiJsonEditor = ({
               setReferencesOpen((current) => !current); setReferenceView('References');
             }}>Related resources</Button>}
             <ResourceHistory api={api} disabled={saving || loading} onRestore={(draft, latest) => {
+              revisionRef.current += 1;
               setResourceBase(normalizeApiResource(api, latest)); setOriginal(draft.original); setValue(draft.value);
               userEditedRef.current = true; setError(null);
               setSaveFeedback({ type: 'warning', message: 'Previous values restored into the editor. Review and save to apply.', at: new Date().toLocaleTimeString() });
@@ -609,6 +632,7 @@ export const AdminApiJsonEditor = ({
             <ConfigurationImpact api={api} disabled={saving || loading} />
             <LocalRawDraft key={api} api={api} snapshot={{ original, value }} disabled={saving || loading || !original}
               onRestore={(draft, latest) => {
+                revisionRef.current += 1;
                 setResourceBase(normalizeApiResource(api, latest));
                 setOriginal(draft.original);
                 setValue(draft.value);
@@ -644,11 +668,12 @@ export const AdminApiJsonEditor = ({
           </Space>
         </Space>
       )}
-      {conflict && <RawConflictResolver
+      {active && conflict && <RawConflictResolver
         snapshot={{ previous: conflict.previous, draft: conflict.draft, latest: stripPatchReadonlyFields(conflict.latest) }}
         onCancel={() => setConflict(null)}
         onDiscard={() => loadData(conflict.latest)}
         onResolve={(draft) => {
+          revisionRef.current += 1;
           setResourceBase(conflict.latest);
           setOriginal(toJson(stripPatchReadonlyFields(conflict.latest)));
           setValue(toJson(draft));
@@ -659,7 +684,7 @@ export const AdminApiJsonEditor = ({
         }}
       />}
       <JsonChangeReview
-        open={review !== null}
+        open={active && review !== null}
         original={review?.original ?? ''}
         modified={review?.modified ?? ''}
         saving={saving}
