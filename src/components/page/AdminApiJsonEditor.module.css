@@ -15,7 +15,23 @@
 
 .actionBar {
   flex: 0 0 auto;
+  width: 100%;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ant-color-border-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
+
+.fillAvailable > .actionBar { position: sticky; bottom: 0; z-index: 2; background: var(--ant-color-bg-container); }
+
+.secondaryActions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.secondaryActions :global(.ant-btn) { height: 32px; padding-inline: 7px; font-size: var(--app-font-size-sm); }
+.primaryRow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.saveStatus { flex: 1 1 240px; min-width: 0; }
+.primaryActions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-inline-start: auto; }
+.actionBar :is(button, [tabindex]):focus-visible { outline: 2px solid var(--ant-color-primary); outline-offset: 2px; }
 
 @media (max-width: 480px) {
   .editorArea {
