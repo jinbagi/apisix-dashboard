@@ -22,12 +22,19 @@ const storedKey = (page: Page) => page.evaluate(() => JSON.parse(localStorage.ge
 
 async function mockConnection(page: Page, initialKey?: string) {
   if (initialKey) await page.addInitScript((key) => localStorage.setItem('settings:adminKey', JSON.stringify(key)), initialKey);
-  const state = { requests: [] as { key?: string; method: string; test: boolean }[], response: undefined as unknown, pause: undefined as Promise<void> | undefined };
+  const state = { pageSizes: [] as number[], requests: [] as { key?: string; method: string; test: boolean }[], response: undefined as unknown, pause: undefined as Promise<void> | undefined };
   await page.route('**/apisix/admin/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const key = request.headers()['x-api-key'];
-    const isTest = url.pathname.endsWith('/routes') && url.searchParams.get('page_size') === '1';
+    const isTest = url.pathname.endsWith('/routes') && url.searchParams.has('page_size');
+    if (isTest) {
+      const pageSize = Number(url.searchParams.get('page_size'));
+      state.pageSizes.push(pageSize);
+      // APISIX rejects pagination outside its documented 10..500 range.
+      if (!Number.isInteger(pageSize) || pageSize < 10 || pageSize > 500)
+        return route.fulfill({ status: 400, json: { error_msg: 'invalid page_size' } });
+    }
     state.requests.push({ key, method: request.method(), test: isTest });
     if (isTest && state.pause) await state.pause;
     if (isTest && state.response !== undefined) {
@@ -83,6 +90,8 @@ test('first setup keeps the key in a draft until its explicit test succeeds', as
   await expect(dialog).toBeHidden();
   await expect(page.getByRole('heading', { name: 'Routes', exact: true })).toBeVisible();
   expect(state.requests.every(({ method }) => method === 'GET')).toBe(true);
+  expect(state.pageSizes.length).toBeGreaterThan(0);
+  expect(state.pageSizes.every((size) => size >= 10 && size <= 500)).toBe(true);
 });
 
 test('failed edits and cancellation preserve the previous active key', async ({ page }) => {
@@ -114,7 +123,7 @@ test('cancelling an in-flight test cannot adopt its late successful response', a
   let release!: () => void;
   state.pause = new Promise<void>((resolve) => { release = resolve; });
   await dialog.getByRole('button', { name: 'Test connection' }).click();
-  await expect.poll(() => state.requests.some(({ test }) => test)).toBe(true);
+  await expect.poll(() => state.requests.some(({ test, key }) => test && key === replacementKey)).toBe(true);
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
   release();
   await expect(dialog).toBeHidden();

@@ -20,7 +20,7 @@ import axios from 'axios';
 import { useAtom } from 'jotai';
 import { useEffect, useId, useRef, useState } from 'react';
 
-import { API_HEADER_KEY, API_PREFIX } from '@/config/constant';
+import { API_HEADER_KEY, API_PREFIX, PAGE_SIZE_MIN } from '@/config/constant';
 import { queryClient } from '@/config/global';
 import { adminKeyAtom, isSettingsOpenAtom } from '@/stores/global';
 import { isRecord } from '@/utils/apisixEditable';
@@ -68,7 +68,7 @@ const ConnectionSettings = ({ initialKey, onClose }: { initialKey: string; onClo
     try {
       // Test only this draft. The shared interceptor continues using the active key.
       const response = await axios.get(`${API_PREFIX}/routes`, {
-        params: { page: 1, page_size: 1 },
+        params: { page: 1, page_size: PAGE_SIZE_MIN },
         headers: { [API_HEADER_KEY]: candidate },
         signal: controller.signal,
         timeout: 15_000,
