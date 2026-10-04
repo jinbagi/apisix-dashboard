@@ -52,6 +52,7 @@ import {
 import { type ImportPreviewItem,previewImport, verifyImportPreview } from '@/apis/import-preview';
 import { ImportChangePreview } from '@/components/page/ImportChangePreview';
 import PageHeader from '@/components/page/PageHeader';
+import { SnapshotComparison } from '@/components/page/SnapshotComparison';
 import { downloadJson } from '@/utils/downloadJson';
 import IconDownload from '~icons/material-symbols/download';
 import IconUpload from '~icons/material-symbols/upload';
@@ -516,6 +517,7 @@ function ExportImportPage() {
       <PageHeader
         title="Import / Export"
         desc="Backup and restore APISIX configuration"
+        extra={<SnapshotComparison />}
       />
       <Row gutter={[24, 24]}>
         <Col xs={24} lg={12}>
