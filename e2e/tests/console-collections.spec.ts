@@ -183,15 +183,29 @@ test('loading a preset respects draft replacement and never sends implicitly', a
   expect(writes).toEqual([]);
 });
 
-test('an explicit replacement at capacity preserves all other presets and blocks send shortcut', async ({page}) => {
+for (const shortcut of ['Enter', 'Control+Enter', 'Meta+Enter']) test(`an explicit replacement at capacity preserves all other presets and blocks send shortcut (${shortcut})`, async ({page}, info) => {
   const writes=await setup(page,Array.from({length:20},(_,i)=>preset(String(i),'Development')));
+  await page.getByRole('combobox',{name:/Path suffix/}).fill('preserved-request');
+  await page.getByRole('textbox',{name:'Query parameters'}).fill('label=env%3Afixture');
+  const requestBody = '{"uri":"/keyboard-preserved","desc":"fixture-only"}';
+  await uiFillMonacoEditor(page,page.locator('.monaco-editor').first(),requestBody);
   await page.getByRole('button',{name:'Save preset',exact:true}).click();
   const dialog=page.getByRole('dialog',{name:'Save session preset'});
   await dialog.getByRole('textbox',{name:'Preset name',exact:true}).fill('saved 19');
   await dialog.getByRole('combobox',{name:'Preset collection',exact:true}).fill('development');
   await expect(dialog.getByRole('status')).toContainText('replaces the existing preset');
   await dialog.getByRole('textbox',{name:'Preset name',exact:true}).focus();
-  await page.keyboard.press('ControlOrMeta+Enter');
+  await page.evaluate(() => {
+    const events: { ctrl: boolean; meta: boolean; saved: boolean }[] = [];
+    Object.assign(window, { presetEnterEvents: events });
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') events.push({ ctrl: event.ctrlKey, meta: event.metaKey,
+        saved: JSON.parse(sessionStorage.getItem('api-console:session-presets')!)[0].name === 'saved 19' });
+    });
+  });
+  await page.keyboard.press(shortcut);
+  const propagated = await page.evaluate(() => (window as unknown as { presetEnterEvents: unknown[] }).presetEnterEvents);
+  await info.attach('preset-enter-window-events', { body: JSON.stringify(propagated), contentType: 'application/json' });
   await expect(page.getByRole('dialog',{name:/^PUT /})).toHaveCount(0);
   // Enter in the name field uses the preset dialog action; never the underlying Send action.
   await expect(dialog).toBeHidden();
@@ -199,6 +213,42 @@ test('an explicit replacement at capacity preserves all other presets and blocks
   expect(items).toHaveLength(20); expect(items[0]).toMatchObject({name:'saved 19',collection:'Development'});
   expect(items.slice(1).map((item:{id:string})=>item.id)).toEqual(Array.from({length:19},(_,i)=>String(i)));
   expect(writes).toEqual([]);
+  // The input consumes its save event before a replaced window listener can see it.
+  expect(propagated).toEqual([]);
+  expect(items[0]).toMatchObject({pathSuffix:'preserved-request',queryString:'label=env%3Afixture',body:requestBody});
+  await expect(page.getByRole('combobox',{name:/Path suffix/})).toHaveValue('preserved-request');
+  await expect(page.getByRole('textbox',{name:'Query parameters'})).toHaveValue('label=env%3Afixture');
+  await page.setViewportSize({width:1440,height:1000});
+  await expect(page.locator('.ant-message-notice')).toHaveCount(0);
+  await page.screenshot({path:info.outputPath('shortcut-isolated-after.png'),animations:'disabled'});
+  // A separate shortcut in the Console still opens its request review.
+  await page.getByRole('textbox',{name:'Query parameters'}).focus();
+  await page.keyboard.press('Control+Enter');
+  const review = page.getByRole('dialog',{name:/^PUT \/routes\/preserved-request/});
+  await expect(review).toBeVisible(); expect(writes).toEqual([]);
+  await review.getByRole('button',{name:'Cancel',exact:true}).click();
+});
+
+test('keyboard preset validation and storage failure preserve the modal, request and existing presets', async ({page}, info) => {
+  const initial=[preset('existing','Development')];
+  const writes=await setup(page,initial,true);
+  await page.setViewportSize({width:390,height:844});
+  await page.getByRole('button',{name:'Save preset',exact:true}).click();
+  const dialog=page.getByRole('dialog',{name:'Save session preset'});
+  const name=dialog.getByRole('textbox',{name:'Preset name',exact:true});
+  await name.focus(); await page.keyboard.press('Control+Enter');
+  await expect(page.getByText('Enter a preset name',{exact:true})).toBeVisible();
+  await expect(dialog).toBeVisible();
+  // Capture the storage error separately from the preceding transient validation message.
+  await expect(page.getByText('Enter a preset name',{exact:true})).toBeHidden();
+  await name.fill('Attempted save'); await page.keyboard.press('Meta+Enter');
+  await expect(page.getByText('Could not save the preset. Your request draft is still available.',{exact:true})).toBeVisible();
+  await expect(dialog).toBeVisible(); await expect(name).toHaveValue('Attempted save');
+  await expect(page.getByRole('dialog',{name:/^PUT /})).toHaveCount(0);
+  expect(await page.evaluate(()=>JSON.parse(sessionStorage.getItem('api-console:session-presets')!))).toEqual(initial);
+  expect(writes).toEqual([]);
+  await expect(dialog).not.toHaveClass(/ant-zoom-enter|ant-zoom-appear/);
+  await page.screenshot({path:info.outputPath('shortcut-save-failure-narrow.png'),animations:'disabled'});
 });
 
 
