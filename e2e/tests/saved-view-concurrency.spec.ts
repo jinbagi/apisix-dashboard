@@ -124,3 +124,53 @@ test('unreadable stored views are preserved instead of being replaced by an empt
   await expect(dialog(page).getByRole('alert')).toContainText('Existing browser storage was preserved');
   expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBe('{broken');
 });
+
+async function prepareRetry(page: Page, update: boolean) {
+  if (update) { await begin(page,'Shared'); await commit(page); }
+  await begin(page,update?'Shared':'New view');
+}
+
+for (const update of [false, true]) {
+  test(`${update ? 'update' : 'save'} control keeps its accessible name through a pending lock and explicit retry`, async ({context,page},info) => {
+    const {other,writes}=await setup(context,page);
+    await prepareRetry(page,update);
+    await other.evaluate(async key=> {
+      let release!:()=>void;
+      let acquired!:()=>void;
+      const ready=new Promise<void>(resolve=>{acquired=resolve;});
+      const finished=navigator.locks.request(key,()=>new Promise<void>(resolve=>{release=resolve;acquired();}));
+      (window as unknown as {releaseViewLock:()=>Promise<void>}).releaseViewLock=async()=>{release();await finished;};
+      await ready;
+    },key);
+    // Hold the real request until the loading state can be inspected deterministically.
+    await page.evaluate(()=>{
+      const request=navigator.locks.request.bind(navigator.locks);
+      Object.defineProperty(navigator.locks,'request',{configurable:true,value:(name:string,options:LockOptions,callback:LockGrantedCallback)=>
+        new Promise<void>(resolve=>{(window as unknown as {continueViewSave:()=>void}).continueViewSave=resolve;})
+          .then(()=>{delete (navigator.locks as Partial<LockManager>).request;return request(name,options,callback);})});
+    });
+    const action=dialog(page).getByRole('button',{name:update?'Update view':'Save view',exact:true});
+    await action.click();
+    try {
+      await expect(action).toBeDisabled();
+      await expect(action).toHaveAttribute('aria-busy','true');
+      expect((await saved(page)).length).toBe(update?1:0);
+      await page.evaluate(()=>(window as unknown as {continueViewSave:()=>void}).continueViewSave());
+      await expect(dialog(page).getByRole('alert')).toContainText('Another tab is saving');
+      await expect(action).toBeEnabled();
+      await expect(action).toHaveAttribute('aria-busy','false');
+      // Returning to the editor tab must retain both the error and the explicit retry action.
+      await other.bringToFront(); await page.bringToFront();
+      await expect(action).toBeEnabled();
+      await page.setViewportSize({width:390,height:640});
+      await page.screenshot({path:info.outputPath('saved-view-retry-narrow.png'),animations:'disabled'});
+    } finally {
+      await other.evaluate(()=>(window as unknown as {releaseViewLock:()=>Promise<void>}).releaseViewLock());
+    }
+    await expect(dialog(page)).toBeVisible();
+    expect((await saved(page)).length).toBe(update?1:0);
+    await commit(page,update);
+    expect((await saved(page)).map(view=>view.name)).toEqual([update?'Shared':'New view']);
+    expect(writes).toEqual([]);
+  });
+}
