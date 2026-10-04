@@ -485,3 +485,8 @@
     min-height: 420px;
   }
 }
+
+@media (max-width: 640px) {
+  .requestCard :global(.ant-card-head-wrapper) { flex-direction: column; align-items: stretch; gap: 10px; padding-block: 12px; }
+  .requestCard :global(.ant-card-extra) { margin-inline-start: 0; }
+}
