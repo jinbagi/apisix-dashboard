@@ -45,6 +45,7 @@ import {
 } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
 import { supportsRelatedResources } from '@/utils/relatedResources';
+import { validateExactResourceSnapshot } from '@/utils/resourceIdentity';
 import {
   getAdminResourceSchema,
   getResourceConditionalRequirements,
@@ -121,6 +122,7 @@ const verifySavedResource = async (
         throw new Error('Admin API returned no resource value');
       }
 
+      validateExactResourceSnapshot(api, latestData, latest.data?.key);
       const normalizedResource = normalizeApiResource(api, latestData);
       const editorResource = stripPatchReadonlyFields(normalizedResource);
       const mismatches = getPatchMismatchPaths(payload, editorResource);
@@ -240,6 +242,7 @@ export const AdminApiJsonEditor = ({
       if (!isRecord(data)) {
         throw new Error('Admin API returned no resource value');
       }
+      validateExactResourceSnapshot(api, data, res.data?.key);
       loadData(data);
       setSaveFeedback({
         type: 'success',
@@ -294,6 +297,7 @@ export const AdminApiJsonEditor = ({
           return;
         }
 
+        validateExactResourceSnapshot(api, data, res.data?.key);
         loadData(data);
       })
       .catch(() => {
@@ -383,6 +387,7 @@ export const AdminApiJsonEditor = ({
       if (!isRecord(latest)) {
         throw new Error('Could not check the latest resource. No changes were sent.');
       }
+      validateExactResourceSnapshot(api, latest, latestResponse.data?.key);
       const normalizedLatest = normalizeApiResource(api, latest);
       const paths = getPatchConflictPaths(payload, previous, stripPatchReadonlyFields(normalizedLatest));
       if (paths.length > 0) {

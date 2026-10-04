@@ -23,6 +23,7 @@ import { trackResourceWrite, UnverifiedResourceWriteError } from '@/apis/tracked
 import { req } from '@/config/req';
 import { adminKeyAtom } from '@/stores/global';
 import { historyRestoreReason, resourceHistoryAtom } from '@/stores/resourceHistory';
+import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 
 test.describe.configure({ mode: 'serial' });
 const store = getDefaultStore();
@@ -156,3 +157,19 @@ test('GraphQL restore preserves path-owned service metadata excluded from PUT pa
   const draft = await prepareHistoryRestore(entry);
   expect(JSON.parse(draft.value)).toMatchObject({ service_id: 'parent', cost: 1 });
 });
+
+
+for (const fixture of [
+  { api: '/routes/unit', value: { id: 'other', desc: 'After' } },
+  { api: '/consumers/alice/credentials/unit', value: { id: 'unit', username: 'bob', desc: 'After' } },
+  { api: '/services/parent/graphql_cost_decorations/unit', value: { id: 'unit', service_id: 'other', desc: 'After' } },
+  { api: '/secrets/vault/unit', value: { id: 'aws/unit', desc: 'After' } },
+]) {
+  test(`shared read-back verification rejects a wrong identity for ${fixture.api}`, async () => {
+    afterRead = fixture.value;
+    await expect(verifyAdminApiResource(fixture.api, { desc: 'After' })).rejects.toThrow('resource identity could not be verified');
+    expect(reads).toHaveLength(3);
+    expect(writes).toBe(0);
+    expect(store.get(resourceHistoryAtom)).toEqual([]);
+  });
+}

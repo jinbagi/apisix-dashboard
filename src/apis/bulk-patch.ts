@@ -20,6 +20,7 @@ import { req } from '@/config/req';
 import { recordResourceChange } from '@/stores/resourceHistory';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { buildPatchPayload, getPatchConflictPaths, isRecord, PATCH_READONLY_KEYS, setJsonProperty, stripSystemReadonlyFields } from '@/utils/apisixEditable';
+import { validateExactResourceSnapshot } from '@/utils/resourceIdentity';
 import { getAdminResourceSchema } from '@/utils/resourceJsonSchema';
 
 export const supportsBulkPatch = (api: string) =>
@@ -77,6 +78,7 @@ async function readResource(api: string, id: string): Promise<Record<string, unk
   const identity = isConsumer(api) ? 'username' : 'id';
   if (!isRecord(data?.value) || String(data.value[identity]) !== id)
     throw new Error('The selected resource could not be read with its expected identity.');
+  validateExactResourceSnapshot(api, data.value, data.key);
   rejectUnsafeKeys(data.value);
   return { ...data.value, [identity]: id };
 }

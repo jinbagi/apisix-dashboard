@@ -20,7 +20,7 @@ import { expect, type Page, test } from '@playwright/test';
 const initial = { id: 'draft-route', name: 'Draft route', uri: '/draft/*', desc: 'Before', upstream: { nodes: { '127.0.0.1:1980': 1 } }, create_time: 1, update_time: 1 };
 const editable = { name: initial.name, uri: initial.uri, desc: initial.desc, upstream: initial.upstream };
 async function setup(page: Page) {
-  const controls = { value: { ...initial }, failRead: false, writes: [] as unknown[] };
+  const controls = { value: { ...initial }, failRead: false, afterIdentity: '', writes: [] as unknown[] };
   await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('fixture-key')));
   await page.route('**/apisix/admin/**', async (route) => {
     const path = new URL(route.request().url()).pathname.replace('/apisix/admin', '');
@@ -28,7 +28,7 @@ async function setup(page: Page) {
       if (controls.failRead) return route.fulfill({ status: 503, json: { error_msg: 'Unavailable' } });
       if (route.request().method() === 'PATCH') {
         controls.writes.push(route.request().postDataJSON());
-        controls.value = { ...controls.value, ...route.request().postDataJSON() };
+        controls.value = { ...controls.value, ...route.request().postDataJSON(), ...(controls.afterIdentity ? { id: controls.afterIdentity } : {}) };
       }
       return route.fulfill({ json: { value: controls.value } });
     }
@@ -123,3 +123,21 @@ test('history archive detects another tab and supports narrow screens', async ({
   const bounds = await history(page).boundingBox();
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(391);
 });
+
+
+for (const { stage, beforeIdentity, afterIdentity, writeCount } of [
+  { stage: 'before', beforeIdentity: 'other-resource', afterIdentity: '', writeCount: 0 },
+  { stage: 'after', beforeIdentity: initial.id, afterIdentity: 'other-resource', writeCount: 1 },
+]) {
+  test(`RAW rejects a wrong ${stage} identity without recording another resource`, async ({ page }) => {
+    const controls = await setup(page);
+    controls.value.id = beforeIdentity;
+    controls.afterIdentity = afterIdentity;
+    await uiFillMonacoEditor(page, drawer(page).locator('.monaco-editor'), JSON.stringify({ ...editable, desc: 'Identity change' }));
+    await drawer(page).getByRole('button', { name: 'Save Changes', exact: true }).click();
+    await expect(drawer(page).getByText(/resource identity could not be verified/).first()).toBeVisible();
+    expect(controls.writes).toHaveLength(writeCount);
+    await drawer(page).getByRole('button', { name: 'Change history', exact: true }).click();
+    await expect(history(page).getByRole('button', { name: 'Compare change' })).toHaveCount(0);
+  });
+}
