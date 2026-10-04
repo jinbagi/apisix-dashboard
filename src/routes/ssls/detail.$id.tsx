@@ -40,6 +40,7 @@ import { FormTOCBox } from '@/components/form-slice/FormSection';
 import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
+import { SSLReplacement } from '@/components/page/SSLReplacement';
 import { StatusSwitch } from '@/components/StatusTag';
 import { API_SSLS } from '@/config/constant';
 import { showNotification } from '@/utils/notification';
@@ -94,6 +95,7 @@ const SSLDetailForm = (props: { id: string }) => {
           rawData={sslData}
           adminApi={`${API_SSLS}/${id}`}
         >
+          <SSLReplacement id={id} disabled={form.formState.isDirty || putSSL.isPending} onSaved={() => refetch({ throwOnError: true })} />
           <FormSectionGeneral readOnly />
           <FormPartSSL showID={false} />
         </FormJsonTabs>
