@@ -17,13 +17,15 @@
 import { expect, test } from '@playwright/test';
 import { AxiosError, AxiosHeaders, type AxiosResponse } from 'axios';
 import { getDefaultStore } from 'jotai';
+import { z } from 'zod';
 
 import { prepareHistoryRestore } from '@/apis/resource-history';
 import { trackResourceWrite, UnverifiedResourceWriteError } from '@/apis/tracked-resource-write';
 import { req } from '@/config/req';
 import { adminKeyAtom } from '@/stores/global';
-import { historyRestoreReason, resourceHistoryAtom } from '@/stores/resourceHistory';
+import { historyEntrySchema, historyRestoreReason, recordResourceChange, resourceHistoryAtom } from '@/stores/resourceHistory';
 import { verifyAdminApiResource } from '@/utils/adminApiVerification';
+import { decryptRawDraft, encryptRawDraft } from '@/utils/rawDraftStorage';
 
 test.describe.configure({ mode: 'serial' });
 const store = getDefaultStore();
@@ -173,3 +175,44 @@ for (const fixture of [
     expect(store.get(resourceHistoryAtom)).toEqual([]);
   });
 }
+
+
+async function withFixtureOrigin(run: () => Promise<void>) {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'location');
+  Object.defineProperty(globalThis, 'location', { configurable: true, value: { origin: 'https://history.fixture.test' } });
+  try { await run(); }
+  finally {
+    if (previous) Object.defineProperty(globalThis, 'location', previous);
+    else Reflect.deleteProperty(globalThis, 'location');
+  }
+}
+
+test('own special configuration keys survive history validation, encrypted archives, and restore', async () => {
+  await withFixtureOrigin(async () => {
+    const before = JSON.parse('{"id":"unit","__proto__":{"x":1},"constructor":{"prototype":{"keep":"before"}},"prototype":[1,2]}');
+    const after = JSON.parse('{"id":"unit","__proto__":{"x":2},"constructor":{"prototype":{"keep":"after"}},"prototype":[3,4]}');
+    recordResourceChange('/routes/unit', before, after, { source: 'form', restoreAfter: after });
+    const [entry] = store.get(resourceHistoryAtom);
+    const expectedKeys = ['__proto__', 'constructor', 'prototype'];
+    expect(Object.keys(entry.before!)).toEqual(expectedKeys);
+    expect(Object.keys(entry.after!)).toEqual(expectedKeys);
+    expect(Object.keys(entry.restoreAfter!)).toEqual(expectedKeys);
+    before.__proto__.x = 999;
+    expect(entry.before?.__proto__).toEqual({ x: 1 });
+    const encoded = await encryptRawDraft('/dashboard-local-history', { original: '{}', value: JSON.stringify([entry]) }, 'fixture-history-password');
+    expect(encoded).not.toContain('constructor');
+    const decoded = await decryptRawDraft('/dashboard-local-history', encoded, 'fixture-history-password');
+    const [unlocked] = z.array(historyEntrySchema).parse(JSON.parse(decoded.value));
+    expect(unlocked).toEqual(entry);
+    expect(Object.hasOwn(unlocked.before!, '__proto__')).toBe(true);
+    expect(Object.hasOwn(unlocked.after!, '__proto__')).toBe(true);
+    expect(Object.hasOwn(unlocked.restoreAfter!, '__proto__')).toBe(true);
+    current = after;
+    const restored = JSON.parse((await prepareHistoryRestore(unlocked)).value);
+    expect(Object.hasOwn(restored, '__proto__')).toBe(true);
+    expect(restored.__proto__).toEqual({ x: 1 });
+    expect(restored.constructor).toEqual({ prototype: { keep: 'before' } });
+    expect(restored.prototype).toEqual([1, 2]);
+    expect(Object.prototype).not.toHaveProperty('x');
+  });
+});

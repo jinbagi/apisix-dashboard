@@ -17,19 +17,23 @@
 import { atom, getDefaultStore } from 'jotai';
 import { z } from 'zod';
 
-import { isDeepEqual, stripPatchReadonlyFields } from '@/utils/apisixEditable';
+import { isDeepEqual, isRecord, stripPatchReadonlyFields } from '@/utils/apisixEditable';
 import { getHistoryTarget, hasHistoryProtectedFields } from '@/utils/historyResource';
 
 const historySourceSchema = z.enum(['raw', 'bulk', 'form', 'import', 'console', 'legacy']);
 export type HistorySource = z.infer<typeof historySourceSchema>;
+// Zod record parsing drops an own __proto__ property; configuration keys are data.
+const snapshotSchema = z.custom<Record<string, unknown>>((value) => isRecord(value) &&
+  [Object.prototype, null].includes(Object.getPrototypeOf(value)), 'History snapshots must be JSON objects')
+  .transform((value) => structuredClone(value));
 export const historyEntrySchema = z.object({
   id: z.string().min(1), at: z.number().finite(),
   api: z.string().refine((api) => getHistoryTarget(api)?.detail === true, 'Unsupported history resource'),
-  before: z.record(z.unknown()).nullable(), after: z.record(z.unknown()).nullable(),
+  before: snapshotSchema.nullable(), after: snapshotSchema.nullable(),
   operation: z.enum(['create', 'update', 'delete']).default('update'),
   source: historySourceSchema.default('legacy'),
   verification: z.enum(['full', 'readable']).default('full'),
-  restoreAfter: z.record(z.unknown()).optional(),
+  restoreAfter: snapshotSchema.optional(),
 }).refine((entry) => entry.operation === 'create'
   ? entry.before === null && entry.after !== null
   : entry.operation === 'delete'

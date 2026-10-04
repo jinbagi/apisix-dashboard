@@ -204,6 +204,7 @@ test('accepts exact numeric, encoded, Consumer and supported composite detail id
     '/consumers/alice': { username: 'alice' },
     '/consumers/alice/credentials/main': { id: 'alice/credentials/main', plugins: {} },
     '/consumers/alice/credentials/secondary': { id: 'secondary', plugins: {} },
+    '/services/service-a': { id: 'service-a' },
     '/services/service-a/graphql_cost_decorations/cost': { id: 'cost', service_id: 'service-a', field_path: 'Query.users' },
     '/secrets/vault/main': { id: 'vault/main', uri: 'http://example.test' },
     '/secrets/vault/secondary': { id: 'secondary', manager: 'vault', uri: 'http://example.test' },
