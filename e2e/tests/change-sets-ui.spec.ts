@@ -46,7 +46,7 @@ async function setup(page: Page, data = exportData) {
 }
 async function stage(page: Page) {
   await page.getByRole('button', { name: 'Import Selected Resources', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Confirm Import', exact: true }).getByRole('button', { name: 'Stage selected', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Confirm Import', exact: true }).getByRole('button', { name: 'Stage for resumable import', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Change sets', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Change sets', exact: true })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Change sets', exact: true })).toHaveClass(/ant-menu-item-selected/);

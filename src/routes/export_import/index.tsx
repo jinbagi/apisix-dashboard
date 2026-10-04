@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createFileRoute, useBlocker } from '@tanstack/react-router';
+import { createFileRoute, useBlocker, useNavigate } from '@tanstack/react-router';
 import {
   Alert,
   Button,
@@ -145,6 +145,7 @@ function ExportSection() {
 }
 
 function ImportSection() {
+  const navigate = useNavigate();
   const [fileData, setFileData] = useState<ExportData | null>(null);
   const [fileName, setFileName] = useState('');
   const [fileError, setFileError] = useState('');
@@ -419,8 +420,10 @@ function ImportSection() {
                     resourceType: row.resourceType, item: preview.data.resources[row.resourceType]![row.index], baseline: row.before,
                   })));
                   message.success('Selected drafts added to Change sets. Nothing was imported.'); setPreview(null);
+                  void navigate({ to: '/change_sets' });
                 } catch (error) { message.error(error instanceof Error ? error.message : 'Could not stage selected changes.'); }
-              }}>Stage selected</Button>
+              }}>Stage for resumable import</Button>
+              <Typography.Paragraph type="secondary">Use the staged workflow for per-item checkpoints and optional encrypted resume. The direct Import button applies now and does not keep a resumable journal.</Typography.Paragraph>
               {missingDependencies.length > 0 && <Alert type="error" showIcon title="Select required new dependencies"
                 description={missingDependencies.join(', ')} />}
               <ImportChangePreview items={preview.items} selectedKeys={selectedItems} onSelectionChange={setSelectedItems} disabled={importing} />

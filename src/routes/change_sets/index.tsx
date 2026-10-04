@@ -16,27 +16,33 @@
  */
 import { createFileRoute, Link, useBlocker } from '@tanstack/react-router';
 import { Alert, Button, Card, Collapse, Empty, Modal, Popconfirm, Space, Tag, Typography } from 'antd';
-import { useAtom } from 'jotai';
+import { getDefaultStore, useAtom, useAtomValue } from 'jotai';
 import { useState } from 'react';
 
+import { reconcileChangeJournal } from '@/apis/change-journal';
 import { applyChangeSet, type ChangeSetRow, previewChangeSet } from '@/apis/change-sets';
 import { RESOURCE_LABELS } from '@/apis/export-import';
 import { JsonChangeReview } from '@/components/form/JsonChangeReview';
+import { ChangeSetJournal } from '@/components/page/ChangeSetJournal';
 import PageHeader from '@/components/page/PageHeader';
 import { queryClient } from '@/config/global';
 import { changeSetAtom, changeUrl } from '@/stores/changeSets';
+import { checkpointChangeJournal, journalVaultAtom } from '@/utils/changeJournal';
 
 function ChangeSetsPage() {
   const [state, setState] = useAtom(changeSetAtom);
+  const encrypted = useAtomValue(journalVaultAtom);
   const [error, setError] = useState('');
   const [review, setReview] = useState<ChangeSetRow | null>(null);
   const [confirming, setConfirming] = useState(false);
   const blocker = useBlocker({ shouldBlockFn: () => state.busy, enableBeforeUnload: false, withResolver: true });
-  const preview = async () => {
+  const preview = async (reconcile = false) => {
     setError(''); setState((current) => ({ ...current, busy: true, plan: null }));
     try {
-      const plan = await previewChangeSet(state.drafts);
-      setState((current) => ({ ...current, plan }));
+      const drafts = reconcile || state.needsRecheck ? await reconcileChangeJournal(state.drafts) : state.drafts;
+      const plan = await previewChangeSet(drafts);
+      await checkpointChangeJournal(drafts);
+      setState((current) => ({ ...current, drafts, plan, needsRecheck: false }));
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not load the destinations.'); }
     finally { setState((current) => ({ ...current, busy: false })); }
   };
@@ -44,12 +50,28 @@ function ChangeSetsPage() {
     if (!state.plan) return;
     setConfirming(false); setError(''); setState((current) => ({ ...current, busy: true }));
     try {
-      await applyChangeSet(state.plan, (updated, outcome) => setState((current) => ({ ...current,
-        plan: current.plan?.map((row) => row.url === updated.url ? updated : row) ?? null,
-        drafts: outcome ? current.drafts.map((draft) => changeUrl(draft) === updated.url ? { ...draft, outcome, detail: updated.detail } : draft) : current.drafts,
-      })));
+      const store = getDefaultStore();
+      const prepared = state.drafts.map((draft) => {
+        const row = state.plan!.find((item) => item.url === changeUrl(draft));
+        return !draft.outcome && draft.baseline === undefined && row ? { ...draft, baseline: row.before } : draft;
+      });
+      await checkpointChangeJournal(prepared);
+      setState((current) => ({ ...current, drafts: prepared }));
+      await applyChangeSet(state.plan, async (updated, outcome) => {
+        const current = store.get(changeSetAtom);
+        const next = { ...current,
+          plan: current.plan?.map((row) => row.url === updated.url ? updated : row) ?? null,
+          drafts: outcome ? current.drafts.map((draft) => changeUrl(draft) === updated.url ? { ...draft, ...updated.draft, outcome, detail: updated.detail } : draft) : current.drafts,
+        };
+        // Persist the uncertain checkpoint before PUT and confirmed outcome after read-back.
+        await checkpointChangeJournal(next.drafts);
+        store.set(changeSetAtom, next);
+      });
       await queryClient.invalidateQueries();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Change-set execution stopped.'); }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Change-set execution stopped.');
+      setState((current) => ({ ...current, plan: current.plan?.map((row) => row.result === 'Uncertain' ? { ...row, detail: 'Execution stopped before the next checkpoint completed. Recheck the actual target before continuing.' } : row) ?? null }));
+    }
     finally { setState((current) => ({ ...current, busy: false })); }
   };
   const remove = (url: string) => setState((current) => ({ ...current, drafts: current.drafts.filter((draft) => changeUrl(draft) !== url), plan: null }));
@@ -60,8 +82,8 @@ function ChangeSetsPage() {
   return <>
     <PageHeader title="Change sets" desc="Review related changes before applying them" />
     <Space orientation="vertical" size="middle" style={{ width: '100%', minWidth: 0 }}>
-      <Alert type="info" showIcon title="Drafts stay in this tab"
-        description={<>Stage changes from RAW or an Import preview. Reloading or closing this tab clears them. <Link to="/export_import">Open Import / Export</Link></>} />
+      <Alert type="info" showIcon title={encrypted ? 'Encrypted checkpoints enabled' : 'Drafts stay in this tab'}
+        description={<>Stage changes from RAW or an Import preview. Use an encrypted journal to keep resumable checkpoints; otherwise reloading or closing clears these drafts. <Link to="/export_import">Open Import / Export</Link></>} />
       <Collapse size="small" items={[{ key: 'scope', label: 'How staging and verification work', children: <>
         <Typography.Paragraph>Nothing is applied until you preview and confirm. Changes use explicit-ID PUT: create a new resource or replace its writable configuration. Absent fields may be removed. Create-only drafts must still target a missing resource.</Typography.Paragraph>
         <Typography.Paragraph>References checked: native Service, Upstream, Plugin Config, Consumer Group and child owners; grpc-transcode Proto and traffic-split Upstream IDs. Other plugin references are not inferred.</Typography.Paragraph>
@@ -69,12 +91,14 @@ function ChangeSetsPage() {
       </> }]} />
       {error && <Alert type="error" showIcon title={error} />}
       <Space wrap>
-        <Button onClick={preview} loading={state.busy} aria-label="Preview destinations" aria-busy={state.busy} disabled={!state.drafts.length}>Preview destinations</Button>
-        <Button type="primary" onClick={() => setConfirming(true)} disabled={state.busy || !ready || !!blocked || needsPreview}>Apply {ready || ''} changes</Button>
+        <Button onClick={() => preview()} loading={state.busy} aria-label={state.needsRecheck ? 'Reconcile and preview' : 'Preview destinations'} aria-busy={state.busy} disabled={!state.drafts.length}>{state.needsRecheck ? 'Reconcile and preview' : 'Preview destinations'}</Button>
+        <Button type="primary" onClick={() => setConfirming(true)} disabled={state.busy || !ready || !!blocked || needsPreview || state.needsRecheck}>Apply {ready || ''} changes</Button>
+        <ChangeSetJournal />
+        {state.drafts.some((draft) => draft.outcome || draft.resumeError) && <Button disabled={state.busy} onClick={() => preview(true)}>Recheck after reconnect</Button>}
         <Typography.Text>{state.drafts.length} staged · {state.drafts.filter((draft) => draft.outcome === 'verified').length} verified</Typography.Text>
       </Space>
-      {!state.busy && attempted && <Alert type={blocked ? 'warning' : 'success'} showIcon title={blocked ? 'Execution stopped. Remaining items were not applied.' : 'Execution finished.'}
-        description="Each outcome is shown below. Previously verified items will not be sent again. Uncertain writes require inspection before discarding or restaging. Preview again to review remaining items." />}
+      {!state.busy && attempted && <Alert type={blocked ? 'warning' : 'success'} showIcon title={blocked ? 'Execution stopped. Remaining items were not applied.' : ready ? 'Ready to continue with the remaining changes.' : 'Execution finished.'}
+        description="Each outcome is shown below. Previously verified items will not be sent again. Use Recheck after reconnect to compare actual targets before continuing. Protected uncertain writes require manual inspection. No write is retried automatically." />}
       {!state.drafts.length && <Empty description="No staged changes yet" />}
       {(state.plan ?? state.drafts.map((draft) => ({ draft, url: changeUrl(draft), resourceType: draft.resourceType }))).map((entry) => {
         const row = 'status' in entry ? entry as ChangeSetRow : undefined;
