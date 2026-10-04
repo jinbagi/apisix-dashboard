@@ -63,6 +63,8 @@ Owner: this development thread. Scope approved by the user: implement all 20 pro
 
 | 38 | P1 | Full-export paging trusts the first total, and child exports may read only one page or treat an unverified owner404 as empty. | Validate complete page sequences and exact owners before claiming complete coverage; preserve explicitly incomplete endpoint skips. | Implementing with 32 |
 
+| 39 | P2 | Shared JSON review actions fall below a 390x640 viewport with a valid 64-character resource ID (reproduced footer viewport ratio 0). | Bound the dialog, retain visible actions, scroll the complete description/JSON, and preserve keyboard focus plus explicit confirm/cancel behavior. | Verified: 39 RAW/history/import/layout fixtures, lint, TypeScript and production build; fail-before/pass-after narrow evidence in docs/design/json-review-modal. |
+
 ## Execution log
 
 - Baseline: master 4b8216f5. Existing local changes remain preserved.
