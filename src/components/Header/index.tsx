@@ -24,6 +24,7 @@ import type { FC } from 'react';
 import { ActivityLogButton } from '@/components/ActivityLogDrawer';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { SIDEBAR_COLLAPSED_WIDTH } from '@/components/Navbar';
+import { RawWorkspaceButton } from '@/components/page/RawWorkspace';
 import {
   APPSHELL_HEADER_HEIGHT,
   APPSHELL_NAVBAR_WIDTH,
@@ -185,6 +186,7 @@ export const Header: FC = () => {
       </div>
       <div className={classes.actions}>
         <ApiStatusIndicator />
+        <RawWorkspaceButton />
         <ActivityLogButton />
         <Button
           variant="text"

@@ -39,3 +39,9 @@
     display: none;
   }
 }
+
+@media (max-width: 480px) {
+  .header { padding-inline: 8px; }
+  .context { gap: 8px; }
+  .actions { gap: 4px; }
+}

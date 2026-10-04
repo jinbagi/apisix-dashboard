@@ -36,3 +36,23 @@
   outline: 2px solid var(--ant-color-primary);
   outline-offset: -2px;
 }
+
+.workspaceActions { display: flex; gap: 8px; flex-wrap: wrap; }
+.workspaceHeader :global(.ant-drawer-header-title) { min-width: 0; }
+.workspaceBar { display: flex; gap: 8px; align-items: center; flex: 0 0 auto; min-width: 0; }
+.tabList { display: flex; overflow-x: auto; min-width: 0; flex: 1; gap: 4px; padding: 3px 2px 8px; }
+.tabItem { display: flex; flex: 0 0 auto; align-items: center; border: 1px solid var(--ant-color-border-secondary); border-radius: 6px; background: var(--ant-color-fill-quaternary); }
+.tabItem:has([aria-selected='true']) { border-color: var(--ant-color-primary); background: var(--ant-color-primary-bg); }
+.tab { display: flex; gap: 8px; border: 0; background: transparent; color: var(--ant-color-text); padding: 8px; cursor: pointer; min-width: 0; }
+.tab > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+.tabStatus { width: 12px; flex: 0 0 12px; }
+.tab[aria-selected='true'] { color: var(--ant-color-primary); font-weight: 600; }
+.tab:focus-visible { outline: 2px solid var(--ant-color-primary); outline-offset: 1px; }
+.workspaceHint { color: var(--ant-color-text-secondary); font-size: 12px; margin: 4px 0 8px; flex-shrink: 0; }
+.tabPanel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.tabPanel[hidden] { display: none; }
+@media (max-width: 767px) {
+  .workspaceHeader { flex-wrap: wrap; gap: 8px; padding: 12px !important; }
+  .body { padding: 12px !important; }
+  .tab > span:first-child { max-width: 160px; }
+}

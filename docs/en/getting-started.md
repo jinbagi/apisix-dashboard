@@ -108,6 +108,25 @@ need to inspect or patch the saved APISIX object directly. When creating a new
 resource, the **Payload JSON** tab edits the same draft payload that the visual
 editor will validate and submit.
 
+## Keep Multiple RAW Resources Open
+
+Open **RAW** from a resource list to add it to the shared workspace. **Minimize**
+keeps each tab's draft and editor position while you browse other pages. The RAW
+button in the header reopens the workspace and shows its tab count; its dot marks
+unsaved edits. Opening the same API resource again selects its existing tab.
+
+Each tab saves only its own changed fields. A background save or late response
+cannot replace another tab's draft. Switch tabs with the left/right arrow keys,
+Home, or End; Delete closes the focused tab. Closing a dirty tab or **Close all**
+asks before discarding drafts, and saving tabs cannot be closed.
+
+Tabs and resource values stay in memory only. Browser reload or leaving the app
+clears them; the browser warns while any tab is dirty or saving, including when
+the workspace is minimized. Use the existing encrypted **Drafts** feature when
+you need recovery after a reload. Nothing is automatically saved to APISIX.
+
+![RAW resource tabs](./assets/screenshots/raw-resource-tabs.png)
+
 ## Understand Traffic Relationships
 
 The Topology page visualizes the live relationship between Routes, Services, and
