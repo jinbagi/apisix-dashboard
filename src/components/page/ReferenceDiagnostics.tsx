@@ -60,7 +60,8 @@ export const ReferenceDiagnostics = () => {
           {result.unavailable.length > 0 && <Alert type="warning" showIcon message="Reference check is incomplete"
             description={`Could not verify: ${result.unavailable.join(', ')}. References and affected Route counts may be incomplete. Retry before drawing conclusions.`} />}
           {result.issues.length === 0 && result.unavailable.length === 0 && <Alert type="success" showIcon message="No broken references found in the checked scope" />}
-          <Table size="small" rowKey="key" dataSource={result.issues} pagination={{ pageSize: 8 }} scroll={{ x: 950 }} columns={[
+          <Table size="small" rowKey="key" dataSource={result.issues} pagination={{ pageSize: 8 }} scroll={{ x: 950 }}
+            locale={{ emptyText: <Typography.Text>{result.unavailable.length > 0 ? 'No findings to display from available collections. Retry the reference check to include unavailable collections.' : 'No reference issues in the checked scope.'}</Typography.Text> }} columns={[
             { title: 'Source / field', key: 'source', render: (_, row) => <Space direction="vertical"><Typography.Text code>{row.source}</Typography.Text><Typography.Text style={{ overflowWrap: 'anywhere' }}>{row.field}</Typography.Text></Space> },
             { title: 'Target', dataIndex: 'target', render: (value) => <Typography.Text style={{ overflowWrap: 'anywhere' }}>{value}</Typography.Text> },
             { title: 'Result', key: 'status', render: (_, row) => <Tag color={row.status === 'Not verified' ? 'orange' : 'red'}>{row.status}</Tag> },
