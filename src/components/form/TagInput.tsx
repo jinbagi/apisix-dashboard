@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 import { Select, type SelectProps } from 'antd';
-import type { ReactNode } from 'react';
+import type { KeyboardEventHandler, ReactNode } from 'react';
 import { useState } from 'react';
 import {
   type FieldValues,
@@ -38,6 +38,7 @@ export type FormItemTagsInputProps<
     label?: ReactNode;
     description?: ReactNode;
     required?: boolean;
+    onKeyDownCapture?: KeyboardEventHandler<HTMLDivElement>;
   };
 
 export const FormItemTagsInput = <T extends FieldValues, R>(
@@ -53,6 +54,7 @@ export const FormItemTagsInput = <T extends FieldValues, R>(
       label,
       description,
       required = false,
+      onKeyDownCapture,
       ...restProps
     },
   } = genControllerProps(props);
@@ -82,38 +84,40 @@ export const FormItemTagsInput = <T extends FieldValues, R>(
       fieldPath={controllerProps.name}
       required={required || !!controllerProps.rules?.required}
     >
-      <Select
-        mode="tags"
-        value={
-          from
-            ? selectedValue.map(from as (v: unknown) => string)
-            : selectedValue
-        }
-        status={fieldState.error ? 'error' : undefined}
-        searchValue={searchValue}
-        onSearch={setSearchValue}
-        tokenSeparators={splitChars}
-        options={options}
-        onChange={(val) => {
-          const mapped = to ? (val as string[]).map(to) : val;
-          fOnChange((mapped as unknown[]).length > 0 ? mapped : undefined);
-          restProps?.onChange?.(val, []);
-          setSearchValue('');
-        }}
-        onBlur={() => {
-          if (searchValue.trim()) {
-            const newVal = [...(selectedValue as string[]), searchValue.trim()];
-            const mapped = to ? newVal.map(to) : newVal;
-            fOnChange(mapped);
-            setSearchValue('');
+      <div onKeyDownCapture={(event) => {
+        onKeyDownCapture?.(event);
+        // rc-select treats Tab as option selection; let the browser move focus instead.
+        if (event.key === 'Tab') event.stopPropagation();
+      }}>
+        <Select
+          mode="tags"
+          value={
+            from
+              ? selectedValue.map(from as (v: unknown) => string)
+              : selectedValue
           }
-          fOnBlur();
-        }}
-        {...restField}
-        {...restProps}
-        style={{ width: '100%', ...restProps.style }}
-        aria-label={ariaLabel}
-      />
+          status={fieldState.error ? 'error' : undefined}
+          searchValue={searchValue}
+          onSearch={setSearchValue}
+          tokenSeparators={splitChars}
+          options={options}
+          onChange={(val) => {
+            const mapped = to ? (val as string[]).map(to) : val;
+            fOnChange((mapped as unknown[]).length > 0 ? mapped : undefined);
+            restProps?.onChange?.(val, []);
+            setSearchValue('');
+          }}
+          onBlur={() => {
+            // Select commits and deduplicates pending tag text before notifying blur.
+            setSearchValue('');
+            fOnBlur();
+          }}
+          {...restField}
+          {...restProps}
+          style={{ width: '100%', ...restProps.style }}
+          aria-label={ariaLabel}
+        />
+      </div>
     </InputWrapper>
   );
 };

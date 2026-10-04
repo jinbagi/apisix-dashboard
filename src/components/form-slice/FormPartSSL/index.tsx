@@ -136,6 +136,7 @@ const FormSectionServerNames = () => {
         control={control}
         label="SNI"
         name="sni"
+        rules={{ deps: 'snis' }}
         placeholder="domain1.com"
         required={isServer && !hasSnis}
         disabled={isServer && hasSnis && !hasSni}
@@ -145,6 +146,7 @@ const FormSectionServerNames = () => {
         control={control}
         label="SNIs"
         name="snis"
+        rules={{ deps: 'sni' }}
         placeholder="domain1.com, domain2.com"
         disabled={isServer && hasSni && !hasSnis}
         description={!isServer ? 'Optional for client certificates.' : hasSni && !hasSnis ? 'Disabled because SNI is set.' : 'Use this for multiple hostnames.'}
