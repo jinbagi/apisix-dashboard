@@ -72,7 +72,6 @@ const FormSectionMatchRules = () => {
         name="methods"
         label="HTTP Methods"
         data={APISIX.HttpMethod.options.map((v) => v.value)}
-        searchValue=""
       />
       <MatchField single="uri" multiple="uris" label="URI" pluralLabel="URIs" placeholder="/api/*" help="Match the request path. Choose Single or Multiple; at least one path is required." required />
       <MatchField single="host" multiple="hosts" label="Host" pluralLabel="Hosts" placeholder="api.example.com" help="Leave empty to match any hostname." />
