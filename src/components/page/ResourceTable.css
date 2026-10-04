@@ -318,3 +318,11 @@
   .resource-table-view-popover .ant-popover-arrow { display: none; }
   .resource-table-view { width: 100%; max-width: none; max-height: calc(100dvh - 152px); }
 }
+
+.resource-table-storage-warning { margin: 8px 20px 12px; }
+.resource-table-storage-status { color: var(--ant-color-warning-text); }
+.resource-table-view-footer > div { flex-wrap: wrap; }
+@media (max-width: 560px) {
+  .resource-table-storage-warning { margin-inline: 14px; flex-wrap: wrap; }
+  .resource-table-storage-warning .ant-alert-actions { flex: 0 0 100%; margin: 8px 0 0; padding-inline-start: 36px; }
+}

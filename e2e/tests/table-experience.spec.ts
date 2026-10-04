@@ -682,13 +682,186 @@ test('saved pins release on narrow tables and return on resize while settings re
   const settings = page.getByRole('dialog', { name: 'Table view settings' });
   await expect(settings).toBeVisible();
   await expect.poll(async () => { const bounds = await settings.boundingBox(); return Boolean(bounds && bounds.x >= 0 && bounds.x + bounds.width <= 390 && bounds.y + bounds.height <= 832); }).toBe(true);
-  await expect(settings.getByText('Your pins are saved and will return when this table has more room.')).toBeAttached();
+  await expect(settings.getByText('Your pins will return when this table has more room.')).toBeAttached();
   await page.screenshot({ path: testInfo.outputPath('table-layout-narrow.png') });
   await settings.getByRole('spinbutton', { name: 'URI width', exact: true }).fill('300');
   await settings.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(settings).toBeHidden();
   await expect(page.getByRole('button', { name: 'View', exact: true })).toBeFocused();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.setViewportSize({ width: 1920, height: 1080 });
   await expect(page.getByRole('columnheader', { name: 'URI', exact: true })).toHaveClass(/ant-table-cell-fix-start/);
   expect(writes).toEqual([]);
+});
+
+
+const routeLayoutKey = 'resource-table:v1:table-v6:routes';
+const routeSavedViewsKey = `resource-table:saved-views:v1:${routeLayoutKey}`;
+type StorageFixtureWindow = Window & { __tableStorageFixture: { blocked: boolean; attempts: number } };
+async function blockTableStorage(page: Page, key = routeLayoutKey) {
+  await page.evaluate((storageKey) => {
+    const control = { blocked: true, attempts: 0 };
+    Object.assign(window, { __tableStorageFixture: control });
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === storageKey && control.blocked) {
+        control.attempts += 1;
+        throw new DOMException('Fixture storage unavailable', 'QuotaExceededError');
+      }
+      return original.call(this, key, value);
+    };
+  }, key);
+}
+async function recoverTableStorage(page: Page) {
+  await page.evaluate(() => { (window as StorageFixtureWindow).__tableStorageFixture.blocked = false; });
+}
+const layoutWarning = (page: Page) => page.getByRole('alert').filter({ hasText: 'Table layout is not saved' });
+
+test('layout storage failures keep live edits, show one warning and retry the latest layout', async ({ page }, info) => {
+  const { writes } = await mockAdmin(page);
+  await page.setViewportSize({ width: 1440, height: 1080 });
+  await page.goto('routes');
+  await blockTableStorage(page);
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  const settings = page.getByRole('dialog', { name: 'Table view settings' });
+  await settings.getByText('Compact', { exact: true }).click();
+  await settings.getByRole('button', { name: 'Move Target earlier', exact: true }).click();
+  await settings.getByRole('checkbox', { name: 'Host', exact: true }).check();
+  await settings.getByRole('combobox', { name: 'Host pin', exact: true }).click();
+  await page.getByRole('option', { name: 'Right', exact: true }).click();
+  for (const width of ['320', '360', '400']) {
+    await settings.getByRole('spinbutton', { name: 'URI width', exact: true }).fill(width);
+    await settings.getByRole('spinbutton', { name: 'URI width', exact: true }).press('Tab');
+  }
+  await expect(settings).toContainText('Changes apply now, but are not saved in this browser.');
+  await expect(settings.getByText('Saved for this table in this browser.', { exact: true })).toHaveCount(0);
+  await expect(layoutWarning(page)).toHaveCount(1);
+  await expect(page.locator('.ant-message-notice')).toHaveCount(0);
+  const attempts = await page.evaluate(() => (window as StorageFixtureWindow).__tableStorageFixture.attempts);
+  await settings.getByRole('button', { name: 'Retry save', exact: true }).click();
+  expect(await page.evaluate(() => (window as StorageFixtureWindow).__tableStorageFixture.attempts)).toBeGreaterThan(attempts);
+  await expect(layoutWarning(page)).toHaveCount(1);
+  await settings.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(settings).toBeHidden();
+  await expect(layoutWarning(page)).toBeVisible();
+  await expect(page.locator('.ant-table-small')).toBeVisible();
+  expect((await page.getByRole('columnheader', { name: 'URI', exact: true }).boundingBox())!.width).toBeCloseTo(400, 0);
+  expect(await page.evaluate((key) => localStorage.getItem(key), routeLayoutKey)).toBeNull();
+  await page.mouse.move(0, 0);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: info.outputPath('table-storage-warning.png'), animations: 'disabled' });
+  await recoverTableStorage(page);
+  await layoutWarning(page).getByRole('button', { name: 'Retry save', exact: true }).click();
+  await expect(layoutWarning(page)).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('.ant-table-small')).toBeVisible();
+  const headers = await page.getByRole('columnheader').allTextContents();
+  expect(headers.indexOf('Target')).toBeLessThan(headers.indexOf('URI'));
+  expect((await page.getByRole('columnheader', { name: 'URI', exact: true }).boundingBox())!.width).toBeCloseTo(400, 0);
+  await expect(page.getByRole('columnheader', { name: 'Host', exact: true })).toHaveClass(/ant-table-cell-fix-end/);
+  expect(writes).toEqual([]);
+});
+
+test('a failed layout reset stays active and a later edit persists the reset instead of stale settings', async ({ page }) => {
+  await mockAdmin(page);
+  await page.goto('routes');
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  const settings = page.getByRole('dialog', { name: 'Table view settings' });
+  await settings.getByRole('spinbutton', { name: 'URI width', exact: true }).fill('360');
+  await settings.getByRole('spinbutton', { name: 'URI width', exact: true }).press('Tab');
+  await settings.getByRole('checkbox', { name: 'Host', exact: true }).check();
+  const stored = await page.evaluate((key) => localStorage.getItem(key), routeLayoutKey);
+  await blockTableStorage(page);
+  await settings.getByRole('button', { name: 'Reset view', exact: true }).click();
+  await expect(settings.getByRole('spinbutton', { name: 'URI width', exact: true })).toHaveValue('200');
+  await expect(page.getByRole('columnheader', { name: 'Host', exact: true })).toHaveCount(0);
+  expect(await page.evaluate((key) => localStorage.getItem(key), routeLayoutKey)).toBe(stored);
+  await expect(layoutWarning(page)).toHaveCount(1);
+  await recoverTableStorage(page);
+  await settings.getByText('Roomy', { exact: true }).click();
+  await expect(layoutWarning(page)).toHaveCount(0);
+  await expect(settings).toContainText('Saved for this table in this browser.');
+  expect(JSON.parse((await page.evaluate((key) => localStorage.getItem(key), routeLayoutKey))!)).toEqual({ density: 'large' });
+  await page.reload();
+  await expect(page.getByRole('columnheader', { name: 'Host', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  await expect(settings.getByRole('spinbutton', { name: 'URI width', exact: true })).toHaveValue('200');
+});
+
+test('applying a named view preserves its layout in memory when current preferences cannot be saved', async ({ page }) => {
+  await mockAdmin(page);
+  await page.addInitScript(({ layoutKey, savedKey }) => {
+    localStorage.setItem(layoutKey, JSON.stringify({ density: 'middle' }));
+    localStorage.setItem(savedKey, JSON.stringify([{ name: 'Saved wide layout', snapshot: { search: { sort_by: 'name', sort_order: 'desc', page_size: 10, column_filters: {} }, presentation: { density: 'small', columns: ['raw', 'name', 'uri', 'host'], widths: { uri: 360 } } } }]));
+  }, { layoutKey: routeLayoutKey, savedKey: routeSavedViewsKey });
+  await page.goto('routes');
+  await blockTableStorage(page);
+  await page.getByRole('combobox', { name: 'Saved views', exact: true }).click();
+  await page.getByRole('option', { name: 'Saved wide layout', exact: true }).click();
+  await expect(layoutWarning(page)).toBeVisible();
+  await expect(page.locator('.ant-table-small')).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Host', exact: true })).toBeVisible();
+  expect((await page.getByRole('columnheader', { name: 'URI', exact: true }).boundingBox())!.width).toBeGreaterThanOrEqual(360);
+  expect(JSON.parse((await page.evaluate((key) => localStorage.getItem(key), routeLayoutKey))!)).toEqual({ density: 'middle' });
+  expect(JSON.parse((await page.evaluate((key) => localStorage.getItem(key), routeSavedViewsKey))!)[0].name).toBe('Saved wide layout');
+  await recoverTableStorage(page);
+  await layoutWarning(page).getByRole('button', { name: 'Retry save', exact: true }).click();
+  await expect(layoutWarning(page)).toHaveCount(0);
+});
+
+test('failed named view updates and deletion preserve the previously saved view', async ({ page }) => {
+  const { writes } = await mockAdmin(page);
+  await page.goto('routes');
+  const views = page.getByRole('region', { name: 'Saved table views' });
+  await views.getByRole('button', { name: 'Save view', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Save table view' });
+  await dialog.getByRole('textbox', { name: 'View name' }).fill('Keep saved view');
+  await dialog.getByRole('button', { name: 'Save view', exact: true }).click();
+  const stored = await page.evaluate((key) => localStorage.getItem(key), routeSavedViewsKey);
+  await blockTableStorage(page, routeSavedViewsKey);
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  const settings = page.getByRole('dialog', { name: 'Table view settings' });
+  await settings.getByText('Compact', { exact: true }).click();
+  await settings.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(settings).toBeHidden();
+  await views.getByRole('button', { name: 'Save view', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Update view', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Your view could not be saved');
+  expect(await page.evaluate((key) => localStorage.getItem(key), routeSavedViewsKey)).toBe(stored);
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(views.getByText('Modified', { exact: true })).toBeVisible();
+  await views.getByRole('button', { name: 'Delete view', exact: true }).click();
+  await page.getByRole('tooltip').getByRole('button', { name: 'Delete view', exact: true }).click();
+  await expect(views.getByRole('alert')).toBeVisible();
+  await expect(views.getByRole('button', { name: 'Restore view', exact: true })).toBeVisible();
+  expect(await page.evaluate((key) => localStorage.getItem(key), routeSavedViewsKey)).toBe(stored);
+  await recoverTableStorage(page);
+  await views.getByRole('button', { name: 'Delete view', exact: true }).click();
+  await page.getByRole('tooltip').getByRole('button', { name: 'Delete view', exact: true }).click();
+  await expect(views.getByRole('alert')).toHaveCount(0);
+  expect(JSON.parse((await page.evaluate((key) => localStorage.getItem(key), routeSavedViewsKey))!)).toEqual([]);
+  expect(writes).toEqual([]);
+});
+
+test('storage warning and retry stay reachable on narrow table settings', async ({ page }, info) => {
+  await mockAdmin(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('routes');
+  await blockTableStorage(page);
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  const settings = page.getByRole('dialog', { name: 'Table view settings' });
+  await settings.getByRole('spinbutton', { name: 'URI width', exact: true }).fill('320');
+  await settings.getByRole('spinbutton', { name: 'URI width', exact: true }).press('Tab');
+  await expect(settings.getByText('Changes apply now, but are not saved in this browser.', { exact: true })).toBeInViewport();
+  for (const name of ['Reset view', 'Retry save', 'Done']) await expect(settings.getByRole('button', { name, exact: true })).toBeInViewport({ ratio: 1 });
+  expect(await settings.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+  await page.screenshot({ path: info.outputPath('table-storage-settings-narrow.png'), animations: 'disabled' });
+  await settings.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(settings).toBeHidden();
+  await expect(layoutWarning(page).getByRole('button', { name: 'Retry save', exact: true })).toBeInViewport({ ratio: 1 });
+  expect((await layoutWarning(page).locator('.ant-alert-section').boundingBox())!.width).toBeGreaterThan(140);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.mouse.move(0, 0);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: info.outputPath('table-storage-warning-narrow.png'), animations: 'disabled' });
 });
