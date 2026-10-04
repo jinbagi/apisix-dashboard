@@ -26,7 +26,7 @@ const cases = [
 ];
 
 async function mockApi(page: Page, resource: string, initial: Record<string, unknown>) {
-  let value = { id: 'parity', create_time: 1, update_time: 1, ...initial };
+  let value = { id: 'parity', ...(resource === 'consumers' ? { username: 'parity' } : {}), create_time: 1, update_time: 1, ...initial };
   const writes: Record<string, unknown>[] = [];
   await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('test-admin-key')));
   await page.route('**/apisix/admin/**', async (route) => {

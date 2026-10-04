@@ -28,6 +28,7 @@ import { useBoolean } from 'react-use';
 
 import { putConsumerReq } from '@/apis/consumers';
 import { getConsumerQueryOptions } from '@/apis/hooks';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartConsumer } from '@/components/form-slice/FormPartConsumer';
 import { FormTOCBox } from '@/components/form-slice/FormSection';
@@ -35,7 +36,6 @@ import { FormSectionGeneral } from '@/components/form-slice/FormSectionGeneral';
 import { DeleteResourceBtn } from '@/components/page/DeleteResourceBtn';
 import PageHeader from '@/components/page/PageHeader';
 import { API_CONSUMERS } from '@/config/constant';
-import { req } from '@/config/req';
 import { APISIX, type APISIXType } from '@/types/schema/apisix';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
@@ -68,7 +68,7 @@ const ConsumerDetailForm = (props: Props) => {
   }, [consumerData, form, isLoading]);
 
   const putConsumer = useMutation({
-    mutationFn: (d: APISIXType['ConsumerPut']) => putConsumerReq(req, d),
+    mutationFn: (d: APISIXType['ConsumerPut']) => putConsumerReq(formHistoryReq, d),
     async onSuccess() {
       await refetch({ throwOnError: true });
       await refreshResourceCaches('consumers', API_CONSUMERS);

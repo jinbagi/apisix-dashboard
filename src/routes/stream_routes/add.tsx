@@ -20,6 +20,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { postStreamRouteReq } from '@/apis/stream_routes';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartStreamRoute } from '@/components/form-slice/FormPartStreamRoute';
 import {
@@ -30,10 +31,7 @@ import { FormTOCBox } from '@/components/form-slice/FormSection';
 import PageHeader from '@/components/page/PageHeader';
 import { StreamRoutesErrorComponent } from '@/components/page-slice/stream_routes/ErrorComponent';
 import { API_STREAM_ROUTES } from '@/config/constant';
-import { req } from '@/config/req';
 import type { APISIXType } from '@/types/schema/apisix';
-import { verifyAdminApiResource } from '@/utils/adminApiVerification';
-import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
 import { prepareResourceFormPayload } from '@/utils/resourceFormPayload';
@@ -49,12 +47,7 @@ export const StreamRouteAddForm = (props: Props) => {
   const postStreamRoute = useMutation({
     mutationFn: async (d: StreamRoutePostType) => {
       const payload = prepareResourceFormPayload(d);
-      const response = await postStreamRouteReq(req, payload);
-      const id = response.data.value.id;
-      await verifyAdminApiResource(
-        `${API_STREAM_ROUTES}/${id}`,
-        stripSystemReadonlyFields(payload as Record<string, unknown>)
-      );
+      const response = await postStreamRouteReq(formHistoryReq, payload);
       return response;
     },
     async onSuccess(response) {

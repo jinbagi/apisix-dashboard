@@ -22,6 +22,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { getUpstreamQueryOptions } from '@/apis/hooks';
+import { formHistoryReq } from '@/apis/tracked-resource-write';
 import { postUpstreamReq } from '@/apis/upstreams';
 import { FormJsonTabs } from '@/components/form/FormJsonTabs';
 import { FormPartUpstream } from '@/components/form-slice/FormPartUpstream';
@@ -29,9 +30,7 @@ import { UpstreamPostSchema } from '@/components/form-slice/FormPartUpstream/sch
 import { FormTOCBox } from '@/components/form-slice/FormSection';
 import PageHeader from '@/components/page/PageHeader';
 import { API_UPSTREAMS } from '@/config/constant';
-import { req } from '@/config/req';
 import { UPSTREAM_REQUIRED_TEMPLATE } from '@/config/resourceTemplates';
-import { verifyAdminApiResource } from '@/utils/adminApiVerification';
 import { stripSystemReadonlyFields } from '@/utils/apisixEditable';
 import { showNotification } from '@/utils/notification';
 import { refreshResourceCaches } from '@/utils/resourceCache';
@@ -44,13 +43,7 @@ const UpstreamAddForm = ({ defaultValues }: { defaultValues?: PostUpstreamType }
   const postUpstream = useMutation({
     mutationFn: async (d: PostUpstreamType) => {
       const payload = prepareUpstreamFormPayload(d);
-      const response = await postUpstreamReq(req, payload);
-      const id = response.data.value.id;
-      await verifyAdminApiResource(
-        `${API_UPSTREAMS}/${id}`,
-        stripSystemReadonlyFields(payload as Record<string, unknown>),
-        { ignoredPaths: ['tls.client_key'] }
-      );
+      const response = await postUpstreamReq(formHistoryReq, payload);
       return response;
     },
     async onSuccess(response) {

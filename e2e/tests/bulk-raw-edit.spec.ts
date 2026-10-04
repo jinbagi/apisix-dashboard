@@ -29,7 +29,7 @@ async function setup(page: Page, resource = 'routes') {
     create_time: 1, update_time: 1, future_field: { preserved: true },
   }]));
   const writes: { id: string; body: Record<string, unknown> }[] = [];
-  const controls = { readFail: '', writeFail: '', ignoreWrite: '', holdWrite: '' };
+  const controls = { readFail: '', writeFail: '', ignoreWrite: '', holdWrite: '', wrongReadback: '' };
   const held = new Map<string, () => void>();
   await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('test-admin-key')));
   await page.route('**/apisix/admin/**', async (route) => {
@@ -60,7 +60,7 @@ async function setup(page: Page, resource = 'routes') {
           }
         }
       } else if (controls.readFail === id) return route.fulfill({ status: 503, json: { error_msg: 'Unavailable' } });
-      return route.fulfill({ json: { value: values[id] } });
+      return route.fulfill({ json: { value: controls.wrongReadback === id && writes.some((write) => write.id === id) ? { ...values[id], id: 'another-resource' } : values[id] } });
     }
     if (path === '/plugins/list') return route.fulfill({ json: [] });
     return route.fulfill({ json: { list: [], total: 0 } });
@@ -269,6 +269,25 @@ test('Consumer RAW PUT preserves latest unrelated data and blocks a mismatched u
   await uiFillMonacoEditor(page, raw.locator('.monaco-editor'), JSON.stringify({ ...editable, labels: values.first.labels, desc: 'Try again' }));
   values.first.username = 'unexpected';
   await raw.getByRole('button', { name: 'Save Changes', exact: true }).click();
-  await expect(raw).toContainText('unexpected username');
+  await expect(raw).toContainText('resource identity could not be verified');
   expect(writes).toHaveLength(1);
+});
+
+
+test('bulk RAW rejects another resource returned after an accepted PATCH', async ({ page }) => {
+  const { writes, controls } = await setup(page);
+  await preview(page, { desc: 'After' });
+  await expect(dialog(page).getByRole('status')).toContainText('2 ready');
+  controls.wrongReadback = 'first';
+  await dialog(page).getByRole('button', { name: 'Apply 2 changes' }).click();
+  await expect(dialog(page).getByRole('status')).toContainText('1 saved and verified');
+  await expect(dialog(page)).toContainText('resource identity could not be verified');
+  expect(writes).toHaveLength(2);
+  await dialog(page).getByRole('button', { name: 'Close bulk editor' }).click();
+  await page.getByRole('button', { name: 'Activity Log', exact: true }).click();
+  await page.getByRole('button', { name: 'Change history', exact: true }).click();
+  const history = page.getByRole('dialog', { name: 'Resource change history', exact: true });
+  await expect(history.getByRole('button', { name: 'Compare change' })).toHaveCount(1);
+  await expect(history).toContainText('/routes/second');
+  await expect(history).not.toContainText('/routes/first');
 });

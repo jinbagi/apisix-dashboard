@@ -237,10 +237,10 @@ function ImportSection() {
             setProgress(Math.round((completed / totalSteps) * 100));
             setResults((prev) => [...prev, result]);
           },
-          async (resourceType, item, index) => {
+          async (resourceType, item, index, latest) => {
             const row = selection.rows.get(resourceType)?.[index];
-            const changed = await verifyImportPreview(row, item);
-            if (changed) await verifyEnvironmentReferences(row!);
+            const changed = await verifyImportPreview(row, item, latest);
+            if (changed && latest === undefined) await verifyEnvironmentReferences(row!);
             return changed;
           },
         );

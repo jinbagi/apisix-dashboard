@@ -155,7 +155,7 @@ test('a form save reports an error if the API does not return the saved value', 
   await page.getByLabel('Description').first().fill('not persisted');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await page.getByRole('dialog', { name: 'Review Changes Before Saving' }).getByRole('button', { name: 'Confirm & Save' }).click();
-  await expect(page.getByText(/Save or verification failed: Admin API did not return the saved value for: desc/)).toBeVisible();
+  await expect(page.getByText(/Save or verification failed: The write was accepted, but read-back could not verify it/)).toBeVisible();
 });
 
 
