@@ -568,7 +568,7 @@ export const AdminApiJsonEditor = ({
         <JsonSchemaGuide
           schema={resourceSchema}
           value={value}
-          title="Required fields and schema validation"
+          title={editorWidth > 0 && editorWidth < 560 ? 'Schema guidance' : 'Required fields and schema validation'}
           compact
           collapsible
           validAlertType="info"
@@ -580,7 +580,7 @@ export const AdminApiJsonEditor = ({
         />
       )}
       {!loading && <RawJsonNavigation codeEditor={codeEditor} value={value} original={original}
-        schema={resourceSchema} resourceBase={resourceBase} disabled={disabled || saving || !active} />}
+        schema={resourceSchema} resourceBase={resourceBase} disabled={disabled || saving || !active} compact={editorWidth > 0 && editorWidth < 560} />}
       {loading ? (
         <div
           className={fillAvailable ? classes.editorArea : undefined}

@@ -211,7 +211,7 @@ export function RawWorkspaceProvider({ children }: { children: ReactNode }) {
         </div>
         <Button size="small" onClick={() => closeTabs(true)} disabled={tabs.some((tab) => tab.saving)}>Close all</Button>
       </div>
-      <p className={classes.workspaceHint}>Tabs stay in memory while browsing. Minimize to open another resource. Reloading this browser page clears tabs.</p>
+      <p className={classes.workspaceHint}><span className={classes.fullHint}>Tabs stay in memory while browsing. Minimize to open another resource. Reloading this browser page clears tabs.</span><span className={classes.shortHint}>Minimize keeps tabs. Reload clears them.</span></p>
       {tabs.map((tab, index) => <div key={tab.id} role="tabpanel" id={`${workspaceId}-panel-${index}`} aria-labelledby={`${workspaceId}-tab-${index}`} hidden={tab.id !== active?.id} className={classes.tabPanel}>
         <TabEditor tab={tab} active={open && tab.id === active?.id} updateStatus={updateStatus} />
       </div>)}
