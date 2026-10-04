@@ -16,8 +16,9 @@
  */
 import { writeFile } from 'node:fs/promises';
 
-import { captureNativeViewport, nativeZoomContext, setNativeZoom } from '@e2e/utils/nativeBrowserZoom';
-import { expect, test } from '@playwright/test';
+import { captureNativeViewport, nativeZoomContext, setNativeZoom, settledLayout } from '@e2e/utils/nativeBrowserZoom';
+import { textContrast } from '@e2e/utils/textContrast';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 
 const resource = { id: 'native-zoom', name: 'Native zoom API', uri: '/zoom/*', status: 1,
   upstream: { type: 'roundrobin', nodes: { 'fixture.example:8080': 1 } } };
@@ -25,7 +26,26 @@ const longId = `route-${'a'.repeat(58)}`;
 const before = { id: longId, uri: '/before', labels: Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`field_${i}`, 'Before'])), tail_marker: 'Before final field' };
 const after = { ...before, uri: '/after', labels: Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`field_${i}`, 'After'])), tail_marker: 'After final field' };
 
-for (const theme of ['light', 'dark'] as const) test(`native 200% browser zoom preserves table, RAW, Add and review actions in ${theme}`, async ({ baseURL }, info) => {
+async function drawerOpacity(raw: Locator) {
+  return raw.evaluate(element => {
+    const panel = element.closest('.ant-drawer-content-wrapper');
+    if (!panel) throw new Error('RAW drawer surface is missing');
+    return getComputedStyle(panel).opacity;
+  });
+}
+
+async function configureDrawerMotion(page: Page, slow: boolean) {
+  if (slow) {
+    // Widen the real Ant panel fade's final-frame race without changing opacity/colors.
+    await page.addStyleTag({ content: '.ant-drawer-content-wrapper { transition-duration: 5s !important; }' });
+  }
+}
+
+for (const { theme, slowDrawer } of [
+  { theme: 'light', slowDrawer: false },
+  { theme: 'dark', slowDrawer: false },
+  { theme: 'dark', slowDrawer: true },
+] as const) test(`native 200% browser zoom preserves table, RAW, Add and review actions in ${theme}${slowDrawer ? ' with a slow drawer transition' : ''}`, async ({ baseURL }, info) => {
   const fixture = await nativeZoomContext();
   const { context, worker, initialDpr } = fixture;
   const origin = new URL(baseURL!).origin;
@@ -63,12 +83,23 @@ for (const theme of ['light', 'dark'] as const) test(`native 200% browser zoom p
     const rawTrigger = page.getByRole('button', { name: 'Raw', exact: true }).first();
     await rawTrigger.scrollIntoViewIfNeeded(); await expect(rawTrigger).toBeInViewport({ ratio: 1 });
     measurements.push(await captureNativeViewport(page, info.outputPath(`${theme}-200-table-row.png`)));
+    await configureDrawerMotion(page, slowDrawer);
     await rawTrigger.focus(); await page.keyboard.press('Enter');
     const raw = page.getByRole('dialog', { name: /Route: Native zoom API/ });
     await expect(raw.getByRole('textbox', { name: 'Editor content' })).toBeVisible();
     const save = raw.getByRole('button', { name: 'Save Changes', exact: true }); await expect(save).toBeDisabled();
     await page.evaluate(() => { const editor = window.__monacoEditor__!; editor.setValue(JSON.stringify({ ...JSON.parse(editor.getValue()), desc: 'Unsaved native zoom draft' }, null, 2)); });
-    await expect(save).toBeEnabled(); await expect(save).toBeInViewport({ ratio: 1 });
+    await expect(save).toBeEnabled();
+    const opacityBefore = await drawerOpacity(raw);
+    // In-viewport buttons can precede the final opacity frame of the enclosing drawer.
+    await settledLayout(page);
+    await expect(save).toBeInViewport({ ratio: 1 });
+    const opacityAfter = await drawerOpacity(raw);
+    expect(opacityAfter).toBe('1');
+    measurements.push({ flow: 'raw-drawer-opacity', before: opacityBefore, after: opacityAfter });
+    const statusContrast = await textContrast(raw.getByText('Unsaved changes. Ctrl+S saves changed fields.', { exact: true }));
+    expect(statusContrast.ratio, JSON.stringify(statusContrast)).toBeGreaterThanOrEqual(4.5);
+    measurements.push({ flow: 'raw-dirty-status', ...statusContrast });
     await save.focus(); await page.keyboard.press('Tab'); await expect(save).not.toBeFocused();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     measurements.push(await captureNativeViewport(page, info.outputPath(`${theme}-200-raw.png`)));

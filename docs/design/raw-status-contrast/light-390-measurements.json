@@ -1,0 +1,109 @@
+{
+  "theme": "light",
+  "size": 390,
+  "palette": {
+    "warning": "#faad14",
+    "warning-text": "#faad14",
+    "error": "#ff4d4f",
+    "primary": "#2563eb"
+  },
+  "measurements": [
+    {
+      "viewport": 390
+    },
+    {
+      "state": "clean",
+      "text": "No pending changes",
+      "color": "rgba(0, 0, 0, 0.65)",
+      "background": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "focusVisible": false,
+      "ratio": 6.977601437110393
+    },
+    {
+      "state": "dirty",
+      "text": "Unsaved changes. Ctrl+S saves changed fields.",
+      "color": "rgb(135, 77, 0)",
+      "background": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "focusVisible": false,
+      "ratio": 6.792313216479324
+    },
+    {
+      "width": 390,
+      "height": 1024,
+      "current": {
+        "innerWidth": 390,
+        "innerHeight": 1024,
+        "outerWidth": 390,
+        "outerHeight": 1024,
+        "dpr": 1,
+        "visualScale": 1,
+        "cssZoom": "1",
+        "scrollWidth": 390
+      }
+    },
+    {
+      "state": "saving",
+      "text": "Saving and verifying with APISIX...",
+      "color": "rgb(135, 77, 0)",
+      "background": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "focusVisible": false,
+      "ratio": 6.792313216479324
+    },
+    {
+      "width": 390,
+      "height": 1024,
+      "current": {
+        "innerWidth": 390,
+        "innerHeight": 1024,
+        "outerWidth": 390,
+        "outerHeight": 1024,
+        "dpr": 1,
+        "visualScale": 1,
+        "cssZoom": "1",
+        "scrollWidth": 390
+      }
+    },
+    {
+      "state": "saved",
+      "text": "Saved at 10:51:11 PM",
+      "color": "rgba(0, 0, 0, 0.65)",
+      "background": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "focusVisible": false,
+      "ratio": 6.977601437110393
+    }
+  ],
+  "patches": [
+    {
+      "desc": "Prepared contrast change"
+    }
+  ],
+  "unexpected": []
+}

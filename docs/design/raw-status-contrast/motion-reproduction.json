@@ -1,0 +1,47 @@
+{
+  "build": "97f12142",
+  "nativeZoom": true,
+  "stress": "Only installed drawer transition-duration changed to5s",
+  "before": [
+    {
+      "tag": "DIV",
+      "classes": "ant-drawer-content-wrapper",
+      "opacity": "0.998568",
+      "backgroundImage": "none",
+      "animations": [
+        {
+          "playState": "running",
+          "currentTime": 4540.496999896877,
+          "endTime": 5000
+        },
+        {
+          "playState": "running",
+          "currentTime": 4540.496999896877,
+          "endTime": 5000
+        },
+        {
+          "playState": "running",
+          "currentTime": 4091.800000000001,
+          "endTime": 5000
+        }
+      ]
+    }
+  ],
+  "error": "locator.evaluate: Error: This assertion needs a solid, unmasked text surface.\n    at eval (eval at evaluate (:290:30), <anonymous>:18:76)\n    at UtilityScript.evaluate (<anonymous>:292:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)",
+  "after": [],
+  "contrast": {
+    "text": "Unsaved changes. Ctrl+S saves changed fields.",
+    "color": "rgb(216, 150, 20)",
+    "background": [
+      20,
+      20,
+      20,
+      1
+    ],
+    "fontSize": "14px",
+    "fontWeight": "400",
+    "focusVisible": false,
+    "ratio": 7.2746435493623425
+  },
+  "unexpected": []
+}
