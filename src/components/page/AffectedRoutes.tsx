@@ -42,7 +42,7 @@ export function AffectedRoutes({ routes, source }: { routes: string[]; source: s
       <Input.Search aria-label="Filter affected routes" placeholder="Filter by route ID or type" value={query} allowClear
         onChange={(event) => { setQuery(event.target.value); setPage(1); }} style={{ marginBottom: 12 }} />
       <Table size="small" rowKey="path" dataSource={open ? filtered.map((path) => ({ path })) : []} scroll={{ y: 360 }}
-        locale={{ emptyText: <Typography.Text type="secondary">No affected Routes match this filter.</Typography.Text> }}
+        locale={{ emptyText: <Typography.Text>No affected Routes match this filter.</Typography.Text> }}
         pagination={{ current: page, pageSize: 10, showSizeChanger: false, onChange: setPage, showTotal: (total) => `${total} of ${routes.length} routes` }}
         columns={[{ title: 'Route', dataIndex: 'path', render: (path: string) => <Link target="_blank" rel="noopener noreferrer"
           style={{ overflowWrap: 'anywhere' }} to={path.startsWith('/stream_routes/') ? '/stream_routes/detail/$id' : '/routes/detail/$id'}

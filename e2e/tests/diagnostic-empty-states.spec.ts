@@ -14,10 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 
 const genericEmpty = 'No items yet. Use the Add button above to create one.';
 const routes = Array.from({ length: 14 }, (_, index) => ({ id: `route-${index}`, name: `Catalog ${index}`, uri: `/catalog-${index}`, host: 'example.com', status: index === 13 ? 0 : 1 }));
+async function expectReadableEmpty(locator: Locator) {
+  const contrast = await locator.evaluate((element) => {
+    const channels = (css: string) => css.match(/[\d.]+/g)!.map(Number);
+    const composite = (foreground: number[], background: number[]) => foreground.slice(0, 3).map((channel, index) => channel * (foreground[3] ?? 1) + background[index] * (1 - (foreground[3] ?? 1)));
+    const ancestors: Element[] = [];
+    for (let current: Element | null = element; current; current = current.parentElement) ancestors.unshift(current);
+    const background = ancestors.reduce((color, ancestor) => composite(channels(getComputedStyle(ancestor).backgroundColor), color), [255, 255, 255]);
+    const color = getComputedStyle(element).color;
+    const foreground = composite(channels(color), background);
+    const luminance = (rgb: number[]) => rgb.map((channel) => channel / 255).map((channel) => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4).reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+    const levels = [luminance(foreground), luminance(background)].sort((a, b) => a - b);
+    return { color, background, ratio: (levels[1] + 0.05) / (levels[0] + 0.05) };
+  });
+  await test.info().attach('empty-state-contrast', { body: JSON.stringify(contrast), contentType: 'application/json' });
+  expect(contrast.ratio, JSON.stringify(contrast)).toBeGreaterThanOrEqual(4.5);
+}
 async function mock(page: Page, options: { empty?: boolean; unavailable?: string; brokenGlobal?: boolean } = {}) {
   const writes: string[] = [];
   const records: Record<string, Record<string, unknown>[]> = {
@@ -55,6 +71,7 @@ test('request preview explains zero candidates without implying no saved resourc
   await expect(dialog.getByRole('status')).toContainText('0 candidate(s) / 0 runtime check(s) / 14 excluded');
   await page.screenshot({ path: info.outputPath('request-empty.png'), animations: 'disabled' });
   await expect(dialog.getByText(genericEmpty, { exact: true })).toHaveCount(0);
+  await expectReadableEmpty(dialog.locator('.ant-table-placeholder .ant-typography'));
   await expect(dialog.getByText('No candidates for these request inputs.', { exact: true })).toBeVisible();
   await dialog.getByRole('checkbox', { name: 'Show excluded and disabled Routes' }).check();
   await expect(dialog.getByText('Catalog 0 / route-0', { exact: true })).toBeVisible();
@@ -67,6 +84,7 @@ test('an empty Route collection has specific request-preview guidance on a narro
   const writes = await mock(page, { empty: true }); const dialog = await requestPreview(page);
   await expect(dialog.getByRole('status')).toContainText('Read 0 Routes');
   await expect(dialog.getByText(genericEmpty, { exact: true })).toHaveCount(0);
+  await expectReadableEmpty(dialog.locator('.ant-table-placeholder .ant-typography'));
   await expect(dialog.getByText('No saved HTTP Routes to preview.', { exact: true })).toBeVisible();
   await expect(dialog.getByText('No candidates in the supported conditions', { exact: true })).toHaveCount(0);
   await dialog.getByText('No saved HTTP Routes to preview.', { exact: true }).scrollIntoViewIfNeeded();
@@ -84,6 +102,7 @@ test('overlap comparison distinguishes no candidates from no resources', async (
   await expect(dialog).not.toHaveClass(/ant-zoom-(enter|appear)/);
   await page.screenshot({ path: info.outputPath('overlap-empty.png'), animations: 'disabled' });
   await expect(dialog.getByText(genericEmpty, { exact: true })).toHaveCount(0);
+  await expectReadableEmpty(dialog.locator('.ant-table-placeholder .ant-typography'));
   await expect(dialog.getByText('No overlap candidates in the checked conditions.', { exact: true })).toBeVisible();
   await expect(dialog.getByText('No overlaps found in the checked scope', { exact: true })).toBeVisible();
   expect(writes).toEqual([]);
@@ -95,6 +114,7 @@ for (const unavailable of [false, true]) test(`reference diagnostics keeps empty
   const dialog = page.getByRole('dialog', { name: 'Configuration reference diagnostics', exact: true });
   await expect(dialog.getByRole('status')).toHaveText(`0 reference issue(s) / ${unavailable ? 1 : 0} unavailable collection(s)`);
   await expect(dialog.getByText(genericEmpty, { exact: true })).toHaveCount(0);
+  await expectReadableEmpty(dialog.locator('.ant-table-placeholder .ant-typography'));
   await expect(dialog.getByText(unavailable ? 'No findings to display from available collections. Retry the reference check to include unavailable collections.' : 'No reference issues in the checked scope.', { exact: true })).toBeVisible();
   expect(writes).toEqual([]);
 });
@@ -107,6 +127,7 @@ test('affected Route filtering explains zero matches and clearing restores the l
   const dialog = page.getByRole('dialog', { name: 'Potentially affected routes', exact: true });
   await dialog.getByRole('searchbox', { name: 'Filter affected routes', exact: true }).fill('no-such-route');
   await expect(dialog.getByText(genericEmpty, { exact: true })).toHaveCount(0);
+  await expectReadableEmpty(dialog.locator('.ant-table-placeholder .ant-typography'));
   await expect(dialog.getByText('No affected Routes match this filter.', { exact: true })).toBeVisible();
   await dialog.getByRole('searchbox', { name: 'Filter affected routes', exact: true }).fill('');
   await expect(dialog.getByRole('link', { name: '/routes/route-0', exact: true })).toBeVisible();
