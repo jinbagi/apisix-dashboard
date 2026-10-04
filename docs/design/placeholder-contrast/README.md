@@ -52,3 +52,11 @@ Validation:
 
 Additional 390px states: [light TextArea](after-light-390-textarea.png), [dark TextArea](after-dark-390-textarea.png), [light disabled SNI](after-light-390-disabled-input.png), [dark disabled SNI](after-dark-390-disabled-input.png).
 
+
+## Separate follow-up 50: SSL hostname tag is lost on Tab
+
+While exercising the actual SNI/SNIs disabled transitions, a separate existing form issue was reproduced in a fixture-only unsaved SSL draft. It is not changed by this placeholder CSS work.
+
+Reproduction: open Add SSL; enter `fixture.example` in SNI; clear SNI; enter `fixture.example` in SNIs and press Enter; wait until the tag is present and SNI is disabled; press Tab from the SNIs input. The newly entered SNIs tag disappears, SNI becomes enabled again, and “A server certificate requires SNI or SNIs” remains in both the error summary and field. The reproduction blocks all Admin API writes and confirms zero write attempts.
+
+Acceptance for follow-up 50: switching SNI to SNIs must retain the committed hostname tag across keyboard Tab/blur; returning between either hostname input style must preserve intended values; the disabled states must follow the retained values; cross-field validation must reflect the actual draft. Add regression coverage for the keyboard sequence without submitting a gateway change. Root owns the separate investigation/fix and final backlog synchronization.
