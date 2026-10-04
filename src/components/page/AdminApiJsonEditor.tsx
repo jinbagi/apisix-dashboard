@@ -605,21 +605,8 @@ export const AdminApiJsonEditor = ({
         </div>
       )}
       {!disabled && (
-        <Space
-          className={fillAvailable ? classes.actionBar : undefined}
-          style={{ width: '100%', justifyContent: 'space-between', marginTop: 12 }}
-          wrap
-        >
-          <Typography.Text type={isDirty ? 'warning' : 'secondary'} aria-live="polite">
-            {saving
-              ? 'Saving and verifying with APISIX...'
-              : isDirty
-                ? 'Unsaved changes. Ctrl+S saves changed fields.'
-                : saveFeedback?.type === 'success'
-                  ? `Saved at ${saveFeedback.at}`
-                  : 'No pending changes'}
-          </Typography.Text>
-          <Space wrap>
+        <div className={classes.actionBar}>
+          <div role="group" aria-label="RAW editor tools" className={classes.secondaryActions}>
             {supportsRelatedResources(api) && <Button size="small" aria-pressed={referencesOpen} onClick={() => {
               setReferencesOpen((current) => !current); setReferenceView('References');
             }}>Related resources</Button>}
@@ -640,10 +627,10 @@ export const AdminApiJsonEditor = ({
                 setError(null);
                 setSaveFeedback({ type: 'warning', message: 'Local draft restored. Review and save to apply it to APISIX.', at: new Date().toLocaleTimeString() });
               }} />
-            <Tooltip title="Format Admin API JSON">
+            <Tooltip title="Format Admin API JSON" trigger={['hover', 'focus']}>
               <Button size="small" onClick={handleFormat} disabled={saving || loading}>Format</Button>
             </Tooltip>
-            <Tooltip title="Copy Admin API JSON">
+            <Tooltip title="Copy Admin API JSON" trigger={['hover', 'focus']}>
               <Button size="small" onClick={handleCopy}>Copy</Button>
             </Tooltip>
             <Button
@@ -653,20 +640,33 @@ export const AdminApiJsonEditor = ({
             >
               Reset
             </Button>
-            <Button onClick={handleReview} disabled={!isDirty || saving || loading}>
-              Review changes
-            </Button>
-            <Button
-              type="primary"
-              aria-label="Save Changes"
-              loading={saving}
-              onClick={handleSave}
-              disabled={!isDirty || loading}
-            >
-              Save Changes
-            </Button>
-          </Space>
-        </Space>
+          </div>
+          <div className={classes.primaryRow}>
+            <Typography.Text className={classes.saveStatus} type={isDirty ? 'warning' : 'secondary'} aria-live="polite">
+              {saving
+                ? 'Saving and verifying with APISIX...'
+                : isDirty
+                  ? 'Unsaved changes. Ctrl+S saves changed fields.'
+                  : saveFeedback?.type === 'success'
+                    ? `Saved at ${saveFeedback.at}`
+                    : 'No pending changes'}
+            </Typography.Text>
+            <div role="group" aria-label="RAW save actions" className={classes.primaryActions}>
+              <Button onClick={handleReview} disabled={!isDirty || saving || loading}>
+                Review changes
+              </Button>
+              <Button
+                type="primary"
+                aria-label="Save Changes"
+                loading={saving}
+                onClick={handleSave}
+                disabled={!isDirty || loading}
+              >
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
       {active && conflict && <RawConflictResolver
         snapshot={{ previous: conflict.previous, draft: conflict.draft, latest: stripPatchReadonlyFields(conflict.latest) }}
