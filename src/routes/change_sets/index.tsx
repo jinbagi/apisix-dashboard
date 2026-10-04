@@ -84,7 +84,9 @@ function ChangeSetsPage() {
     <Space orientation="vertical" size="middle" style={{ width: '100%', minWidth: 0 }}>
       <Alert type="info" showIcon title={encrypted ? 'Encrypted checkpoints enabled' : 'Drafts stay in this tab'}
         description={<>{encrypted
-          ? 'Only checkpointed drafts survive reload. Newly staged items and draft removals are saved on your next Preview or Apply. To save now, open Encrypted journal and choose Encrypt and enable checkpoints. '
+          ? state.drafts.length
+            ? 'Only checkpointed drafts survive reload. Newly staged items and draft removals are saved on your next Preview or Apply. To save now, open Encrypted journal and choose Encrypt and enable checkpoints. '
+            : 'No staged drafts. The stored journal still contains the last checkpoint. To remove saved drafts, open Encrypted journal and choose Remove encrypted journal. '
           : 'Stage changes from RAW or an Import preview. Drafts stay in memory unless you save an encrypted journal; reloading or closing clears unsaved drafts. '}<Link to="/export_import">Open Import / Export</Link></>} />
       <Collapse size="small" items={[{ key: 'scope', label: 'How staging and verification work', children: <>
         <Typography.Paragraph>Nothing is applied until you preview and confirm. Changes use explicit-ID PUT: create a new resource or replace its writable configuration. Absent fields may be removed. Create-only drafts must still target a missing resource.</Typography.Paragraph>

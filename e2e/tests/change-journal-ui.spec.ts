@@ -257,3 +257,37 @@ test('journal explains that staged additions and removals wait for a checkpoint'
   await expect(page.locator('.ant-card').filter({ hasText: '/routes/three' })).toHaveCount(0);
   expect(controls.writes).toEqual([]);
 });
+
+
+test('an empty staged set explains and explicitly removes the last saved checkpoint', async ({ page }) => {
+  const controls = await setup(page); await saveJournal(page);
+  const original = await page.evaluate(() => localStorage.getItem('change-set-journal:v1'));
+  for (let remaining = 3; remaining > 0; remaining--) {
+    await page.getByRole('button', { name: 'Remove draft', exact: true }).first().click();
+    await page.getByRole('button', { name: 'Remove', exact: true }).click();
+    await expect(page.getByText(`${remaining - 1} staged · 0 verified`, { exact: true })).toBeVisible();
+  }
+  await expect(page.getByRole('button', { name: 'Preview destinations', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /^Apply.*changes$/ })).toBeDisabled();
+  expect(await page.evaluate(() => localStorage.getItem('change-set-journal:v1'))).toBe(original);
+  expect(controls.writes).toEqual([]);
+  await expect(page.getByText(/No staged drafts. The stored journal still contains the last checkpoint/)).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Encrypted journal enabled', exact: true }).click();
+  await expect(journal(page).getByText(/To remove saved drafts, choose Remove encrypted journal/)).toBeVisible();
+  await expect(journal(page).getByRole('button', { name: 'Encrypt and enable checkpoints', exact: true })).toBeDisabled();
+  await expect(journal(page).getByRole('button', { name: 'Done', exact: true })).toBeInViewport();
+  await expect(journal(page)).not.toHaveClass(/ant-zoom-enter|ant-zoom-appear/);
+  await expect(page.locator('.ant-message-notice')).toHaveCount(0);
+  await page.screenshot({ path: test.info().outputPath('journal-empty-checkpoint-narrow.png'), animations: 'disabled' });
+  await journal(page).getByRole('button', { name: 'Remove encrypted journal', exact: true }).click();
+  await page.getByRole('button', { name: 'Remove journal', exact: true }).click();
+  await expect(journal(page).getByText(/Encrypted journal removed/)).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('change-set-journal:v1'))).toBeNull();
+  await journal(page).getByRole('button', { name: 'Done', exact: true }).click();
+  await reload(page);
+  await expect(page.getByText('No staged changes yet', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Encrypted journal', exact: true }).click();
+  await expect(journal(page).getByText('No stored journal on this browser.', { exact: true })).toBeVisible();
+  expect(controls.writes).toEqual([]);
+});
