@@ -21,6 +21,7 @@ import { SKIP_INTERCEPTOR_HEADER } from '@/config/constant';
 import { req } from '@/config/req';
 import { isRecord } from '@/utils/apisixEditable';
 import { supportedPluginReferences } from '@/utils/pluginReferences';
+import { validateExactResourceSnapshot } from '@/utils/resourceIdentity';
 
 export const supportsDependencyExport = (api: string) => ['/routes', '/stream_routes', '/services'].includes(api);
 type Kind = 'routes' | 'stream_routes' | 'services' | 'upstreams' | 'plugin_configs' | 'protos' | 'graphql_cost_decorations';
@@ -58,8 +59,9 @@ async function readDecorations(serviceId: string) {
     } catch (error) {
       if (page !== 1 || (error as { response?: { status?: number } }).response?.status !== 404) throw error;
       // APISIX returns 404 for an empty collection, but a deleted owner must not look empty.
-      const owner = await req.get(`/services/${encodeURIComponent(serviceId)}`, { timeout: 15_000 });
-      if (!isRecord(owner.data?.value) || String(owner.data.value.id) !== serviceId) throw new Error('The Service owner could not be verified.');
+      const ownerApi = `/services/${encodeURIComponent(serviceId)}`;
+      const owner = await req.get(ownerApi, { timeout: 15_000 });
+      validateExactResourceSnapshot(ownerApi, owner.data?.value, owner.data?.key);
       return [];
     }
     if (!Array.isArray(data?.list) || !Number.isSafeInteger(data.total) || data.total < 0 ||
@@ -70,6 +72,7 @@ async function readDecorations(serviceId: string) {
       if (!isRecord(value) || !['string', 'number'].includes(typeof value.id) || !String(value.id) ||
         ['.', '..'].includes(String(value.id)) || ids.has(String(value.id)) ||
         (value.service_id != null && String(value.service_id) !== serviceId)) throw new Error('GraphQL collection returned an invalid, duplicate or mismatched identity.');
+      validateExactResourceSnapshot(`${graphqlCostDecorationsApi(serviceId)}/${encodeURIComponent(String(value.id))}`, value, item.key);
       ids.add(String(value.id));
       items.push({ ...value, id: String(value.id), service_id: serviceId });
     }
@@ -105,12 +108,12 @@ export async function prepareDependencyExport(apiBase: string, selectedIds: stri
     offset += batch.length;
     const read = await Promise.all(batch.map(async (row) => {
       try {
-        const response = await req.get(`/${row.kind}/${encodeURIComponent(row.id)}`, {
+        const api = `/${row.kind}/${encodeURIComponent(row.id)}`;
+        const response = await req.get(api, {
           timeout: 15_000, headers: { [SKIP_INTERCEPTOR_HEADER]: ['404'] },
         });
         const value: unknown = response.data?.value;
-        if (!isRecord(value) || value.id == null || String(value.id) !== row.id)
-          throw new Error('The API did not return the expected resource identity.');
+        validateExactResourceSnapshot(api, value, response.data?.key);
         row.status = 'Included';
         const exported: Record<string, unknown> = { ...value, id: row.id };
         return { row, value: exported };

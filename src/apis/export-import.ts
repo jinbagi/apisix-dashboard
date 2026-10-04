@@ -49,6 +49,7 @@ import { req } from '@/config/req';
 import type { APISIXType } from '@/types/schema/apisix';
 import { GraphqlCostDecoration } from '@/types/schema/apisix/graphql_cost_decorations';
 import { isRecord } from '@/utils/apisixEditable';
+import { validateExactResourceSnapshot } from '@/utils/resourceIdentity';
 import { assertRestorableExport } from '@/utils/sharingFormat';
 
 export const EXPORT_VERSION = 3;
@@ -161,8 +162,9 @@ export async function exportSelectedResources(apiBase: string, selectedIds: stri
         throw new Error(`Invalid resource identity: ${id}`);
       }
       try {
-        const response = await req.get(`${apiBase}/${segments.map(encodeURIComponent).join('/')}`);
-        if (!isRecord(response.data?.value)) throw new Error('No resource value returned');
+        const api = `${apiBase}/${segments.map(encodeURIComponent).join('/')}`;
+        const response = await req.get(api, { timeout: 15_000 });
+        validateExactResourceSnapshot(api, response.data?.value, response.data?.key);
         const identity = apiBase === API_SECRETS
           ? { manager: segments[0], id: segments[1] }
           : apiBase === API_CONSUMERS ? { username: id } : { id };
