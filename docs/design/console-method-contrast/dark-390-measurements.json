@@ -1,0 +1,134 @@
+{
+  "theme": "dark",
+  "size": 390,
+  "states": [
+    {
+      "state": "default",
+      "label": {
+        "text": "Send PUTCtrl/Cmd + Enter",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          135,
+          77,
+          0,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 6.792313216479324
+      },
+      "shortcut": {
+        "text": "Ctrl/Cmd + Enter",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          135,
+          77,
+          0,
+          1
+        ],
+        "fontSize": "10px",
+        "fontWeight": "560",
+        "focusVisible": false,
+        "ratio": 6.792313216479324
+      }
+    },
+    {
+      "state": "hover",
+      "label": {
+        "text": "Send PUTCtrl/Cmd + Enter",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          121.50010499999999,
+          69.30007499999999,
+          0,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 7.839078081064624
+      },
+      "shortcut": {
+        "text": "Ctrl/Cmd + Enter",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          121.50010499999999,
+          69.30007499999999,
+          0,
+          1
+        ],
+        "fontSize": "10px",
+        "fontWeight": "560",
+        "focusVisible": false,
+        "ratio": 7.839078081064624
+      }
+    },
+    {
+      "state": "active",
+      "label": {
+        "text": "Send PUTCtrl/Cmd + Enter",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          107.999895,
+          61.600095,
+          0,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 9.059492523863515
+      },
+      "shortcut": {
+        "text": "Ctrl/Cmd + Enter",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          107.999895,
+          61.600095,
+          0,
+          1
+        ],
+        "fontSize": "10px",
+        "fontWeight": "560",
+        "focusVisible": false,
+        "ratio": 9.059492523863515
+      }
+    },
+    {
+      "state": "focus",
+      "label": {
+        "text": "Send PUTCtrl/Cmd + Enter",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          135,
+          77,
+          0,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 6.792313216479324
+      },
+      "shortcut": {
+        "text": "Ctrl/Cmd + Enter",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          135,
+          77,
+          0,
+          1
+        ],
+        "fontSize": "10px",
+        "fontWeight": "560",
+        "focusVisible": false,
+        "ratio": 6.792313216479324
+      }
+    }
+  ],
+  "geometry": {
+    "client": 390,
+    "scroll": 390
+  }
+}

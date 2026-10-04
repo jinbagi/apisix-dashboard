@@ -143,6 +143,63 @@
   flex-wrap: wrap;
 }
 
+/* Console method text and solid actions need different colors across themes. */
+.methodColor {
+  --console-method-text: var(--console-method-light);
+}
+
+.methodColor[data-method='GET'] {
+  --console-method-light: #006d75;
+  --console-method-dark: #5cdbd3;
+}
+
+.methodColor[data-method='PUT'] {
+  --console-method-light: #874d00;
+  --console-method-dark: #ffd666;
+}
+
+.methodColor[data-method='PATCH'] {
+  --console-method-light: #237804;
+  --console-method-dark: #95de64;
+}
+
+.methodColor[data-method='POST'] {
+  --console-method-light: #0958d9;
+  --console-method-dark: #91caff;
+}
+
+.methodColor[data-method='DELETE'] {
+  --console-method-light: #a8071a;
+  --console-method-dark: #ff7875;
+}
+
+:global(:root[data-theme='dark']) .methodColor {
+  --console-method-text: var(--console-method-dark);
+}
+
+.methodBadge:global(.ant-tag) {
+  color: var(--console-method-text);
+  background: color-mix(in srgb, var(--console-method-text) 10%, var(--ant-color-bg-container));
+  border-color: color-mix(in srgb, var(--console-method-text) 30%, var(--ant-color-bg-container));
+}
+
+/* Leave the existing accent fallback and muted shortcut on disabled/loading actions. */
+.executeButton:not(:disabled):not(:global(.ant-btn-disabled)):not(:global(.ant-btn-loading)) {
+  --console-method-button: var(--console-method-light);
+}
+
+.executeButton:not(:disabled):not(:global(.ant-btn-disabled)):not(:global(.ant-btn-loading)):hover {
+  --console-method-button: color-mix(in srgb, var(--console-method-light) 90%, #000);
+}
+
+.executeButton:not(:disabled):not(:global(.ant-btn-disabled)):not(:global(.ant-btn-loading)):active {
+  --console-method-button: color-mix(in srgb, var(--console-method-light) 80%, #000);
+}
+
+.executeButton:not(:disabled):not(:global(.ant-btn-disabled)):not(:global(.ant-btn-loading)) .shortcut {
+  opacity: 1;
+}
+
 .methodTag {
   min-width: 58px;
   margin: 0;
