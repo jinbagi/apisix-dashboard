@@ -29,6 +29,7 @@ import PageHeader from '@/components/page/PageHeader';
 import { RawDrawer } from '@/components/page/RawDrawer';
 import { ResourceSortSelect } from '@/components/page/ResourceSortSelect';
 import { ResourceTable } from '@/components/page/ResourceTable';
+import { RouteOverlapDiagnostics } from '@/components/page/RouteOverlapDiagnostics';
 import { SearchInput } from '@/components/page/SearchInput';
 import { ToAddPageBtn } from '@/components/page/ToAddPageBtn';
 import { StatusSwitch } from '@/components/StatusTag';
@@ -395,7 +396,7 @@ function RouteComponent() {
       <PageHeader
         title="Routes"
         desc="Define how incoming requests are matched, transformed, and forwarded."
-        extra={<ToAddPageBtn label="Add Route" to="/routes/add" />}
+        extra={<Space wrap><RouteOverlapDiagnostics /><ToAddPageBtn label="Add Route" to="/routes/add" /></Space>}
       />
       <RouteList
         routeKey="/routes/"
