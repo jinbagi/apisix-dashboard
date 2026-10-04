@@ -115,6 +115,12 @@ when saving or deleting a view fails.
 
 ## Review a Resource
 
+RAW keeps **Review changes** and **Save Changes** together below the editor tools.
+The save area stays visible while scrolling expanded guidance in the RAW panel.
+Formatting, copying, encrypted drafts, change history, impact analysis, and
+related-resource inspection remain available above it. Tooltips also appear
+when Format or Copy receives keyboard focus.
+
 Open a route detail page to inspect its identity, lifecycle, relationships, and
 applied configuration.
 

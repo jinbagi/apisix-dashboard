@@ -41,7 +41,10 @@ async function setup(page: Page) {
     if (path === controls.hold) await new Promise<void>((resolve) => { controls.release = resolve; });
     if (failures.has(path)) return route.fulfill({ status: 503, json: { error_msg: 'Fixture unavailable' } });
     if (records.has(path)) return route.fulfill({ json: { value: records.get(path) } });
-    if (path === '/routes') return route.fulfill({ json: { list: [{ value: original }], total: 1 } });
+    if (path === '/routes' || path === '/services') {
+      const list = [...records].filter(([key]) => key.startsWith(`${path}/`)).map(([, value]) => ({ value: { create_time: 1, update_time: 1, ...value } }));
+      return route.fulfill({ json: { list, total: list.length } });
+    }
     if (path === '/plugins/list') return route.fulfill({ json: [] });
     return route.fulfill({ json: { list: [], total: 0 } });
   });
@@ -148,4 +151,38 @@ test('reference discovery keeps resource scope, escaped IDs and invalid referenc
   });
   expect(relatedReferences('/services/one', '{"service_id":"ignored","plugin_config_id":"ignored","upstream_id":"u"}').references).toEqual([{ api: '/upstreams/u', label: 'Upstream: u' }]);
   expect(relatedReferences('/stream_routes/one', '{"service_id":"s","plugin_config_id":"ignored"}').references).toEqual([{ api: '/services/s', label: 'Service: s' }]);
+});
+
+
+test('resource tabs keep related inspectors scoped while background reads finish', async ({ page }, info) => {
+  const { panel, drawer, records, controls, writes, draft } = await setup(page);
+  await expect(panel.getByLabel('Related resource JSON')).toContainText('Linked service');
+  await page.evaluate(() => window.__monacoEditor__?.setPosition({ lineNumber: 3, column: 4 }));
+  controls.hold = '/services/svc';
+  await panel.getByRole('button', { name: 'Refresh reference' }).click();
+  await expect.poll(() => Boolean(controls.release)).toBe(true);
+  records.set('/services/new-service', { id: 'new-service', name: 'New service', upstream_id: 'inherited', create_time: 1, update_time: 1 });
+  await drawer.getByRole('button', { name: 'Minimize', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Services', exact: true }).click();
+  await page.getByRole('row').filter({ has: page.getByRole('link', { name: 'New service', exact: true }) }).getByRole('button', { name: 'Raw', exact: true }).click();
+  const service = page.getByRole('dialog', { name: 'Service: New service' });
+  await expect(service.getByRole('textbox', { name: 'Editor content' })).toBeVisible();
+  await service.getByRole('button', { name: 'Related resources', exact: true }).click();
+  const servicePanel = service.getByRole('complementary', { name: 'Related resource inspector' });
+  await expect(servicePanel.getByLabel('Related resource JSON')).toContainText('inherited.example:80');
+  controls.hold = undefined;
+  controls.release?.();
+  await expect(servicePanel.getByLabel('Related resource JSON')).not.toContainText('Linked service');
+  await service.getByRole('tab', { name: /Route: Source route/ }).click();
+  await expect(panel.getByLabel('Related resource JSON')).toContainText('Linked service');
+  expect(JSON.parse((await page.evaluate(() => window.__monacoEditor__?.getValue()))!)).toEqual(draft);
+  expect(await page.evaluate(() => window.__monacoEditor__?.getPosition())).toEqual({ lineNumber: 3, column: 4 });
+  await panel.getByRole('combobox', { name: 'Reference to inspect' }).click();
+  await expect(page.getByRole('option', { name: 'Service: svc', exact: true })).toBeVisible();
+  await drawer.getByRole('tab', { name: /Service: New service/ }).click();
+  await expect(page.getByRole('option')).toHaveCount(0);
+  await expect(servicePanel.getByLabel('Related resource JSON')).toContainText('inherited.example:80');
+  await page.mouse.move(0, 0);
+  await page.screenshot({ path: info.outputPath('raw-tabs-related-integration.png'), animations: 'disabled' });
+  expect(writes).toEqual([]);
 });

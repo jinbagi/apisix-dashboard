@@ -19,6 +19,7 @@ import { SKIP_INTERCEPTOR_HEADER } from '@/config/constant';
 import { req } from '@/config/req';
 import { isDeepEqual, isRecord } from '@/utils/apisixEditable';
 import { validateExactResourceSnapshot } from '@/utils/resourceIdentity';
+import { assertRestorableExport } from '@/utils/sharingFormat';
 
 export type ImportPreviewItem = {
   key: string; resourceType: ResourceKey; index: number; id: string;
@@ -51,6 +52,7 @@ async function currentBody(resourceType: ResourceKey, url: string) {
 }
 
 export async function previewImport(data: ExportData, selected: ResourceKey[]): Promise<ImportPreviewItem[]> {
+  assertRestorableExport(data);
   const plan: ImportPreviewItem[] = [];
   for (const resourceType of IMPORT_ORDER.filter((key) => selected.includes(key))) {
     const items: unknown = data.resources[resourceType] ?? [];
