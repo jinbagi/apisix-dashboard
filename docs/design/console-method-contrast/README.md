@@ -20,7 +20,7 @@ Dark selected labels already met 4.5 except POST (4.49); the Send values matched
 
 Only `raw_api/index.tsx` presentation bindings and its CSS module change. GET remains teal, PUT amber, PATCH green, POST blue and DELETE red, with a method name present on every surface. Selected labels and badges use a darker foreground in light mode and lighter foreground in dark mode. Badges use a local tint of the actual container background. Solid Send actions use dark method colors with white labels; their hover and pressed states darken that local background. The enabled shortcut is opaque and uses the same readable foreground.
 
-The existing accent fallback remains on disabled/loading Send actions, and disabled selectors retain their prior accent. Global palette, response status tags, API-key handling, request serialization, confirmations, shortcuts and session/history behavior are unchanged. The separate preset-keyboard fix in PR123 is outside this branch.
+The existing accent fallback remains on disabled/loading Send actions, and disabled selectors retain their prior accent. Global palette, response status tags, API-key handling, request serialization, confirmations, shortcuts and session/history behavior are unchanged. The separate preset-keyboard fix from PR123 is now included through a normal master merge; it is unchanged by the color correction.
 
 ## Verification and evidence
 
@@ -53,3 +53,30 @@ These measurements cover Console method colors. Other pre-existing warning/advis
 The 390px screenshots expose an existing layout problem that page-level overflow and action-box visibility do not detect: Send label/shortcut glyphs extend outside their button and the Request JSON title is clipped next to Format Request JSON. The computed color-pair assertions are not proof that every glyph remains over its intended background. The 390px evidence therefore confirms computed colors, visible action boxes and keyboard review/cancel behavior; it does **not** claim that child text fits or that the complete narrow layout is fixed.
 
 [Measured child geometry](narrow-clipping.json) records a 390px document with no page overflow, a 102.938px Send button and text extending about 30px beyond each horizontal edge. The existing two-column narrow action grid and `min-width: 0` allow this compression. The workspace title receives only 75.047px for 111.969px of text beside a 164.953px extra action. Its header lacks the existing request-card stacking rule. Follow-up 59 owns the responsive CSS and child-text containment/overlap regressions; this color-only change leaves those rules untouched.
+
+
+## Master integration verification
+
+The first PR124 CI run on the original `064033eb` head reported 909 passed and
+one failed old preset Ctrl+Enter case (three attempts). That branch preceded the
+already-merged follow-up 56 fix; this was the same known shortcut propagation
+failure, not a newly discovered color regression.
+
+A normal merge of master `2246c68b6ceb5778109c1661a0989e6dc7aab1d3` produced
+`a73d7838b674d73cab862a97464a1148ef30d488`. The PR123 `preventDefault` /
+`stopPropagation` / save sequence and stronger Enter, Ctrl+Enter, Meta+Enter and
+storage-failure tests are preserved. Compared with that master, the runtime diff
+is still only the original method presentation bindings and scoped CSS. The
+method-contrast spec and CSS are byte-identical to their original feature versions.
+
+Full lint, explicit TypeScript and production build passed on the merged tree.
+The new index SHA256 is
+`e9c05559b463bbe89fd951dcbff1b7b46c710c9c5a2dea437aa454387a9e248e`.
+The same six-spec mock-only command above passed **44/44** scenarios with zero
+retries in **3.1 minutes**, including all three preset-save key variants and
+storage failure. Fresh method measurements again contain **212** enabled color
+pairs, none below 4.5, with minimum **4.853347:1**. These checks include both themes,
+native 200% zoom, disabled/loading fallbacks and confirmation/cancellation gates.
+The original images and measured baseline remain labeled with their original
+af26-based provenance above. This local result does not claim the fresh full CI
+run has completed.
