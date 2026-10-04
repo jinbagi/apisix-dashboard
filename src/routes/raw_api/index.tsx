@@ -936,7 +936,8 @@ function RawApiPage() {
               }, hasBodyChanges)}
               className={classes.methodSelect}
               labelRender={({ value }) => (
-                <span style={{ color: METHOD_COLORS[value as string], fontWeight: 'var(--app-font-weight-heading)' }}>
+                <span className={classes.methodColor} data-method={value as string}
+                  style={{ color: busy ? METHOD_COLORS[value as string] : 'var(--console-method-text)', fontWeight: 'var(--app-font-weight-heading)' }}>
                   {value as string}
                 </span>
               )}
@@ -1020,7 +1021,7 @@ function RawApiPage() {
 
         <div className={classes.requestSummary}>
           <div className={classes.endpointSummary}>
-            <Tag color={METHOD_COLORS[method]} className={classes.methodTag}>{method}</Tag>
+            <Tag data-method={method} className={`${classes.methodColor} ${classes.methodBadge} ${classes.methodTag}`}>{method}</Tag>
             <Typography.Text code className={classes.endpoint}>
               /apisix/admin{requestUrl}
             </Typography.Text>
@@ -1050,8 +1051,9 @@ function RawApiPage() {
               onClick={handleExecute}
               aria-keyshortcuts="Control+Enter Meta+Enter"
               title="Send request (Ctrl/Cmd + Enter)"
-              className={classes.executeButton}
-              style={{ background: METHOD_COLORS[method] }}
+              className={`${classes.methodColor} ${classes.executeButton}`}
+              data-method={method}
+              style={{ background: `var(--console-method-button, ${METHOD_COLORS[method]})` }}
             >
               Send {method}
               <span className={classes.shortcut}>Ctrl/Cmd + Enter</span>
@@ -1279,7 +1281,7 @@ function RawApiPage() {
                 onClick={() => restoreHistoryEntry(entry)}
               >
                 <div className={classes.historyHeading}>
-                  <Tag color={METHOD_COLORS[entry.method]}>{entry.method}</Tag>
+                  <Tag data-method={entry.method} className={`${classes.methodColor} ${classes.methodBadge}`}>{entry.method}</Tag>
                   <Typography.Text code ellipsis>{entry.endpoint}</Typography.Text>
                 </div>
                 <div className={classes.historyMeta}>

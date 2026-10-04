@@ -1,0 +1,244 @@
+{
+  "page": {
+    "clientWidth": 390,
+    "scrollWidth": 390
+  },
+  "actions": {
+    "className": "_requestActions_1tw8m_449",
+    "box": {
+      "left": 109,
+      "right": 349,
+      "top": 964.4375,
+      "bottom": 1038.9375,
+      "width": 240,
+      "height": 74.5
+    },
+    "style": {
+      "display": "grid",
+      "grid": "129.062px 102.938px",
+      "gap": "8px",
+      "minWidth": "auto",
+      "whiteSpace": "normal",
+      "overflow": "visible",
+      "flexShrink": "0",
+      "padding": "0px"
+    },
+    "text": [
+      {
+        "text": "Copy as curl",
+        "left": 186.671875,
+        "right": 271.328125,
+        "top": 970.1875,
+        "bottom": 987.1875,
+        "width": 84.65625,
+        "height": 17
+      },
+      {
+        "text": "Load resource",
+        "left": 125,
+        "right": 222.0625,
+        "top": 1011.4375,
+        "bottom": 1028.4375,
+        "width": 97.0625,
+        "height": 17
+      },
+      {
+        "text": "Send PUT",
+        "left": 216.109375,
+        "right": 282.953125,
+        "top": 1011.4375,
+        "bottom": 1028.4375,
+        "width": 66.84375,
+        "height": 17
+      },
+      {
+        "text": "Ctrl/Cmd + Enter",
+        "left": 297.953125,
+        "right": 378.953125,
+        "top": 1013.9375,
+        "bottom": 1025.9375,
+        "width": 81,
+        "height": 12
+      }
+    ]
+  },
+  "send": {
+    "className": "ant-btn css-xsuzon css-var-_r_0_ ant-btn-primary ant-btn-color-primary ant-btn-variant-solid _methodColor_1tw8m_293 _executeButton_1tw8m_373",
+    "box": {
+      "left": 246.0625,
+      "right": 349,
+      "top": 1000.9375,
+      "bottom": 1038.9375,
+      "width": 102.9375,
+      "height": 38
+    },
+    "style": {
+      "display": "flex",
+      "grid": "none",
+      "gap": "8px",
+      "minWidth": "0px",
+      "whiteSpace": "nowrap",
+      "overflow": "visible",
+      "flexShrink": "1",
+      "padding": "0px 15px"
+    },
+    "text": [
+      {
+        "text": "Send PUT",
+        "left": 216.109375,
+        "right": 282.953125,
+        "top": 1011.4375,
+        "bottom": 1028.4375,
+        "width": 66.84375,
+        "height": 17
+      },
+      {
+        "text": "Ctrl/Cmd + Enter",
+        "left": 297.953125,
+        "right": 378.953125,
+        "top": 1013.9375,
+        "bottom": 1025.9375,
+        "width": 81,
+        "height": 12
+      }
+    ]
+  },
+  "load": {
+    "className": "ant-btn css-xsuzon css-var-_r_0_ ant-btn-default ant-btn-color-default ant-btn-variant-outlined",
+    "box": {
+      "left": 109,
+      "right": 238.0625,
+      "top": 1000.9375,
+      "bottom": 1038.9375,
+      "width": 129.0625,
+      "height": 38
+    },
+    "style": {
+      "display": "flex",
+      "grid": "none",
+      "gap": "8px",
+      "minWidth": "auto",
+      "whiteSpace": "nowrap",
+      "overflow": "visible",
+      "flexShrink": "1",
+      "padding": "0px 15px"
+    },
+    "text": [
+      {
+        "text": "Load resource",
+        "left": 125,
+        "right": 222.0625,
+        "top": 1011.4375,
+        "bottom": 1028.4375,
+        "width": 97.0625,
+        "height": 17
+      }
+    ]
+  },
+  "workspaceHeader": {
+    "className": "ant-card-head",
+    "box": {
+      "left": 85,
+      "right": 373,
+      "top": 1080.9375,
+      "bottom": 1132.9375,
+      "width": 288,
+      "height": 52
+    },
+    "style": {
+      "display": "flex",
+      "grid": "none",
+      "gap": "normal",
+      "minWidth": "auto",
+      "whiteSpace": "normal",
+      "overflow": "visible",
+      "flexShrink": "1",
+      "padding": "0px 24px"
+    },
+    "text": [
+      {
+        "text": "Request JSON",
+        "left": 109,
+        "right": 220.96875,
+        "top": 1095.84375,
+        "bottom": 1115.84375,
+        "width": 111.96875,
+        "height": 20
+      },
+      {
+        "text": "Format Request JSON",
+        "left": 192.046875,
+        "right": 341,
+        "top": 1097.9375,
+        "bottom": 1114.9375,
+        "width": 148.953125,
+        "height": 17
+      }
+    ]
+  },
+  "title": {
+    "className": "ant-card-head-title",
+    "box": {
+      "left": 109,
+      "right": 184.046875,
+      "top": 1094.84375,
+      "bottom": 1118.03125,
+      "width": 75.046875,
+      "height": 23.1875
+    },
+    "style": {
+      "display": "block",
+      "grid": "none",
+      "gap": "normal",
+      "minWidth": "auto",
+      "whiteSpace": "nowrap",
+      "overflow": "hidden",
+      "flexShrink": "1",
+      "padding": "0px"
+    },
+    "text": [
+      {
+        "text": "Request JSON",
+        "left": 109,
+        "right": 220.96875,
+        "top": 1095.84375,
+        "bottom": 1115.84375,
+        "width": 111.96875,
+        "height": 20
+      }
+    ]
+  },
+  "extra": {
+    "className": "ant-card-extra",
+    "box": {
+      "left": 184.046875,
+      "right": 349,
+      "top": 1092.1875,
+      "bottom": 1120.6875,
+      "width": 164.953125,
+      "height": 28.5
+    },
+    "style": {
+      "display": "block",
+      "grid": "none",
+      "gap": "normal",
+      "minWidth": "auto",
+      "whiteSpace": "normal",
+      "overflow": "visible",
+      "flexShrink": "1",
+      "padding": "0px"
+    },
+    "text": [
+      {
+        "text": "Format Request JSON",
+        "left": 192.046875,
+        "right": 341,
+        "top": 1097.9375,
+        "bottom": 1114.9375,
+        "width": 148.953125,
+        "height": 17
+      }
+    ]
+  },
+  "blocked": []
+}

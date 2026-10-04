@@ -1,0 +1,1507 @@
+{
+  "theme": "light",
+  "records": [
+    {
+      "method": "GET",
+      "selected": {
+        "text": "GET",
+        "color": "rgb(0, 109, 117)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 6.096982876063082
+      },
+      "selectionStates": [
+        {
+          "state": "default",
+          "label": {
+            "text": "GET",
+            "color": "rgb(0, 109, 117)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.096982876063082
+          }
+        },
+        {
+          "state": "hover",
+          "label": {
+            "text": "GET",
+            "color": "rgb(0, 109, 117)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.096982876063082
+          }
+        },
+        {
+          "state": "active",
+          "label": {
+            "text": "GET",
+            "color": "rgb(0, 109, 117)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.096982876063082
+          }
+        },
+        {
+          "state": "focus",
+          "label": {
+            "text": "GET",
+            "color": "rgb(0, 109, 117)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.096982876063082
+          }
+        }
+      ],
+      "summary": {
+        "text": "GET",
+        "color": "rgb(0, 109, 117)",
+        "background": [
+          229.5,
+          240.399975,
+          241.19991,
+          1
+        ],
+        "fontSize": "12px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 5.2642600022035415
+      },
+      "send": [
+        {
+          "state": "default",
+          "label": {
+            "text": "Send GETCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              0,
+              109,
+              117,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": false,
+            "ratio": 6.096982876063082
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              0,
+              109,
+              117,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 6.096982876063082
+          }
+        },
+        {
+          "state": "hover",
+          "label": {
+            "text": "Send GETCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              0,
+              98.10003,
+              105.299955,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": false,
+            "ratio": 7.104100002803655
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              0,
+              98.10003,
+              105.299955,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 7.104100002803655
+          }
+        },
+        {
+          "state": "active",
+          "label": {
+            "text": "Send GETCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              0,
+              87.200055,
+              93.60004500000001,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": false,
+            "ratio": 8.300513253454385
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              0,
+              87.200055,
+              93.60004500000001,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 8.300513253454385
+          }
+        },
+        {
+          "state": "focus",
+          "label": {
+            "text": "Send GETCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              0,
+              109,
+              117,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": true,
+            "ratio": 6.096982876063082
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              0,
+              109,
+              117,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 6.096982876063082
+          }
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "selected": {
+        "text": "PUT",
+        "color": "rgb(135, 77, 0)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 6.792313216479324
+      },
+      "selectionStates": [
+        {
+          "state": "default",
+          "label": {
+            "text": "PUT",
+            "color": "rgb(135, 77, 0)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.792313216479324
+          }
+        },
+        {
+          "state": "hover",
+          "label": {
+            "text": "PUT",
+            "color": "rgb(135, 77, 0)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.792313216479324
+          }
+        },
+        {
+          "state": "active",
+          "label": {
+            "text": "PUT",
+            "color": "rgb(135, 77, 0)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.792313216479324
+          }
+        },
+        {
+          "state": "focus",
+          "label": {
+            "text": "PUT",
+            "color": "rgb(135, 77, 0)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.792313216479324
+          }
+        }
+      ],
+      "summary": {
+        "text": "PUT",
+        "color": "rgb(135, 77, 0)",
+        "background": [
+          242.999955,
+          237.19998,
+          229.5,
+          1
+        ],
+        "fontSize": "12px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 5.849413231061062
+      },
+      "send": [
+        {
+          "state": "default",
+          "label": {
+            "text": "Send PUTCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              135,
+              77,
+              0,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": false,
+            "ratio": 6.792313216479324
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              135,
+              77,
+              0,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 6.792313216479324
+          }
+        },
+        {
+          "state": "hover",
+          "label": {
+            "text": "Send PUTCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              121.50010499999999,
+              69.30007499999999,
+              0,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": false,
+            "ratio": 7.839078081064624
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              121.50010499999999,
+              69.30007499999999,
+              0,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 7.839078081064624
+          }
+        },
+        {
+          "state": "active",
+          "label": {
+            "text": "Send PUTCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              107.999895,
+              61.600095,
+              0,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": false,
+            "ratio": 9.059492523863515
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              107.999895,
+              61.600095,
+              0,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 9.059492523863515
+          }
+        },
+        {
+          "state": "focus",
+          "label": {
+            "text": "Send PUTCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              135,
+              77,
+              0,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": true,
+            "ratio": 6.792313216479324
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              135,
+              77,
+              0,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 6.792313216479324
+          }
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "selected": {
+        "text": "PATCH",
+        "color": "rgb(35, 120, 4)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 5.585393881403125
+      },
+      "selectionStates": [
+        {
+          "state": "default",
+          "label": {
+            "text": "PATCH",
+            "color": "rgb(35, 120, 4)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.585393881403125
+          }
+        },
+        {
+          "state": "hover",
+          "label": {
+            "text": "PATCH",
+            "color": "rgb(35, 120, 4)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.585393881403125
+          }
+        },
+        {
+          "state": "active",
+          "label": {
+            "text": "PATCH",
+            "color": "rgb(35, 120, 4)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.585393881403125
+          }
+        },
+        {
+          "state": "focus",
+          "label": {
+            "text": "PATCH",
+            "color": "rgb(35, 120, 4)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.585393881403125
+          }
+        }
+      ],
+      "summary": {
+        "text": "PATCH",
+        "color": "rgb(35, 120, 4)",
+        "background": [
+          232.999875,
+          241.500045,
+          229.900095,
+          1
+        ],
+        "fontSize": "12px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 4.853346837105617
+      },
+      "send": [
+        {
+          "state": "default",
+          "label": {
+            "text": "Send PATCHCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              35,
+              120,
+              4,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": false,
+            "ratio": 5.585393881403125
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              35,
+              120,
+              4,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 5.585393881403125
+          }
+        },
+        {
+          "state": "hover",
+          "label": {
+            "text": "Send PATCHCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              31.499895,
+              107.999895,
+              3.5999879999999997,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": false,
+            "ratio": 6.549352097609807
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              31.499895,
+              107.999895,
+              3.5999879999999997,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 6.549352097609807
+          }
+        },
+        {
+          "state": "active",
+          "label": {
+            "text": "Send PATCHCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              28.00002,
+              96.000105,
+              3.199995,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": false,
+            "ratio": 7.709448869702057
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              28.00002,
+              96.000105,
+              3.199995,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 7.709448869702057
+          }
+        },
+        {
+          "state": "focus",
+          "label": {
+            "text": "Send PATCHCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              35,
+              120,
+              4,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": true,
+            "ratio": 5.585393881403125
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              35,
+              120,
+              4,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 5.585393881403125
+          }
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "selected": {
+        "text": "POST",
+        "color": "rgb(9, 88, 217)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 6.159341084905322
+      },
+      "selectionStates": [
+        {
+          "state": "default",
+          "label": {
+            "text": "POST",
+            "color": "rgb(9, 88, 217)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.159341084905322
+          }
+        },
+        {
+          "state": "hover",
+          "label": {
+            "text": "POST",
+            "color": "rgb(9, 88, 217)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.159341084905322
+          }
+        },
+        {
+          "state": "active",
+          "label": {
+            "text": "POST",
+            "color": "rgb(9, 88, 217)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.159341084905322
+          }
+        },
+        {
+          "state": "focus",
+          "label": {
+            "text": "POST",
+            "color": "rgb(9, 88, 217)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.159341084905322
+          }
+        }
+      ],
+      "summary": {
+        "text": "POST",
+        "color": "rgb(9, 88, 217)",
+        "background": [
+          230.39989500000001,
+          238.30005,
+          251.19999,
+          1
+        ],
+        "fontSize": "12px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 5.290629416453383
+      },
+      "send": [
+        {
+          "state": "default",
+          "label": {
+            "text": "Send POSTCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              9,
+              88,
+              217,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": false,
+            "ratio": 6.159341084905322
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              9,
+              88,
+              217,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 6.159341084905322
+          }
+        },
+        {
+          "state": "hover",
+          "label": {
+            "text": "Send POSTCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              8.0999985,
+              79.19994,
+              195.29990999999998,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": false,
+            "ratio": 7.178586718669248
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              8.0999985,
+              79.19994,
+              195.29990999999998,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 7.178586718669248
+          }
+        },
+        {
+          "state": "active",
+          "label": {
+            "text": "Send POSTCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              7.2000015,
+              70.39989,
+              173.59992,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": false,
+            "ratio": 8.388331566717898
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              7.2000015,
+              70.39989,
+              173.59992,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 8.388331566717898
+          }
+        },
+        {
+          "state": "focus",
+          "label": {
+            "text": "Send POSTCtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              9,
+              88,
+              217,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": true,
+            "ratio": 6.159341084905322
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              9,
+              88,
+              217,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 6.159341084905322
+          }
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "selected": {
+        "text": "DELETE",
+        "color": "rgb(168, 7, 26)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 7.748294113493004
+      },
+      "selectionStates": [
+        {
+          "state": "default",
+          "label": {
+            "text": "DELETE",
+            "color": "rgb(168, 7, 26)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 7.748294113493004
+          }
+        },
+        {
+          "state": "hover",
+          "label": {
+            "text": "DELETE",
+            "color": "rgb(168, 7, 26)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 7.748294113493004
+          }
+        },
+        {
+          "state": "active",
+          "label": {
+            "text": "DELETE",
+            "color": "rgb(168, 7, 26)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 7.748294113493004
+          }
+        },
+        {
+          "state": "focus",
+          "label": {
+            "text": "DELETE",
+            "color": "rgb(168, 7, 26)",
+            "background": [
+              255,
+              255,
+              255,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 7.748294113493004
+          }
+        }
+      ],
+      "summary": {
+        "text": "DELETE",
+        "color": "rgb(168, 7, 26)",
+        "background": [
+          246.29991,
+          230.199975,
+          232.09998,
+          1
+        ],
+        "fontSize": "12px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 6.43359219188391
+      },
+      "send": [
+        {
+          "state": "default",
+          "label": {
+            "text": "Send DELETECtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              168,
+              7,
+              26,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": false,
+            "ratio": 7.748294113493004
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              168,
+              7,
+              26,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 7.748294113493004
+          }
+        },
+        {
+          "state": "hover",
+          "label": {
+            "text": "Send DELETECtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              151.19995500000002,
+              6.3000045,
+              23.399998500000002,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": false,
+            "ratio": 8.899286876760394
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              151.19995500000002,
+              6.3000045,
+              23.399998500000002,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 8.899286876760394
+          }
+        },
+        {
+          "state": "active",
+          "label": {
+            "text": "Send DELETECtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              134.400045,
+              5.600004,
+              20.799993,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": false,
+            "ratio": 10.217746324618346
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              134.400045,
+              5.600004,
+              20.799993,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 10.217746324618346
+          }
+        },
+        {
+          "state": "focus",
+          "label": {
+            "text": "Send DELETECtrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              168,
+              7,
+              26,
+              1
+            ],
+            "fontSize": "14px",
+            "fontWeight": "620",
+            "focusVisible": true,
+            "ratio": 7.748294113493004
+          },
+          "shortcut": {
+            "text": "Ctrl/Cmd + Enter",
+            "color": "rgb(255, 255, 255)",
+            "background": [
+              168,
+              7,
+              26,
+              1
+            ],
+            "fontSize": "10px",
+            "fontWeight": "560",
+            "focusVisible": false,
+            "ratio": 7.748294113493004
+          }
+        }
+      ]
+    }
+  ],
+  "badges": [
+    {
+      "method": "GET",
+      "states": [
+        {
+          "state": "default",
+          "label": {
+            "text": "GET",
+            "color": "rgb(0, 109, 117)",
+            "background": [
+              229.5,
+              240.399975,
+              241.19991,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.2642600022035415
+          }
+        },
+        {
+          "state": "hover",
+          "label": {
+            "text": "GET",
+            "color": "rgb(0, 109, 117)",
+            "background": [
+              229.5,
+              240.399975,
+              241.19991,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.2642600022035415
+          }
+        },
+        {
+          "state": "active",
+          "label": {
+            "text": "GET",
+            "color": "rgb(0, 109, 117)",
+            "background": [
+              229.5,
+              240.399975,
+              241.19991,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.2642600022035415
+          }
+        },
+        {
+          "state": "focus",
+          "label": {
+            "text": "GET",
+            "color": "rgb(0, 109, 117)",
+            "background": [
+              229.5,
+              240.399975,
+              241.19991,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.2642600022035415
+          }
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "states": [
+        {
+          "state": "default",
+          "label": {
+            "text": "PUT",
+            "color": "rgb(135, 77, 0)",
+            "background": [
+              242.999955,
+              237.19998,
+              229.5,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.849413231061062
+          }
+        },
+        {
+          "state": "hover",
+          "label": {
+            "text": "PUT",
+            "color": "rgb(135, 77, 0)",
+            "background": [
+              242.999955,
+              237.19998,
+              229.5,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.849413231061062
+          }
+        },
+        {
+          "state": "active",
+          "label": {
+            "text": "PUT",
+            "color": "rgb(135, 77, 0)",
+            "background": [
+              242.999955,
+              237.19998,
+              229.5,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.849413231061062
+          }
+        },
+        {
+          "state": "focus",
+          "label": {
+            "text": "PUT",
+            "color": "rgb(135, 77, 0)",
+            "background": [
+              242.999955,
+              237.19998,
+              229.5,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.849413231061062
+          }
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "states": [
+        {
+          "state": "default",
+          "label": {
+            "text": "PATCH",
+            "color": "rgb(35, 120, 4)",
+            "background": [
+              232.999875,
+              241.500045,
+              229.900095,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 4.853346837105617
+          }
+        },
+        {
+          "state": "hover",
+          "label": {
+            "text": "PATCH",
+            "color": "rgb(35, 120, 4)",
+            "background": [
+              232.999875,
+              241.500045,
+              229.900095,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 4.853346837105617
+          }
+        },
+        {
+          "state": "active",
+          "label": {
+            "text": "PATCH",
+            "color": "rgb(35, 120, 4)",
+            "background": [
+              232.999875,
+              241.500045,
+              229.900095,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 4.853346837105617
+          }
+        },
+        {
+          "state": "focus",
+          "label": {
+            "text": "PATCH",
+            "color": "rgb(35, 120, 4)",
+            "background": [
+              232.999875,
+              241.500045,
+              229.900095,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 4.853346837105617
+          }
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "states": [
+        {
+          "state": "default",
+          "label": {
+            "text": "POST",
+            "color": "rgb(9, 88, 217)",
+            "background": [
+              230.39989500000001,
+              238.30005,
+              251.19999,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.290629416453383
+          }
+        },
+        {
+          "state": "hover",
+          "label": {
+            "text": "POST",
+            "color": "rgb(9, 88, 217)",
+            "background": [
+              230.39989500000001,
+              238.30005,
+              251.19999,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.290629416453383
+          }
+        },
+        {
+          "state": "active",
+          "label": {
+            "text": "POST",
+            "color": "rgb(9, 88, 217)",
+            "background": [
+              230.39989500000001,
+              238.30005,
+              251.19999,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.290629416453383
+          }
+        },
+        {
+          "state": "focus",
+          "label": {
+            "text": "POST",
+            "color": "rgb(9, 88, 217)",
+            "background": [
+              230.39989500000001,
+              238.30005,
+              251.19999,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 5.290629416453383
+          }
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "states": [
+        {
+          "state": "default",
+          "label": {
+            "text": "DELETE",
+            "color": "rgb(168, 7, 26)",
+            "background": [
+              246.29991,
+              230.199975,
+              232.09998,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.43359219188391
+          }
+        },
+        {
+          "state": "hover",
+          "label": {
+            "text": "DELETE",
+            "color": "rgb(168, 7, 26)",
+            "background": [
+              246.29991,
+              230.199975,
+              232.09998,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.43359219188391
+          }
+        },
+        {
+          "state": "active",
+          "label": {
+            "text": "DELETE",
+            "color": "rgb(168, 7, 26)",
+            "background": [
+              246.29991,
+              230.199975,
+              232.09998,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.43359219188391
+          }
+        },
+        {
+          "state": "focus",
+          "label": {
+            "text": "DELETE",
+            "color": "rgb(168, 7, 26)",
+            "background": [
+              246.29991,
+              230.199975,
+              232.09998,
+              1
+            ],
+            "fontSize": "12px",
+            "fontWeight": "680",
+            "focusVisible": false,
+            "ratio": 6.43359219188391
+          }
+        }
+      ]
+    }
+  ]
+}
