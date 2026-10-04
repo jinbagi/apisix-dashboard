@@ -20,6 +20,7 @@ import { graphqlCostDecorationsApi } from '@/apis/graphql_cost_decorations';
 import { SKIP_INTERCEPTOR_HEADER } from '@/config/constant';
 import { req } from '@/config/req';
 import { isRecord } from '@/utils/apisixEditable';
+import { supportedPluginReferences } from '@/utils/pluginReferences';
 
 export const supportsDependencyExport = (api: string) => ['/routes', '/stream_routes', '/services'].includes(api);
 type Kind = 'routes' | 'stream_routes' | 'services' | 'upstreams' | 'plugin_configs' | 'protos' | 'graphql_cost_decorations';
@@ -130,16 +131,8 @@ export async function prepareDependencyExport(apiBase: string, selectedIds: stri
         if (row.kind === 'routes' && value.plugin_config_id != null) add('plugin_configs', value.plugin_config_id, `${row.key} → plugin_config_id`);
       }
       if (row.kind === 'services' && value.upstream_id != null) add('upstreams', value.upstream_id, `${row.key} → upstream_id`);
-      if (options.pluginReferences && isRecord(value.plugins)) {
-        const grpc = value.plugins['grpc-transcode'];
-        if (isRecord(grpc) && grpc.proto_id != null) add('protos', grpc.proto_id, `${row.key} → grpc-transcode.proto_id`);
-        const split = value.plugins['traffic-split'];
-        if (isRecord(split) && Array.isArray(split.rules)) split.rules.forEach((rule, ruleIndex) => {
-          if (isRecord(rule) && Array.isArray(rule.weighted_upstreams)) rule.weighted_upstreams.forEach((upstream, index) => {
-            if (isRecord(upstream) && upstream.upstream_id != null) add('upstreams', upstream.upstream_id,
-              `${row.key} → traffic-split.rules[${ruleIndex}].weighted_upstreams[${index}].upstream_id`);
-          });
-        });
+      if (options.pluginReferences) for (const reference of supportedPluginReferences(row.kind, value)) {
+        add(reference.targetKind, reference.value, `${row.key} → ${reference.field.replace(/^plugins\./, '')}`);
       }
       if (options.graphqlCostDecorations && row.kind === 'services') {
         const collectionKey = `${row.key}/graphql_cost_decorations`;

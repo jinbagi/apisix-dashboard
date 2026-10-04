@@ -17,9 +17,9 @@
 
 import { fetchAllResources } from '@/apis/fetchAll';
 import { isRecord } from '@/utils/apisixEditable';
+import { supportedPluginReferences } from '@/utils/pluginReferences';
 
 const kinds = ['routes', 'stream_routes', 'services', 'upstreams', 'plugin_configs', 'consumers', 'consumer_groups', 'global_rules', 'protos'] as const;
-const pluginKinds = new Set<Kind>(['routes', 'stream_routes', 'services', 'plugin_configs', 'consumers', 'consumer_groups', 'global_rules']);
 type Kind = typeof kinds[number];
 export type ReferenceIssue = {
   key: string; source: string; field: string; target: string; affected: string[];
@@ -39,19 +39,7 @@ function savedReferences(kind: Kind, resource: Record<string, unknown>): SavedRe
   const found: SavedReference[] = (references[kind] ?? [])
     .filter(([field]) => resource[field] != null)
     .map(([field, targetKind]) => ({ field, targetKind, value: resource[field] }));
-  if (!pluginKinds.has(kind) || !isRecord(resource.plugins)) return found;
-  const grpc = resource.plugins['grpc-transcode'];
-  if (isRecord(grpc)) found.push({ field: 'plugins.grpc-transcode.proto_id', targetKind: 'protos', value: grpc.proto_id });
-  const split = resource.plugins['traffic-split'];
-  if (isRecord(split) && Array.isArray(split.rules)) split.rules.forEach((rule, ruleIndex) => {
-    if (isRecord(rule) && Array.isArray(rule.weighted_upstreams)) rule.weighted_upstreams.forEach((upstream, index) => {
-      // Inline upstreams and the fallback to the Route's upstream do not contain an ID reference.
-      if (isRecord(upstream) && Object.hasOwn(upstream, 'upstream_id')) found.push({
-        field: `plugins.traffic-split.rules[${ruleIndex}].weighted_upstreams[${index}].upstream_id`,
-        targetKind: 'upstreams', value: upstream.upstream_id,
-      });
-    });
-  });
+  found.push(...supportedPluginReferences(kind, resource));
   return found;
 }
 function affectedRoutes(kind: Kind, resource: Record<string, unknown>, source: string, data: Map<Kind, Record<string, unknown>[]>) {

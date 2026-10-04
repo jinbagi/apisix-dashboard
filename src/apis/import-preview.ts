@@ -22,6 +22,7 @@ import { isDeepEqual, isRecord } from '@/utils/apisixEditable';
 export type ImportPreviewItem = {
   key: string; resourceType: ResourceKey; index: number; id: string;
   status: 'New' | 'Changed' | 'Unchanged' | 'Blocked';
+  sourceUrl?: string; sourceBody?: Record<string, unknown>;
   url?: string; before?: Record<string, unknown> | null; after?: Record<string, unknown>; error?: string;
 };
 const errorText = (cause: unknown) => cause instanceof Error ? cause.message : 'Unable to read current APISIX configuration';

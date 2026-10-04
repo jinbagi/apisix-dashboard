@@ -22,7 +22,6 @@ import {
   Checkbox,
   Col,
   Collapse,
-  Input,
   message,
   Modal,
   Progress,
@@ -36,12 +35,13 @@ import {
 } from 'antd';
 import { useCallback, useRef, useState } from 'react';
 
-import { mapImportEnvironment, selectImportItems, unselectedImportDependencies } from '@/apis/environment-import';
+import { checkEnvironmentReferences, mapImportEnvironment, selectImportItems, unselectedImportDependencies, verifyEnvironmentReferences } from '@/apis/environment-import';
 import {
   type ConfigValidationResult,
   EXPORT_VERSION,
   exportAllResources,
   type ExportData,
+  getImportRequest,
   IMPORT_ORDER,
   importResources,
   type ImportResult,
@@ -50,6 +50,7 @@ import {
   validateConfiguration,
 } from '@/apis/export-import';
 import { type ImportPreviewItem,previewImport, verifyImportPreview } from '@/apis/import-preview';
+import { EnvironmentIdMapping } from '@/components/page/EnvironmentIdMapping';
 import { ImportChangePreview } from '@/components/page/ImportChangePreview';
 import PageHeader from '@/components/page/PageHeader';
 import { downloadJson } from '@/utils/downloadJson';
@@ -188,7 +189,13 @@ function ImportSection() {
     setPreviewing(true);
     try {
       const mapped = mapImportEnvironment(fileData, mappingText);
-      const items = await previewImport(mapped, selectedResources);
+      const items = await checkEnvironmentReferences(await previewImport(mapped, selectedResources));
+      for (const row of items) {
+        try {
+          const source = getImportRequest(row.resourceType, fileData.resources[row.resourceType]![row.index]);
+          row.sourceUrl = source.url; row.sourceBody = source.body;
+        } catch { /* Invalid identities are already reported by the import preview. */ }
+      }
       setSelectedItems(items.filter((row) => ['New', 'Changed'].includes(row.status)).map((row) => row.key));
       setPreview({ items, data: mapped, selected: [...selectedResources] });
     } catch (error) {
@@ -215,9 +222,12 @@ function ImportSection() {
             setProgress(Math.round((completed / totalSteps) * 100));
             setResults((prev) => [...prev, result]);
           },
-          (resourceType, item, index) => verifyImportPreview(
-            selection.rows.get(resourceType)?.[index], item,
-          ),
+          async (resourceType, item, index) => {
+            const row = selection.rows.get(resourceType)?.[index];
+            const changed = await verifyImportPreview(row, item);
+            if (changed) await verifyEnvironmentReferences(row!);
+            return changed;
+          },
         );
 
         setImporting(false);
@@ -313,16 +323,10 @@ function ImportSection() {
             style={{ marginBottom: 16 }}
           />
 
-          <Collapse style={{ marginBottom: 16 }} items={[{ key: 'mappings', label: 'Environment ID mappings (optional)', children: <>
-            <Typography.Paragraph>
-              Compare this exported file with the current environment: {window.location.origin}.
-              Map IDs for routes, streamRoutes, services, upstreams, pluginConfigs, consumers and consumerGroups.
-              Matching top-level references and Service/Consumer child owners are updated together. Plugin-internal references are unchanged.
-            </Typography.Paragraph>
-            <Typography.Paragraph code>{'{"upstreams":{"dev-upstream":"prod-upstream"}}'}</Typography.Paragraph>
-            <Input.TextArea aria-label="Environment ID mappings" rows={4} value={mappingText} disabled={previewing || importing || validating}
-              onChange={(event) => { setMappingText(event.target.value); setValidation(null); setPreview(null); }} />
-          </> }]} />
+          <Collapse style={{ marginBottom: 16 }} items={[{ key: 'mappings', label: 'Environment ID mappings (optional)', children:
+            <EnvironmentIdMapping data={fileData} text={mappingText} disabled={previewing || importing || validating}
+              onChange={(value) => { setMappingText(value); setValidation(null); setPreview(null); }} />
+          }]} />
           <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
             Select resources to import:
           </Typography.Text>
@@ -384,7 +388,8 @@ function ImportSection() {
             onCancel={() => navigationBlocker.reset?.()} footer={<Button onClick={() => navigationBlocker.reset?.()}>Keep waiting</Button>}>
             Wait for the current import to finish before leaving this page.
           </Modal>
-          <Modal open={preview !== null} title="Confirm Import" width={1000} okText="Import"
+          <Modal open={preview !== null} title="Confirm Import" width={1100} okText="Import"
+            style={{ top: 24 }} styles={{ body: { maxHeight: 'calc(100dvh - 160px)', overflowY: 'auto' } }}
             onCancel={() => setPreview(null)} onOk={applyImport} confirmLoading={importing}
             closable={!importing} maskClosable={!importing} keyboard={!importing}
             cancelButtonProps={{ disabled: importing }} destroyOnHidden
