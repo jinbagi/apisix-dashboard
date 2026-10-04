@@ -29,3 +29,12 @@ Full repository ESLint, TypeScript and production build pass (the existing large
 [Before: Tab removes the hostname and leaves an error](before-tab.png).
 
 [After: desktop hostname retained](after-1440.png) · [After: 390px hostname retained](after-390.png).
+
+
+## Follow-up 53: Route HTTP Method blur submission
+
+The integrated APISIX run exposed a Route caller that forced `searchValue=""` on the shared tags control. This was the only such caller. The prop overrode TagInput's controlled search text, so Select received an empty search string during its blur-submit path. Removing the redundant manual append in follow-up 50 made the existing conflicting control visible: typing GET then blurring left an empty array.
+
+A fully mocked production fixture reproduces that exact failure against PR117 before the correction. The fix removes only the Route's forced empty search value; TagInput remains the owner of its search text. Added coverage includes GET blur, POST Tab with native focus movement, PUT Enter, DELETE pointer blur, duplicate POST, every supported method in exact Payload JSON, invalid-method rejection with zero writes, and a complete valid-method custom-ID PUT plus matching detail read-back. The existing six SSL/numeric-tag cases remain in the same fixture suite. No dependency, validation schema or Admin API payload normalizer changes.
+
+Full ESLint, TypeScript and production build pass. The final production run passes **85/85** across the eight tag-input cases, SSL/Upstream validation, custom-ID creation and Form/JSON parity. [All supported methods retained at 390px](route-methods-narrow.png) was visually checked. These are mocked frontend/contract checks; the integrated service-backed Route CRUD rerun is separate.

@@ -32,7 +32,7 @@ async function setup(page: Page, allowWrite = false) {
       return route.fulfill({ json: { value, key: `/apisix${path}` } });
     }
     if (records.has(path)) return route.fulfill({ json: { value: records.get(path), key: `/apisix${path}` } });
-    if (path.startsWith('/ssls/')) return route.fulfill({ status: 404, json: { error_msg: 'Not found' } });
+    if (/^\/(ssls|routes)\/[^/]+$/.test(path)) return route.fulfill({ status: 404, json: { error_msg: 'Not found' } });
     if (path === '/plugins/list') return route.fulfill({ json: [] });
     if (path === '/plugins') return route.fulfill({ json: {} });
     const list = [...records].filter(([key]) => key.startsWith(`${path}/`)).map(([, value]) => ({ value }));
@@ -173,4 +173,58 @@ test('shared numeric tags retain their conversion through Enter, Tab and duplica
   const json = await payload(page);
   expect(json).toMatchObject({ checks: { active: { healthy: { http_statuses: [200, 201] } } } });
   expect(writes).toEqual([]);
+});
+
+
+const routeMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS', 'CONNECT', 'TRACE', 'PURGE'];
+const methodTags = (page: Page) => page.locator('[data-form-field="methods"] .ant-select-selection-item-content');
+
+test('Route HTTP Methods retain blur, Tab and Enter tags with deduplication and exact JSON', async ({ page }) => {
+  const writes = await setup(page);
+  await page.setViewportSize({ width: 390, height: 1000 });
+  await page.goto('routes/add');
+  const input = page.getByRole('combobox', { name: 'HTTP Methods', exact: true });
+  await input.fill('GET'); await input.blur();
+  await expect(methodTags(page)).toHaveText(['GET']);
+  await input.fill('POST'); await input.press('Tab');
+  await expect(input).not.toBeFocused();
+  await expect(methodTags(page)).toHaveText(['GET', 'POST']);
+  await input.fill('PUT'); await input.press('Enter');
+  await expect(methodTags(page)).toHaveText(['GET', 'POST', 'PUT']);
+  await input.fill('DELETE'); await page.getByRole('textbox', { name: 'Description', exact: true }).click();
+  for (const method of routeMethods.slice(4)) { await input.fill(method); await input.blur(); }
+  await input.fill('POST'); await input.blur();
+  await expect(methodTags(page)).toHaveText(routeMethods);
+  await page.keyboard.press('Escape');
+  const field = page.locator('[data-form-field="methods"]');
+  await page.evaluate(() => document.fonts.ready);
+  await field.evaluate(element => element.scrollIntoView({ block: 'center' }));
+  const box = await field.boundingBox(); expect(box).not.toBeNull();
+  await page.screenshot({ path: test.info().outputPath('route-methods-narrow.png'), clip: box!, animations: 'disabled' });
+  expect((await payload(page)).methods).toEqual(routeMethods);
+  expect(writes).toEqual([]);
+});
+
+test('Route method validation blocks unsupported tags and saves the complete valid method list', async ({ page }) => {
+  const writes = await setup(page, true);
+  await page.goto('routes/add');
+  await page.getByRole('textbox', { name: 'ID', exact: true }).fill('route-methods-fixture');
+  await page.getByRole('textbox', { name: 'URI', exact: true }).fill('/method-fixture');
+  const input = page.getByRole('combobox', { name: 'HTTP Methods', exact: true });
+  await input.fill('INVALID-METHOD'); await input.blur();
+  await expect(methodTags(page)).toHaveText(['INVALID-METHOD']);
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Review first error', exact: true })).toBeVisible();
+  expect(writes).toEqual([]);
+  await page.locator('[data-form-field="methods"] .ant-select-selection-item').filter({ hasText: 'INVALID-METHOD' }).locator('.ant-select-selection-item-remove').click();
+  for (const method of routeMethods) { await input.fill(method); await input.blur(); }
+  await expect(methodTags(page)).toHaveText(routeMethods);
+  await expect(page.getByRole('button', { name: 'Review first error', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(page).toHaveURL(url => url.pathname.endsWith('/routes/detail/route-methods-fixture'));
+  expect(writes).toHaveLength(1);
+  expect(writes[0]).toMatchObject({ path: '/routes/route-methods-fixture', body: { uri: '/method-fixture', methods: routeMethods } });
+  expect(writes[0].body.methods).toEqual(routeMethods);
+  expect(writes[0].body).not.toHaveProperty('id');
+  await expect(methodTags(page)).toHaveText(routeMethods);
 });
