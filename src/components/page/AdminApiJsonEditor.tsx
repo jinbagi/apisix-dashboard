@@ -16,7 +16,7 @@
  */
 import { Alert, Button, message, Segmented, Space, Tooltip, Typography } from 'antd';
 import type { editor } from 'monaco-editor';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { ZodIssue } from 'zod';
 
 import { applyBulkPatch } from '@/apis/bulk-patch';
@@ -171,6 +171,9 @@ export const AdminApiJsonEditor = ({
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const activeRef = useRef(active);
   activeRef.current = active;
+  const sessionId = useId();
+  const modelPath = 'inmemory:///raw/' + encodeURIComponent(sessionId);
+  const retainedModel = useRef<editor.ITextModel | null>(null);
   const viewState = useRef<editor.ICodeEditorViewState | null>(null);
   const loadSession = persistentSession || active;
   const userEditedRef = useRef(false);
@@ -487,6 +490,12 @@ export const AdminApiJsonEditor = ({
 
   const handleEditorMount = useCallback((ed: editor.IStandaloneCodeEditor) => {
     editorRef.current = ed;
+    retainedModel.current = ed.getModel();
+    // A save or refresh may finish while this tab's widget is suspended.
+    if (ed.getValue() !== valueRef.current) {
+      ed.executeEdits('raw-session', [{ range: ed.getModel()!.getFullModelRange(), text: valueRef.current }]);
+      ed.pushUndoStop();
+    }
     setCodeEditor(ed);
     if (activeRef.current) window.__monacoEditor__ = ed;
 
@@ -502,7 +511,7 @@ export const AdminApiJsonEditor = ({
   }, []);
 
   useLayoutEffect(() => {
-    if (!codeEditor || !active) return;
+    if (!codeEditor?.getModel() || !active) return;
     window.__monacoEditor__ = codeEditor;
     const frame = requestAnimationFrame(() => {
       codeEditor.layout();
@@ -513,7 +522,8 @@ export const AdminApiJsonEditor = ({
 
   useEffect(() => {
     return () => {
-      editorRef.current?.dispose();
+      if (window.__monacoEditor__ === editorRef.current) delete window.__monacoEditor__;
+      retainedModel.current?.dispose();
     };
   }, []);
 
@@ -584,8 +594,11 @@ export const AdminApiJsonEditor = ({
             options={['Editor', 'References']} onChange={setReferenceView} />}
           <div className={classes.editorWorkspace} style={{ height: fillAvailable ? '100%' : height }}>
           <div className={classes.editorPane} style={{ display: referencesOpen && !sideBySide && referenceView === 'References' ? 'none' : undefined }}>
-          <JsonCodeEditor
+          {(!persistentSession || active) && <JsonCodeEditor
             height="100%"
+            path={persistentSession ? modelPath : undefined}
+            keepCurrentModel={persistentSession}
+            saveViewState={!persistentSession}
             value={value}
             onChange={(nextValue) => {
               if (disabled || saving) return;
@@ -596,7 +609,7 @@ export const AdminApiJsonEditor = ({
             }}
             onMount={handleEditorMount}
             readOnly={disabled || saving}
-          />
+          />}
           </div>
           {referencesOpen && <div className={classes.referencePane} style={{ display: !sideBySide && referenceView !== 'References' ? 'none' : undefined, width: sideBySide ? '38%' : '100%' }}>
             <RelatedResources api={api} draft={value} active={active} onClose={() => { setReferencesOpen(false); setReferenceView('Editor'); requestAnimationFrame(() => editorRef.current?.focus()); }} />

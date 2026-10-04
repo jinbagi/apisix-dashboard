@@ -46,7 +46,7 @@ const jsonEditorOptions: NonNullable<EditorProps['options']> = {
 
 type JsonCodeEditorProps = Pick<
   EditorProps,
-  'height' | 'onChange' | 'onMount' | 'onValidate' | 'value'
+  'height' | 'onChange' | 'onMount' | 'onValidate' | 'value' | 'path' | 'keepCurrentModel' | 'saveViewState'
 > & {
   readOnly?: boolean;
   hasError?: boolean;
@@ -60,6 +60,9 @@ export const JsonCodeEditor = ({
   onChange,
   onMount,
   onValidate,
+  path,
+  keepCurrentModel,
+  saveViewState,
   readOnly = false,
   hasError = false,
   variant = 'contained',
@@ -80,6 +83,9 @@ export const JsonCodeEditor = ({
         language="json"
         theme={mode === 'dark' ? 'vs-dark' : 'vs-light'}
         value={value}
+        path={path}
+        keepCurrentModel={keepCurrentModel}
+        saveViewState={saveViewState}
         onChange={onChange}
         onMount={(editor, monaco) => {
           window.__monacoEditor__ = editor;
