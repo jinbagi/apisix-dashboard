@@ -499,7 +499,7 @@ export async function importResources(
   data: ExportData,
   selectedResources: ResourceKey[],
   onProgress?: (result: ImportResult) => void,
-  beforeWrite?: (resourceType: ResourceKey, item: Record<string, unknown>, index: number) => Promise<boolean>,
+  beforeWrite?: (resourceType: ResourceKey, item: Record<string, unknown>, index: number, latest?: Record<string, unknown> | null) => Promise<boolean>,
 ): Promise<ImportResult[]> {
   assertRestorableExport(data);
   const results: ImportResult[] = [];
@@ -526,8 +526,12 @@ export async function importResources(
           continue;
         }
         // Use PUT with ID to create or update
-        await trackResourceWrite({ source: 'import', method: 'PUT', api: request.url, body: request.body },
-          () => req.put(request.url, request.body));
+        await trackResourceWrite({ source: 'import', method: 'PUT', api: request.url, body: request.body,
+          beforeWrite: beforeWrite ? async (latest) => {
+            if (!(await beforeWrite(resourceType, item, index, latest)))
+              throw new Error('Import preflight changed. No write was sent.');
+          } : undefined,
+        }, () => req.put(request.url, request.body));
         result.success++;
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);

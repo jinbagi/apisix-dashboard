@@ -19,6 +19,8 @@ import { AxiosError, AxiosHeaders, type AxiosResponse } from 'axios';
 import { getDefaultStore } from 'jotai';
 import { z } from 'zod';
 
+import { getImportRequest, type ResourceKey } from '@/apis/export-import';
+import { type ImportPreviewItem, verifyImportPreview } from '@/apis/import-preview';
 import { prepareHistoryRestore } from '@/apis/resource-history';
 import { trackResourceWrite, UnverifiedResourceWriteError } from '@/apis/tracked-resource-write';
 import { req } from '@/config/req';
@@ -215,4 +217,45 @@ test('own special configuration keys survive history validation, encrypted archi
     expect(restored.prototype).toEqual([1, 2]);
     expect(Object.prototype).not.toHaveProperty('x');
   });
+});
+
+
+test('a final write guard sees the verified snapshot and rejection cannot send a write or create history', async () => {
+  const options = { source: 'import' as const, method: 'PUT', api: '/routes/unit', body: { uri: '/after' } };
+  const write = async () => { writes++; return reply({}); };
+  await expect(trackResourceWrite({ ...options, beforeWrite: async (snapshot) => {
+    expect(snapshot).toEqual(current);
+    throw new Error('Preview no longer matches');
+  } }, write)).rejects.toThrow('Preview no longer matches');
+  expect(reads).toEqual(['/routes/unit']); expect(writes).toBe(0); expect(store.get(resourceHistoryAtom)).toEqual([]);
+  unavailable = true;
+  let guarded = false;
+  await expect(trackResourceWrite({ ...options, allowUntracked: true, beforeWrite: () => { guarded = true; } }, write)).rejects.toThrow('No write was sent');
+  expect(guarded).toBe(false); expect(writes).toBe(0); expect(store.get(resourceHistoryAtom)).toEqual([]);
+});
+
+test('a supplied final 404 is distinct from an omitted snapshot and does not cause another read', async () => {
+  const item = { id: 'unit', uri: '/after' };
+  const row: ImportPreviewItem = { key: 'routes:0', resourceType: 'routes', index: 0, id: 'unit', status: 'New', url: '/routes/unit', before: null, after: { uri: '/after' } };
+  expect(await verifyImportPreview(row, item, null)).toBe(true);
+  expect(reads).toEqual([]);
+  await expect(verifyImportPreview(row, item)).rejects.toThrow('Resource changed after preview');
+  expect(reads).toEqual(['/routes/unit']);
+  await expect(verifyImportPreview({ ...row, status: 'Changed', before: { uri: '/before' } }, item, null)).rejects.toThrow('Resource changed after preview');
+  expect(reads).toEqual(['/routes/unit']);
+});
+
+for (const fixture of [
+  { kind: 'consumers', url: '/consumers/alice', item: { username: 'alice', desc: 'Before' }, latest: { username: 'alice', desc: 'Before', create_time: 1 } },
+  { kind: 'credentials', url: '/consumers/alice/credentials/key', item: { username: 'alice', id: 'key', plugins: {} }, latest: { id: 'alice/credentials/key', plugins: {}, update_time: 2 } },
+  { kind: 'secrets', url: '/secrets/vault/key', item: { manager: 'vault', id: 'key', uri: 'https://vault.test' }, latest: { id: 'vault/key', uri: 'https://vault.test', create_time: 1 } },
+  { kind: 'graphqlCostDecorations', url: '/services/service/graphql_cost_decorations/cost', item: { service_id: 'service', id: 'cost', cost: 1 }, latest: { service_id: 'service', id: 'cost', cost: 1, update_time: 2 } },
+  { kind: 'pluginMetadata', url: '/plugin_metadata/http-logger', item: { id: 'http-logger', log_format: { host: '$host' } }, latest: { log_format: { host: '$host' }, update_time: 2 } },
+]) test(`final verified ${fixture.kind} snapshots retain their import payload normalization without refetching`, async () => {
+  const resourceType = fixture.kind as ResourceKey;
+  const before = getImportRequest(resourceType, fixture.item).body;
+  const row: ImportPreviewItem = { key: `${resourceType}:0`, resourceType, index: 0, id: 'fixture', status: 'Changed', url: fixture.url, before };
+  expect(await verifyImportPreview(row, fixture.item, fixture.latest)).toBe(true);
+  await expect(verifyImportPreview(row, fixture.item, { ...fixture.latest, desc: 'Concurrent' })).rejects.toThrow('Resource changed after preview');
+  expect(reads).toEqual([]); expect(writes).toBe(0); expect(store.get(resourceHistoryAtom)).toEqual([]);
 });
