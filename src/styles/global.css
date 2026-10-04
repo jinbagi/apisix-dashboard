@@ -34,6 +34,7 @@
   --app-font-weight-strong: 620;
   --app-font-weight-emphasis: 650;
   --app-font-weight-heading: 680;
+  --app-color-text-placeholder: rgb(0 0 0 / 60%);
   --app-scrollbar-thumb: rgb(15 23 42 / 18%);
   --app-scrollbar-thumb-hover: rgb(15 23 42 / 34%);
   --app-scrollbar-thumb-active: rgb(37 99 235 / 78%);
@@ -47,6 +48,7 @@
   --app-color-action-solid-hover: #365c8f;
   --app-color-action-solid-active: #2b4b76;
   --app-color-success-text: #49aa19;
+  --app-color-text-placeholder: rgb(255 255 255 / 60%);
   --app-scrollbar-thumb: rgb(255 255 255 / 18%);
   --app-scrollbar-thumb-hover: rgb(255 255 255 / 34%);
   --app-scrollbar-thumb-active: rgb(96 165 250 / 82%);
@@ -151,6 +153,12 @@ body {
 .ant-pro-table .ant-btn-link {
   padding-inline: 4px;
   font-weight: var(--app-font-weight-strong);
+}
+
+/* Keep empty, enabled inputs readable without changing disabled control colors. */
+.ant-input:not(:disabled)::placeholder,
+.ant-select:not(.ant-select-disabled) .ant-select-placeholder {
+  color: var(--app-color-text-placeholder);
 }
 
 .ant-input,

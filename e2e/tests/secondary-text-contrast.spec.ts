@@ -71,7 +71,7 @@ for (const mode of ['light', 'dark'] as const) {
       await readable(page.locator('.resource-table-field > label').filter({ hasText: /^Search$/ }));
       await checkSidebar(page, width);
       const input = page.getByRole('searchbox', { name: 'Search', exact: true });
-      expect(await input.evaluate(element => getComputedStyle(element, '::placeholder').color)).toBe(disabledColor);
+      expect(await input.evaluate(element => getComputedStyle(element, '::placeholder').color)).toBe(mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)');
       const descriptionToken = await input.evaluate(element => getComputedStyle(element).getPropertyValue('--ant-color-text-description').replace(/\s/g, ''));
       expect(descriptionToken).toBe(mode === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)');
 
