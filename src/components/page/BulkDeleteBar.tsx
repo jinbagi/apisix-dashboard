@@ -20,8 +20,10 @@ import { useState } from 'react';
 import { exportSelectedResources, getExportResourceKey } from '@/apis/export-import';
 import { bulkHistoryReq } from '@/apis/tracked-resource-write';
 import { BulkRawEdit } from '@/components/page/BulkRawEdit';
+import { DependencyClone } from '@/components/page/DependencyClone';
 import { DependencyExport } from '@/components/page/DependencyExport';
 import { queryClient } from '@/config/global';
+import { stageChanges } from '@/stores/changeSets';
 import { checkDependenciesForIds } from '@/utils/checkDependencies';
 import { downloadJson } from '@/utils/downloadJson';
 import { showNotification } from '@/utils/notification';
@@ -240,6 +242,7 @@ export const BulkDeleteBar = ({
           </Tooltip>
         )}
         <BulkRawEdit apiBase={apiBase} selectedIds={selectedIds} disabled={loading || exporting} onComplete={onComplete} />
+        <DependencyClone key={apiBase} apiBase={apiBase} selectedIds={selectedIds} disabled={loading || exporting} onStage={stageChanges} />
         <DependencyExport apiBase={apiBase} selectedIds={selectedIds} disabled={loading || exporting} />
         {showStatusActions && (
           <>
