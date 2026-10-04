@@ -115,7 +115,6 @@ Formatting, copying, encrypted drafts, change history, impact analysis, and
 related-resource inspection remain available above it. Tooltips also appear
 when Format or Copy receives keyboard focus.
 
-
 Open a route detail page to inspect its identity, lifecycle, relationships, and
 applied configuration.
 
