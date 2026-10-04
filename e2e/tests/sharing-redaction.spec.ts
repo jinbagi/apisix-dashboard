@@ -92,7 +92,7 @@ async function setup(page: Page) {
   });
   await page.route('**/apisix/admin/**', async (route) => {
     requests.push(`${route.request().method()} ${new URL(route.request().url()).pathname}`);
-    await route.fulfill({ json: { list: [], total: 0 } });
+    await route.fulfill({ json: new URL(route.request().url()).pathname === '/apisix/admin/plugins' ? {} : { list: [], total: 0 } });
   });
   await page.goto('export_import');
   await page.evaluate(async () => { await document.fonts.ready; });

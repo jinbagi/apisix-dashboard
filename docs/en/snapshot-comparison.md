@@ -11,9 +11,9 @@ Resources are matched by their canonical Admin API destination: numeric and stri
 - **Added / Removed** describe presence in the two files, not proven additions or deletions on a gateway.
 - **Changed** means editable configuration differs. Object key order and top-level ID / system timestamps are ignored. Child owner metadata is part of the resource identity. Unknown configuration properties and array order are preserved; nested timestamp-like properties still count as configuration.
 - **Unchanged** means the compared configuration is equal under those rules.
-- **Not comparable** means a resource is absent on a side whose collection was omitted or marked skipped. Absence is not treated as an empty collection.
+- **Not comparable** means a resource is absent and the files do not declare the same complete scope. Different selections, incomplete reads, excluded or omitted collections, and legacy unknown coverage cannot establish absence.
 
-Expand **Collection coverage** to see each side's included count and Present, Omitted, or Skipped status. Human-readable legacy partial-scope entries in `skippedResources` conservatively mark all included collections as partial. Older selected-resource exports can contain empty arrays without a machine-readable scope marker; no file comparison can prove complete gateway coverage from those files.
+Expand **Collection coverage** to inspect each side's included count, completion state, exact ID or owner scope, and whether absence is comparable. New exports carry machine-readable scopes. Legacy files remain unknown even when their arrays are present; they can still show changes for shared IDs. See [export coverage](export-coverage.md).
 
 Search resource paths or changed fields, filter by difference or resource type, and use **Review JSON** for a stable object-key-ordered diff. Changed fields are listed as JSON Pointers, including escaped slash and tilde keys. Arrays keep their original ordering.
 

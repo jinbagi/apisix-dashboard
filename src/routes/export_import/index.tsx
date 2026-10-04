@@ -49,6 +49,7 @@ import {
   type ResourceKey,
   validateConfiguration,
 } from '@/apis/export-import';
+import { InvalidExportCollection } from '@/apis/export-snapshot';
 import { type ImportPreviewItem,previewImport, verifyImportPreview } from '@/apis/import-preview';
 import { EnvironmentIdMapping } from '@/components/page/EnvironmentIdMapping';
 import { ImportChangePreview } from '@/components/page/ImportChangePreview';
@@ -62,22 +63,24 @@ import IconUpload from '~icons/material-symbols/upload';
 
 function ExportSection() {
   const [loading, setLoading] = useState(false);
+  const [exportNotice, setExportNotice] = useState<{ type: 'warning' | 'error'; text: string }>();
   const [validating, setValidating] = useState(false);
   const [validation, setValidation] =
     useState<ConfigValidationResult | null>(null);
 
   const handleExport = async () => {
-    setLoading(true);
+    setLoading(true); setExportNotice(undefined);
     try {
       const data = await exportAllResources();
       downloadJson(data, `apisix-export-${new Date().toISOString().slice(0, 10)}.json`);
       if (data.skippedResources?.length) {
+        setExportNotice({ type: 'warning', text: `Partial export downloaded. Unread collections: ${data.skippedResources.join(', ')}. The file marks these scopes incomplete.` });
         message.warning(`Exported with ${data.skippedResources.length} skipped: ${data.skippedResources.join(', ')}`);
       } else {
         message.success('Configuration exported successfully');
       }
-    } catch {
-      message.error('Failed to export configuration');
+    } catch (cause) {
+      setExportNotice({ type: 'error', text: cause instanceof InvalidExportCollection ? cause.message : 'Failed to export configuration. No file was exported. Refresh and retry.' });
     } finally {
       setLoading(false);
     }
@@ -132,6 +135,7 @@ function ExportSection() {
           Validate Current Configuration
         </Button>
       </Space>
+      {exportNotice && <Alert style={{ marginTop: 16 }} type={exportNotice.type} showIcon title={exportNotice.type === 'error' ? 'Export blocked' : 'Incomplete export'} description={exportNotice.text} />}
       {validation && (
         <ValidationResult result={validation} />
       )}
