@@ -200,3 +200,34 @@ test('an explicit replacement at capacity preserves all other presets and blocks
   expect(items.slice(1).map((item:{id:string})=>item.id)).toEqual(Array.from({length:19},(_,i)=>String(i)));
   expect(writes).toEqual([]);
 });
+
+
+test('resolved variables clear the prior response and resource-history outcome without sending', async ({ page }) => {
+  await setup(page);
+  let writes = 0;
+  let current: Record<string, unknown> = { id: 'history-variables', uri: '/before' };
+  await page.route('**/apisix/admin/routes/history-variables', async route => {
+    if (route.request().method() === 'PUT') {
+      writes++;
+      current = { ...route.request().postDataJSON(), id: 'history-variables' };
+    }
+    await route.fulfill({ json: { key: '/apisix/routes/history-variables', value: current } });
+  });
+  await page.getByRole('combobox', { name: /Path suffix/ }).fill('history-variables');
+  await uiFillMonacoEditor(page, page.locator('.monaco-editor').first(), '{"uri":"/after"}');
+  await page.getByRole('button', { name: /Send PUT/ }).click();
+  await page.getByRole('button', { name: 'Execute', exact: true }).click();
+  const outcome = page.getByText('Read-back verified. Resource history includes the observed before and after values.', { exact: true });
+  await expect(outcome).toBeVisible();
+  expect(writes).toBe(1);
+  await page.getByRole('combobox', { name: /Path suffix/ }).fill('{{id}}');
+  await page.getByRole('button', { name: 'Variables', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Resolve request variables' });
+  await variable(page, 1, 'id', 'next-draft');
+  await dialog.getByRole('button', { name: 'Preview resolved request', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Use resolved request', exact: true }).click();
+  await expect(outcome).toBeHidden();
+  await expect(page.getByRole('combobox', { name: /Path suffix/ })).toHaveValue('next-draft');
+  await expect(page.getByText('Unsent changes', { exact: true })).toBeVisible();
+  expect(writes).toBe(1);
+});

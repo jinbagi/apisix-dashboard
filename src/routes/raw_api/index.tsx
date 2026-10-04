@@ -898,6 +898,7 @@ function RawApiPage() {
             <ConsoleVariables template={currentDraft} disabled={busy} onOpenChange={setVariablesOpen} onResolved={(value) => {
               setPathSuffix(value.pathSuffix); setQueryString(value.queryString); setBody(value.body);
               setLoadedBodyNotice(null); setRequestBodyError(null); setResponse(null); setResponseError(null);
+              setResourceHistoryOutcome(null);
               message.success('Resolved draft ready. Review and send when ready.');
             }} />
             <Button size="small" type="text" disabled={busy} onClick={() => setSavePresetOpen(true)}>

@@ -63,6 +63,8 @@ Owner: this development thread. Scope approved by the user: implement all 20 pro
 
 | 38 | P1 | Full-export paging trusts the first total, and child exports may read only one page or treat an unverified owner404 as empty. | Validate complete page sequences and exact owners before claiming complete coverage; preserve explicitly incomplete endpoint skips. | Implementing with 32 |
 
+| 40 | P2 | After a verified Console write, preparing a new variable-resolved draft clears the response but leaves the old verified-history result visible. | Clear stale response/history feedback without sending the new draft or deleting actual history; fail-before/pass-after browser regression. | Integrated with task16 / PR105 locally; awaits final combined CI |
+
 ## Execution log
 
 - Baseline: master 4b8216f5. Existing local changes remain preserved.
