@@ -43,3 +43,15 @@ Full ESLint, TypeScript and production build pass. The journal core/UI, staged U
 When all staged drafts have been removed, Preview, Apply and Encrypt are disabled. The empty-state notice instead explains that the last stored checkpoint remains and directs users to **Remove encrypted journal**. Removing local drafts alone does not erase the archive. An additional regression fails before this conditional notice, proves that all local removals leave the archive unchanged with zero PUTs, then explicitly removes the archive and reloads to an empty workspace. The existing removal action and storage behavior are unchanged. [Empty checkpoint notice at 390px](../design/change-journal/empty-checkpoint-narrow.png).
 
 The empty-state follow-up passes full lint, TypeScript and production build, plus **11/11** journal UI/direct Import cases. The new notice and explicit deletion flow were checked at 390px.
+
+
+## Final master integration
+
+Rebased the six focused journal commits onto `9aa9229a` after Change sets and the keyboard-input fixes landed. The direct Import final-read conflict guard, exact resource identities, stable preview accessibility, navigation coverage and contextual empty states remain intact. The journal button now uses **Reconcile and preview** as both its visible and accessible name after unlock, including while its GET is pending; after reconciliation both switch back to **Preview destinations**. A held-read regression also checks `aria-busy` and that reconciliation sends no resource write.
+
+Full repository ESLint, TypeScript and production build passed on the integrated code. The combined production mock suite passed **106/106** in 3.1 minutes: `change-journal`, `change-journal-ui`, `change-sets`, `change-sets-ui`, `export-import`, `import-preview`, `history-write-contract`, `history-coverage` and `resource-history`. Screenshots were refreshed from that build, including the checkpoint scope and empty-journal notice at 390px. This is local mocked verification; live APISIX and repository CI are separate gates.
+
+- [Reconciled destinations with only the remaining item ready](../design/change-journal/reconciled-desktop.png)
+- [Journal at 390px](../design/change-journal/journal-narrow.png)
+- [Checkpoint scope at 390px](../design/change-journal/checkpoint-scope-narrow.png)
+- [Empty checkpoint notice at 390px](../design/change-journal/empty-checkpoint-narrow.png)

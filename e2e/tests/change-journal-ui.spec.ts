@@ -88,9 +88,29 @@ test('encrypted reload reconciles completed and accepted-unverified writes witho
   await expect(journal(page).getByText(/Journal unlocked/)).toBeVisible();
   await journal(page).getByRole('button', { name: 'Done', exact: true }).click();
   expect(controls.writes).toHaveLength(2);
-  await page.getByRole('button', { name: 'Reconcile and preview', exact: true }).click();
+  let releaseRead!: () => void;
+  const heldRead = new Promise<void>((resolve) => { releaseRead = resolve; });
+  let readStarted = false;
+  await page.route('**/apisix/admin/routes/one', async (route) => {
+    if (route.request().method() === 'GET' && !readStarted) { readStarted = true; await heldRead; }
+    await route.fallback();
+  });
+  const reconcile = page.getByRole('button', { name: 'Reconcile and preview', exact: true });
+  await expect(reconcile).toHaveAttribute('aria-busy', 'false');
+  try {
+    await reconcile.click();
+    await expect.poll(() => readStarted).toBe(true);
+    await expect(reconcile).toHaveAttribute('aria-busy', 'true');
+    await expect(reconcile).toHaveText('Reconcile and preview');
+    expect(controls.writes).toHaveLength(2);
+  } finally { releaseRead(); }
   await expect(page.getByText(/Current destination already matches the intended replacement/)).toBeVisible();
+  const preview = page.getByRole('button', { name: 'Preview destinations', exact: true });
+  await expect(preview).toHaveAttribute('aria-busy', 'false');
+  await expect(preview).toHaveText('Preview destinations');
   await expect(page.getByRole('button', { name: 'Apply 1 changes', exact: true })).toBeEnabled();
+  await expect(page.locator('.ant-message-notice')).toHaveCount(0);
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: test.info().outputPath('journal-reconciled.png'), animations: 'disabled', fullPage: true });
   await apply(page, 1); await expect(page.getByText('3 staged · 3 verified', { exact: true })).toBeVisible();
   expect(controls.writes).toEqual(['/routes/one', '/routes/two', '/routes/three']);
