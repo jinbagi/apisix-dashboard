@@ -18,7 +18,7 @@
 import { isRecord } from '@/utils/apisixEditable';
 
 export type ConfigurationSource = {
-  kind: 'routes' | 'services' | 'plugin_configs' | 'global_rules' | 'upstreams';
+  kind: 'routes' | 'services' | 'plugin_configs' | 'global_rules' | 'upstreams' | 'consumers' | 'consumer_groups';
   id: string;
   value: Record<string, unknown>;
 };

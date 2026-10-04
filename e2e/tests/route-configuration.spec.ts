@@ -27,6 +27,14 @@ async function setup(page: Page, overrides: Record<string, Record<string, unknow
       'limit-count': { count: 10, time_window: 60, key: 'remote_addr', rejected_code: 429, policy: 'local' } }, upstream_id: 'pool', enable_websocket: true },
     '/plugin_configs/common': { id: 'common', plugins: { 'proxy-rewrite': { uri: '/config' },
       'limit-count': { count: 20, time_window: 60, key: 'remote_addr', rejected_code: 429, policy: 'local' } } },
+    '/consumers/alice': { username: 'alice', group_id: 'premium', plugins: {
+      'proxy-rewrite': { uri: '/consumer', headers: { set: { Authorization: 'private-consumer-token' } } },
+      'key-auth': { key: 'private-auth-key' },
+    } },
+    '/consumer_groups/premium': { id: 'premium', plugins: {
+      'proxy-rewrite': { uri: '/group', headers: { set: { Authorization: 'private-group-token' } } },
+      'limit-count': { count: 100, time_window: 60, key: 'remote_addr', rejected_code: 429, policy: 'local' },
+    } },
     '/upstreams/pool': { id: 'pool', type: 'roundrobin', nodes: { '127.0.0.1:8080': 1 } },
     ...overrides,
   }));
@@ -34,7 +42,10 @@ async function setup(page: Page, overrides: Record<string, Record<string, unknow
   const writes: string[] = [];
   const reads: string[] = [];
   let globals = [{ id: 'global-one', plugins: { 'proxy-rewrite': { uri: '/global' } } }];
-  let paginated = false;
+  let pagination: 'none' | 'complete' | 'short' | 'duplicate' | 'changing' = 'none';
+  const delays = new Map<string, Promise<void>>();
+  let consumerNames = ['alice'];
+  let badConsumerTotal = false;
   await page.addInitScript(() => localStorage.setItem('settings:adminKey', JSON.stringify('fixture-key')));
   await page.route('**/apisix/admin/**', async (route) => {
     const request = route.request();
@@ -45,13 +56,19 @@ async function setup(page: Page, overrides: Record<string, Record<string, unknow
       return route.fulfill({ status: 500, json: { error_msg: 'Explanation must not write' } });
     }
     reads.push(path + url.search);
+    await delays.get(path);
     if (failures.has(path)) return route.fulfill({ status: 503, json: { error_msg: 'Fixture unavailable' } });
     let response: unknown = { list: [], total: 0 };
     if (records.has(path)) response = { value: records.get(path) };
     else if (path === '/global_rules') {
       const pageNumber = Number(url.searchParams.get('page') ?? 1);
-      const values = paginated && pageNumber === 2 ? [{ id: 'global-two', plugins: { 'proxy-rewrite': { uri: '/second-global' } } }] : globals;
-      response = { list: values.map((value) => ({ value })), total: paginated ? 101 : values.length };
+      const first = pagination === 'none' || pagination === 'short' ? globals
+        : [...globals, ...Array.from({ length: 99 }, (_, index) => ({ id: `global-empty-${index}`, plugins: {} }))];
+      const values = pageNumber === 2 ? [{ id: pagination === 'duplicate' ? 'global-one' : 'global-two', plugins: { 'proxy-rewrite': { uri: '/second-global' } } }] : first;
+      response = { list: values.map((value) => ({ value })), total: pagination === 'none' ? values.length : pagination === 'changing' && pageNumber === 2 ? 102 : 101 };
+    } else if (path === '/consumers') {
+      const offset = (Number(url.searchParams.get('page') ?? 1) - 1) * 100;
+      response = { list: consumerNames.slice(offset, offset + 100).map((username) => ({ value: { username, plugins: { 'key-auth': { key: 'private-list-key' } } } })), total: consumerNames.length + (badConsumerTotal ? 1 : 0) };
     } else if (path === '/plugins/list') response = [];
     else if (path === '/services') response = { list: [{ value: records.get('/services/backend') }], total: 1 };
     else if (path === '/upstreams') response = { list: [{ value: records.get('/upstreams/pool') }], total: 1 };
@@ -60,7 +77,16 @@ async function setup(page: Page, overrides: Record<string, Record<string, unknow
   });
   await page.goto('routes/detail/explain');
   await expect(page.getByRole('button', { name: 'Explain configuration', exact: true })).toBeVisible();
-  return { records, failures, writes, reads, paginate: () => { paginated = true; }, clearGlobals: () => { globals = []; } };
+  return { records, failures, writes, reads,
+    paginate: () => { pagination = 'complete'; },
+    breakGlobalPages: (mode: 'short' | 'duplicate' | 'changing') => { pagination = mode; },
+    setConsumerNames: (names: string[], invalid = false) => { consumerNames = names; badConsumerTotal = invalid; },
+    delay: (path: string) => {
+      let release!: () => void;
+      delays.set(path, new Promise<void>((resolve) => { release = resolve; }));
+      return () => { delays.delete(path); release(); };
+    },
+    clearGlobals: () => { globals = []; } };
 }
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'Route configuration sources', exact: true });
 async function open(page: Page) {
@@ -214,4 +240,133 @@ test('upstream selection follows APISIX Route and Service precedence without mut
   ];
   expect(resolvePlugins(sources)[0].value).toEqual({ a: 1, _meta: { disable: true } });
   expect(sources[1].value.plugins).toEqual({ example: { b: 2 } });
+});
+
+
+async function chooseConsumer(page: Page, username: string) {
+  await dialog(page).getByLabel('Consumer username', { exact: true }).fill(username);
+  await dialog(page).getByRole('button', { name: 'Explain Consumer', exact: true }).click();
+}
+
+test('Consumer and linked Group override local plugins as whole objects without exposing private settings', async ({ page }) => {
+  const controls = await setup(page);
+  await open(page); await ready(page);
+  await chooseConsumer(page, 'alice');
+  await expect(pluginRow(page, 'proxy-rewrite').getByRole('cell').nth(1)).toHaveText('Consumer: alice');
+  await expect(pluginRow(page, 'proxy-rewrite').getByRole('cell').nth(3)).toContainText('Consumer Group: premium');
+  await expect(pluginRow(page, 'limit-count').getByRole('cell').nth(1)).toHaveText('Consumer Group: premium');
+  await expect(globalTable(page)).toContainText('Global Rule: global-one');
+  await expect(dialog(page).getByRole('link', { name: 'Consumer: alice', exact: true }).first()).toHaveAttribute('href', /consumers\/detail\/alice$/);
+  await pluginRow(page, 'proxy-rewrite').getByRole('button', { name: 'View JSON' }).click();
+  const json = page.getByRole('dialog', { name: 'proxy-rewrite configuration', exact: true });
+  await expect(json).toContainText('Hidden in this explanation');
+  await expect(json).not.toContainText('private-consumer-token');
+  await expect(json).not.toContainText('private-group-token');
+  await expect(json).toContainText('/route');
+  await page.getByRole('button', { name: 'Close JSON' }).click();
+  await pluginRow(page, 'key-auth').getByRole('button', { name: 'View JSON' }).click();
+  await expect(page.getByRole('dialog', { name: 'key-auth configuration', exact: true })).not.toContainText('private-auth-key');
+  await page.getByRole('button', { name: 'Close JSON' }).click();
+  expect(controls.reads.some((path) => path.includes('/credentials'))).toBe(false);
+  expect(controls.writes).toEqual([]);
+  await dialog(page).locator('.ant-modal-body').evaluate((body) => { body.scrollTop = 0; });
+  await page.screenshot({ path: test.info().outputPath('consumer-configuration.png'), animations: 'disabled' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(dialog(page).getByRole('button', { name: 'Close explanation' })).toBeInViewport();
+  await dialog(page).locator('.ant-modal-body').evaluate((body) => { body.scrollTop = 0; });
+  const consumerAction = await dialog(page).getByRole('button', { name: 'Explain Consumer', exact: true }).boundingBox();
+  expect(consumerAction!.x + consumerAction!.width).toBeLessThanOrEqual(390);
+  await page.screenshot({ path: test.info().outputPath('consumer-configuration-narrow.png'), animations: 'disabled' });
+});
+
+test('disabled Consumer winners and conditional Group settings keep their origins; clear restores local sources', async ({ page }) => {
+  const controls = await setup(page);
+  controls.records.get('/consumers/alice')!.plugins = { 'proxy-rewrite': { _meta: { disable: true } } };
+  controls.records.get('/consumer_groups/premium')!.plugins = { 'limit-count': { count: 10, _meta: { filter: [['arg_plan', '==', 'premium']] } } };
+  await open(page); await ready(page); await chooseConsumer(page, 'alice');
+  await expect(pluginRow(page, 'proxy-rewrite')).toContainText('Disabled');
+  await expect(pluginRow(page, 'proxy-rewrite').getByRole('cell').nth(1)).toHaveText('Consumer: alice');
+  await expect(pluginRow(page, 'limit-count')).toContainText('Conditional');
+  await dialog(page).getByRole('button', { name: 'Clear Consumer' }).click();
+  await expect(pluginRow(page, 'proxy-rewrite').getByRole('cell').nth(1)).toHaveText('Route: explain');
+  await expect(pluginRow(page, 'limit-count').getByRole('cell').nth(1)).toHaveText('Plugin Config: common');
+});
+
+test('unlinked Consumer usernames are encoded and do not cause a Group or credential lookup', async ({ page }) => {
+  const controls = await setup(page, { '/consumers/team%2Falice': { username: 'team/alice', plugins: { 'proxy-rewrite': { uri: '/team' } } } });
+  await open(page); await ready(page); await chooseConsumer(page, 'team/alice');
+  await expect(pluginRow(page, 'proxy-rewrite').getByRole('cell').nth(1)).toHaveText('Consumer: team/alice');
+  expect(controls.reads).toContain('/consumers/team%2Falice');
+  expect(controls.reads.some((path) => path.startsWith('/consumer_groups/') || path.includes('/credentials'))).toBe(false);
+});
+
+for (const path of ['/consumers/alice', '/consumer_groups/premium']) {
+  test(`unavailable ${path} blocks the Consumer explanation and refresh recovers`, async ({ page }) => {
+    const controls = await setup(page);
+    controls.failures.add(path);
+    await open(page); await ready(page); await chooseConsumer(page, 'alice');
+    await expect(dialog(page).getByText('Configuration could not be explained')).toBeVisible();
+    await expect(dialog(page).getByRole('table')).toHaveCount(0);
+    controls.failures.clear();
+    await dialog(page).getByRole('button', { name: 'Refresh sources' }).click();
+    await expect(pluginRow(page, 'proxy-rewrite').getByRole('cell').nth(1)).toHaveText('Consumer: alice');
+  });
+}
+
+test('a late Consumer response cannot replace the cleared context or an unsaved form draft', async ({ page }) => {
+  const controls = await setup(page);
+  await page.getByLabel('Description', { exact: true }).fill('Preserve my draft');
+  const release = controls.delay('/consumers/alice');
+  await open(page); await ready(page); await chooseConsumer(page, 'alice');
+  await expect.poll(() => controls.reads.includes('/consumers/alice')).toBe(true);
+  await dialog(page).getByRole('button', { name: 'Clear Consumer' }).click();
+  await expect(pluginRow(page, 'proxy-rewrite').getByRole('cell').nth(1)).toHaveText('Route: explain');
+  const obsoleteResponse = page.waitForResponse((response) => new URL(response.url()).pathname.endsWith('/upstreams/pool'));
+  release();
+  await (await obsoleteResponse).finished();
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  await expect(pluginRow(page, 'proxy-rewrite').getByRole('cell').nth(1)).toHaveText('Route: explain');
+  await dialog(page).getByRole('button', { name: 'Close explanation' }).click();
+  await expect(page.getByLabel('Description', { exact: true })).toHaveValue('Preserve my draft');
+  expect(controls.writes).toEqual([]);
+});
+
+for (const mode of ['short', 'duplicate', 'changing'] as const) {
+  test(`${mode} Global Rule pagination blocks a falsely complete explanation`, async ({ page }) => {
+    const controls = await setup(page);
+    controls.breakGlobalPages(mode);
+    await open(page);
+    await expect(dialog(page).getByText('Configuration could not be explained')).toBeVisible();
+    await expect(dialog(page).getByRole('table')).toHaveCount(0);
+    controls.paginate();
+    await dialog(page).getByRole('button', { name: 'Refresh sources' }).click();
+    await ready(page);
+  });
+}
+
+test('mismatched Consumer identity is rejected before using its group or plugins', async ({ page }) => {
+  const controls = await setup(page);
+  controls.records.get('/consumers/alice')!.username = 'someone-else';
+  await open(page); await ready(page); await chooseConsumer(page, 'alice');
+  await expect(dialog(page)).toContainText('did not return the requested resource identity');
+  await expect(dialog(page).getByRole('table')).toHaveCount(0);
+  expect(controls.reads).not.toContain('/consumer_groups/premium');
+});
+
+test('Consumer suggestions read every page and incomplete suggestions still allow an exact username', async ({ page }) => {
+  const controls = await setup(page);
+  controls.setConsumerNames([...Array.from({ length: 100 }, (_, index) => `user-${index}`), 'alice']);
+  await open(page); await ready(page);
+  await dialog(page).getByLabel('Consumer username', { exact: true }).fill('alice');
+  await expect(page.locator('.ant-select-item-option-content').getByText('alice', { exact: true })).toBeVisible();
+  expect(controls.reads).toContain('/consumers?page=2&page_size=100');
+  await page.keyboard.press('Escape');
+  controls.setConsumerNames(['alice'], true);
+  await page.reload();
+  await open(page); await ready(page);
+  await dialog(page).getByLabel('Consumer username', { exact: true }).fill('alice');
+  await expect(dialog(page).getByText('Consumer suggestions unavailable')).toBeVisible();
+  await dialog(page).getByRole('button', { name: 'Explain Consumer', exact: true }).click();
+  await expect(pluginRow(page, 'proxy-rewrite').getByRole('cell').nth(1)).toHaveText('Consumer: alice');
+  await expect(dialog(page)).not.toContainText('private-list-key');
 });
