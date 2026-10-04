@@ -76,7 +76,12 @@ async function openCreatedListDetail(page: Page, resource: string, id: string) {
   // These creation pages intentionally return to the list; inspect the persisted detail.
   await expect(page).toHaveURL((url) => url.pathname.endsWith(`/${resource}`));
   const label = resource === 'ssls' ? 'example.com' : id;
-  await page.getByRole('row').filter({ hasText: id }).getByRole('link', { name: label, exact: true }).click();
+  // CopyableID can ellipsize DOM text after layout; its accessible cell name keeps the full ID.
+  const identity = resource === 'ssls'
+    ? page.getByRole('cell', { name: id, exact: true })
+    : page.getByRole('link', { name: id, exact: true });
+  const row = page.getByRole('row').filter({ has: identity });
+  await row.getByRole('link', { name: label, exact: true }).click();
   const detail = resource === 'ssls' ? `/ssls/detail/${id}` : `/secrets/detail/vault/${id}`;
   await expect(page).toHaveURL((url) => url.pathname.endsWith(detail));
 }
@@ -116,4 +121,26 @@ test('Proto Payload JSON creates an automatic ID when id is omitted', async ({ p
   await expect.poll(() => writes.length).toBe(1);
   expect(writes[0]).toEqual({ path: 'protos', method: 'POST', body: { content } });
   await expect(page.getByLabel('ID', { exact: true })).toHaveValue('generated');
+});
+
+
+test('SSL custom ID remains verifiable after the table visually ellipsizes it', async ({ page }) => {
+  const id = `${customId}-form`;
+  const writes = await mockApi(page, 'ssls');
+  await page.goto('ssls/add');
+  await fillJson(page, { id, cert: 'certificate', key: 'private-key', snis: ['example.com'], future_field: { keep: '' } });
+  await page.getByRole('button', { name: 'Apply to Visual Editor' }).click();
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(page).toHaveURL((url) => url.pathname.endsWith('/ssls'));
+  await page.evaluate(() => document.fonts.ready);
+  // CI finished ellipsis measurement before the old full-text row selector ran.
+  await page.addStyleTag({ content: '.ant-table-cell .ant-typography { display: inline-block; max-width: 64px !important; width: 64px !important; }' });
+  const cell = page.getByRole('cell', { name: id, exact: true });
+  await expect(cell).toContainText('...');
+  await openCreatedListDetail(page, 'ssls', id);
+  expect(writes).toHaveLength(1);
+  expect(writes[0]).toMatchObject({ path: `ssls/${id}`, method: 'PUT', body: { snis: ['example.com'], future_field: { keep: '' } } });
+  expect(writes[0].body).not.toHaveProperty('id');
+  await expect(page.getByLabel('ID', { exact: true })).toBeDisabled();
+  await expect(page.getByLabel('ID', { exact: true })).toHaveValue(id);
 });
