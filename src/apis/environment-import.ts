@@ -20,6 +20,7 @@ import { SKIP_INTERCEPTOR_HEADER } from '@/config/constant';
 import { req } from '@/config/req';
 import { isRecord } from '@/utils/apisixEditable';
 import { supportedPluginReferences } from '@/utils/pluginReferences';
+import { assertRestorableExport } from '@/utils/sharingFormat';
 
 export const MAPPABLE_RESOURCES = ['routes', 'streamRoutes', 'services', 'upstreams', 'pluginConfigs', 'consumers', 'consumerGroups', 'protos'] as const;
 export type MappedKind = typeof MAPPABLE_RESOURCES[number];
@@ -69,6 +70,7 @@ export function environmentReferences(kind: ResourceKey, resource: Record<string
 }
 
 export function mapImportEnvironment(data: ExportData, text: string): ExportData {
+  assertRestorableExport(data);
   const mappings = parseIdMappings(text);
   const resolve = (kind: MappedKind, id: unknown) => {
     if (!validRef(id)) return id;

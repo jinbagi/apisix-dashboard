@@ -53,8 +53,10 @@ import { type ImportPreviewItem,previewImport, verifyImportPreview } from '@/api
 import { EnvironmentIdMapping } from '@/components/page/EnvironmentIdMapping';
 import { ImportChangePreview } from '@/components/page/ImportChangePreview';
 import PageHeader from '@/components/page/PageHeader';
+import { SharingRedaction } from '@/components/page/SharingRedaction';
 import { SnapshotComparison } from '@/components/page/SnapshotComparison';
 import { downloadJson } from '@/utils/downloadJson';
+import { assertRestorableExport } from '@/utils/sharingFormat';
 import IconDownload from '~icons/material-symbols/download';
 import IconUpload from '~icons/material-symbols/upload';
 
@@ -125,6 +127,7 @@ function ExportSection() {
         >
           Export All Resources
         </Button>
+        <SharingRedaction />
         <Button loading={validating} onClick={handleValidate} size="large">
           Validate Current Configuration
         </Button>
@@ -139,6 +142,8 @@ function ExportSection() {
 function ImportSection() {
   const [fileData, setFileData] = useState<ExportData | null>(null);
   const [fileName, setFileName] = useState('');
+  const [fileError, setFileError] = useState('');
+  const fileGeneration = useRef(0);
   const [mappingText, setMappingText] = useState('{}');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [selectedResources, setSelectedResources] = useState<ResourceKey[]>([]);
@@ -156,12 +161,16 @@ function ImportSection() {
   const missingDependencies = preview ? unselectedImportDependencies(preview.items, selectedItems) : [];
 
   const handleFile = useCallback((file: File) => {
+    const request = ++fileGeneration.current;
+    setFileData(null); setFileName(''); setPreview(null); setSelectedItems([]); setSelectedResources([]); setValidation(null); setResults([]); setShowResults(false); setFileError('');
     const reader = new FileReader();
     reader.onload = (e) => {
+      if (request !== fileGeneration.current) return;
       try {
         const data = JSON.parse(e.target?.result as string) as ExportData;
+        assertRestorableExport(data);
         if (!data.version || !data.resources) {
-          message.error('Invalid export file format');
+          setFileError('Invalid export file format');
           return;
         }
         if (data.version > EXPORT_VERSION) {
@@ -177,10 +186,11 @@ function ImportSection() {
         setResults([]);
         setShowResults(false);
         setValidation(null);
-      } catch {
-        message.error('Failed to parse JSON file');
+      } catch (cause) {
+        setFileError(cause instanceof Error && cause.message.includes('sharing copy') ? cause.message : 'Failed to parse JSON file');
       }
     };
+    reader.onerror = () => { if (request === fileGeneration.current) setFileError('The file could not be read. Choose it again.'); };
     reader.readAsText(file);
     return false; // prevent antd upload
   }, []);
@@ -316,6 +326,7 @@ function ImportSection() {
         )}
       </Upload.Dragger>
 
+      {fileError && <Alert role="alert" type="error" showIcon message={fileError} style={{ marginBottom: 16 }} />}
       {fileData && (
         <>
           <Alert
