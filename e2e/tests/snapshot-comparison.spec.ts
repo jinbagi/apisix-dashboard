@@ -16,9 +16,23 @@
  */
 import { expect, type Page, test } from '@playwright/test';
 
+import { IMPORT_ORDER } from '@/apis/export-import';
 import { compareConfigurationSnapshots, parseConfigurationSnapshot, snapshotComparisonReport, snapshotJson } from '@/utils/snapshotComparison';
 
-const snapshot = (resources: Record<string, unknown>, extra: Record<string, unknown> = {}) => ({ version: 3, exportedAt: '2026-10-04T00:00:00Z', resources, ...extra });
+const snapshot = (resources: Record<string, unknown>, extra: Record<string, unknown> = {}) => {
+  const skipped = Array.isArray(extra.skippedResources) ? extra.skippedResources : [];
+  const unknownScope = skipped.some((kind) => !IMPORT_ORDER.includes(kind));
+  const collections = Object.fromEntries(IMPORT_ORDER.map((kind) => {
+    const values = Array.isArray(resources[kind]) ? resources[kind] as Record<string, unknown>[] : [];
+    const child = kind === 'credentials' || kind === 'graphqlCostDecorations';
+    const owners = child ? [...new Set(values.map((item) => item && typeof item === 'object' ? kind === 'credentials' ? item.username : item.service_id : undefined).filter((owner) => owner != null).map((owner) => `/${kind === 'credentials' ? 'consumers' : 'services'}/${encodeURIComponent(String(owner))}`))].sort() : [];
+    const complete = Object.hasOwn(resources, kind) && !skipped.includes(kind) && !unknownScope;
+    return [kind, { scope: kind === 'pluginMetadata' ? { type: 'ids', values: values.map((item) => `/plugin_metadata/${encodeURIComponent(String(item.id))}`) } : { type: 'all' }, state: complete ? 'complete' : 'incomplete', count: values.length,
+      ...(child ? { owners: { requested: owners, completed: owners, catalogComplete: complete } } : {}) }];
+  }));
+  return { version: 3, exportedAt: '2026-10-04T00:00:00Z', resources,
+    coverage: { version: 1, mode: 'full', selectedResources: IMPORT_ORDER, rootUrls: [], collections }, ...extra };
+};
 const parse = (resources: Record<string, unknown>, extra: Record<string, unknown> = {}) => parseConfigurationSnapshot(JSON.stringify(snapshot(resources, extra)), 'fixture.json');
 
 test('comparison ignores object order and only top-level system noise while preserving array order and unknown data', () => {
@@ -46,7 +60,7 @@ test('canonical resource URLs separate Consumers, Secret managers, and same-name
   expect(result.items.map((row) => row.url)).toEqual(['/consumers/alice', '/consumers/alice/credentials/main', '/consumers/bob/credentials/main', '/secrets/aws/main', '/secrets/vault/main', '/services/one/graphql_cost_decorations/cost', '/services/two/graphql_cost_decorations/cost']);
 });
 
-test('omitted and skipped collections never imply resource removal, while explicit empty arrays do', () => {
+test('omitted and skipped collections never imply resource removal, while matching complete scopes do', () => {
   const before = parse({ routes: [{ id: 'one' }], services: [{ id: 'two' }] });
   expect(compareConfigurationSnapshots(before, parse({})).counts['Not comparable']).toBe(2);
   const empty = compareConfigurationSnapshots(before, parse({ routes: [] }));
@@ -191,4 +205,13 @@ test('a delayed file read cannot replace a newer snapshot selection', async ({ p
   await page.evaluate(() => (window as typeof window & { releaseSnapshotRead?: () => void }).releaseSnapshotRead?.());
   await expect(dialog(page).getByText('latest.json', { exact: true })).toBeVisible();
   await expect(dialog(page).getByText('Removed: 1', { exact: true })).toBeVisible();
+});
+
+
+test('legacy present arrays stay unknown and never establish addition or removal', () => {
+  const before = parse({ routes: [{ id: 'one' }] }, { coverage: undefined });
+  const after = parse({ routes: [] }, { coverage: undefined });
+  expect(compareConfigurationSnapshots(before, after).counts['Not comparable']).toBe(1);
+  expect(compareConfigurationSnapshots(after, before).counts.Added).toBe(0);
+  expect(before.warnings[0]).toContain('Legacy export coverage is unknown');
 });

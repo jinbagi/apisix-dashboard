@@ -20,6 +20,7 @@ import { graphqlCostDecorationsApi } from '@/apis/graphql_cost_decorations';
 import { SKIP_INTERCEPTOR_HEADER } from '@/config/constant';
 import { req } from '@/config/req';
 import { isRecord } from '@/utils/apisixEditable';
+import { excludedCoverage, type ExportCoverage } from '@/utils/exportCoverage';
 import { supportedPluginReferences } from '@/utils/pluginReferences';
 import { validateExactResourceSnapshot } from '@/utils/resourceIdentity';
 
@@ -156,9 +157,28 @@ export async function prepareDependencyExport(apiBase: string, selectedIds: stri
   }
   const items = [...rows.values()];
   const blocked = items.filter((row) => row.status !== 'Included').length;
+  const collections = Object.fromEntries(Object.keys(resources).map((kind) => [kind, excludedCoverage()])) as ExportCoverage['collections'];
+  for (const kind of ['routes', 'stream_routes', 'services', 'upstreams', 'plugin_configs', 'protos'] as const) {
+    const members = items.filter((row) => row.kind === kind);
+    if (!members.length) continue;
+    const resourceKey = getExportResourceKey(`/${kind}`)!;
+    collections[resourceKey] = { scope: { type: 'ids', values: members.map((row) => `/${kind}/${encodeURIComponent(row.id)}`).sort() },
+      state: members.every((row) => row.status === 'Included') ? 'complete' : 'incomplete', count: resources[resourceKey]!.length };
+  }
+  if (options.graphqlCostDecorations) {
+    const owners = items.filter((row) => row.kind === 'services');
+    const requested = owners.map((row) => `/services/${encodeURIComponent(row.id)}`).sort();
+    const completed = owners.filter((row) => row.status === 'Included' && !items.some((child) => child.key === `${row.key}/graphql_cost_decorations` && child.status !== 'Included')).map((row) => `/services/${encodeURIComponent(row.id)}`).sort();
+    collections.graphqlCostDecorations = { scope: { type: 'owners', values: requested }, state: completed.length === requested.length ? 'complete' : 'incomplete', count: resources.graphqlCostDecorations!.length,
+      owners: { requested, completed, catalogComplete: false } };
+  }
+  const coverage: ExportCoverage = { version: 1, mode: 'dependencies', selectedResources: (Object.keys(collections) as (keyof typeof collections)[]).filter((kind) => collections[kind].state !== 'excluded'),
+    rootUrls: [...new Set(selectedIds)].map((id) => `${apiBase}/${encodeURIComponent(id)}`).sort(), collections,
+    referencePaths: ['service_id', 'upstream_id', 'plugin_config_id', ...(options.graphqlCostDecorations ? ['services.graphql_cost_decorations'] : []),
+      ...(options.pluginReferences ? ['plugins.grpc-transcode.proto_id', 'plugins.traffic-split.rules[].weighted_upstreams[].upstream_id'] : [])] };
   const data: ExportData = {
     version: EXPORT_VERSION, exportedAt: new Date().toISOString(),
-    skippedResources: [dependencyExportScope(options)], resources,
+    skippedResources: [dependencyExportScope(options)], coverage, resources,
   };
   return { rows: items, blocked, data };
 }
