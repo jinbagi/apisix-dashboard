@@ -92,7 +92,7 @@ export const RawJsonNavigation = ({ codeEditor, value, original, schema, resourc
     ];
     return () => actions.forEach((action) => action.dispose());
   }, [codeEditor, copyPointer, disabled, navigate, nextProblem]);
-  return <Space direction="vertical" size={4} style={{ marginBottom: 8, flexShrink: 0 }}>
+  return <Space orientation="vertical" size={4} style={{ marginBottom: 8, flexShrink: 0 }}>
     <Space wrap size="small">
       <Select aria-label="Changed JSON field" placeholder={`Changed fields (${changes.length})`} showSearch optionFilterProp="label"
         style={{ width: 240, maxWidth: '100%' }} disabled={disabled || !changes.length}

@@ -665,7 +665,7 @@ function TopologyPage() {
         <Alert
           type="warning"
           showIcon
-          message="Topology unavailable"
+          title="Topology unavailable"
           description={
             error instanceof Error
               ? error.message
@@ -692,7 +692,7 @@ function TopologyPage() {
               type="warning"
               showIcon
               style={{ marginBottom: 16 }}
-              message="Topology data is incomplete"
+              title="Topology data is incomplete"
               description={`Could not load: ${data.unavailableResources.join(', ')}. The graph may omit affected links.`}
               action={
                 <Button

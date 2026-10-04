@@ -109,7 +109,7 @@ export const FormSectionTLS = () => {
         <Alert
           type="info"
           showIcon
-          message="Native WebSocket upstreams use the gateway's trusted CA configuration."
+          title="Native WebSocket upstreams use the gateway's trusted CA configuration."
           description="APISIX does not support per-upstream CA certificates with ws or wss. Remove any CA certificates below before saving."
           style={{ marginBottom: 12 }}
         />

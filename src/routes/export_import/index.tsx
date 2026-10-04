@@ -326,12 +326,12 @@ function ImportSection() {
         )}
       </Upload.Dragger>
 
-      {fileError && <Alert role="alert" type="error" showIcon message={fileError} style={{ marginBottom: 16 }} />}
+      {fileError && <Alert role="alert" type="error" showIcon title={fileError} style={{ marginBottom: 16 }} />}
       {fileData && (
         <>
           <Alert
             type="info"
-            message={`Exported at ${fileData.exportedAt} (format v${fileData.version})`}
+            title={`Exported at ${fileData.exportedAt} (format v${fileData.version})`}
             style={{ marginBottom: 16 }}
           />
 
@@ -403,12 +403,12 @@ function ImportSection() {
           <Modal open={preview !== null} title="Confirm Import" width={1100} okText="Import"
             style={{ top: 24 }} styles={{ body: { maxHeight: 'calc(100dvh - 160px)', overflowY: 'auto' } }}
             onCancel={() => setPreview(null)} onOk={applyImport} confirmLoading={importing}
-            closable={!importing} maskClosable={!importing} keyboard={!importing}
+            closable={!importing} mask={{ closable: !importing }} keyboard={!importing}
             cancelButtonProps={{ disabled: importing }} destroyOnHidden
             okButtonProps={{ disabled: !selectedItems.length || missingDependencies.length > 0 }}>
             {preview && <>
               <Typography.Paragraph>{selectedItems.length} item(s) selected for application. Unselected changes remain untouched.</Typography.Paragraph>
-              {missingDependencies.length > 0 && <Alert type="error" showIcon message="Select required new dependencies"
+              {missingDependencies.length > 0 && <Alert type="error" showIcon title="Select required new dependencies"
                 description={missingDependencies.join(', ')} />}
               <ImportChangePreview items={preview.items} selectedKeys={selectedItems} onSelectionChange={setSelectedItems} disabled={importing} />
             </>}
@@ -425,7 +425,7 @@ function ValidationResult({ result }: { result: ConfigValidationResult }) {
       <Alert
         type="success"
         showIcon
-        message={result.warnings?.length ? 'Configuration checks passed' : 'APISIX configuration validation passed'}
+        title={result.warnings?.length ? 'Configuration checks passed' : 'APISIX configuration validation passed'}
         description={result.warnings?.join(' ')}
         style={{ marginTop: 16 }}
       />
@@ -436,7 +436,7 @@ function ValidationResult({ result }: { result: ConfigValidationResult }) {
     <Alert
       type="error"
       showIcon
-      message={`APISIX configuration validation failed (${result.errors.length})`}
+      title={`APISIX configuration validation failed (${result.errors.length})`}
       description={
         <ul style={{ margin: 0, paddingLeft: 20 }}>
           {result.errors.map((error, index) => (

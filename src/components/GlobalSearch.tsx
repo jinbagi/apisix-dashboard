@@ -187,7 +187,7 @@ export const GlobalSearch = () => {
         </div>
         {isSearching && !isLoading && unavailable.length > 0 && (
           <Alert className={classes.searchAlert} type="warning" showIcon
-            message={unavailable.length === collections.length && !currentResults.length ? 'Search unavailable' : 'Results may be incomplete'}
+            title={unavailable.length === collections.length && !currentResults.length ? 'Search unavailable' : 'Results may be incomplete'}
             description={`Could not completely search: ${unavailable.join(', ')}. Available results are shown.`}
             action={<Button size="small" onClick={() => { setResultKey(''); setRetry((value) => value + 1); resetSelection(); }}>Retry</Button>} />
         )}

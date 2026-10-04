@@ -41,7 +41,7 @@ export const ReferenceDiagnostics = () => {
     <Modal title="Configuration reference diagnostics" open={open} width={1100} onCancel={close} destroyOnHidden
       style={{ top: 24 }} styles={{ body: { maxHeight: 'calc(100dvh - 160px)', overflowY: 'auto' } }}
       footer={<Button onClick={close}>Close diagnostics</Button>}>
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+      <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
         <Typography.Text>Checks standard resource references, grpc-transcode Proto IDs and traffic-split Upstream IDs.</Typography.Text>
         <Collapse size="small" items={[{ key: 'scope', label: 'Checked scope and limitations', children: <Typography.Paragraph style={{ marginBottom: 0 }}>
           Checks saved Route and Stream Route service/upstream references, Route plugin configs, Service upstreams,
@@ -52,15 +52,15 @@ export const ReferenceDiagnostics = () => {
           Consumer plugin impact depends on the authenticated request; Global Rules can affect every HTTP Route. Reads are not an atomic snapshot.
         </Typography.Paragraph> }]} />
         <Button loading={loading} onClick={() => void refresh()}>Refresh reference check</Button>
-        {error && <Alert type="error" message={error} showIcon />}
+        {error && <Alert type="error" title={error} showIcon />}
         {result && <>
           <div role="status">{result.issues.filter((row) => row.status !== 'Not verified').length} reference issue(s) / {result.unavailable.length} unavailable collection(s)</div>
           <Typography.Text type="secondary">Checked at {result.checkedAt}</Typography.Text>
-          {result.unavailable.length > 0 && <Alert type="warning" showIcon message="Reference check is incomplete"
+          {result.unavailable.length > 0 && <Alert type="warning" showIcon title="Reference check is incomplete"
             description={`Could not verify: ${result.unavailable.join(', ')}. References and affected Route counts may be incomplete. Retry before drawing conclusions.`} />}
-          {result.issues.length === 0 && result.unavailable.length === 0 && <Alert type="success" showIcon message="No broken references found in the checked scope" />}
+          {result.issues.length === 0 && result.unavailable.length === 0 && <Alert type="success" showIcon title="No broken references found in the checked scope" />}
           <Table size="small" rowKey="key" dataSource={result.issues} pagination={{ pageSize: 8 }} scroll={{ x: 950 }} columns={[
-            { title: 'Source / field', key: 'source', render: (_, row) => <Space direction="vertical"><Typography.Text code>{row.source}</Typography.Text><Typography.Text style={{ overflowWrap: 'anywhere' }}>{row.field}</Typography.Text></Space> },
+            { title: 'Source / field', key: 'source', render: (_, row) => <Space orientation="vertical"><Typography.Text code>{row.source}</Typography.Text><Typography.Text style={{ overflowWrap: 'anywhere' }}>{row.field}</Typography.Text></Space> },
             { title: 'Target', dataIndex: 'target', render: (value) => <Typography.Text style={{ overflowWrap: 'anywhere' }}>{value}</Typography.Text> },
             { title: 'Result', key: 'status', render: (_, row) => <Tag color={row.status === 'Not verified' ? 'orange' : 'red'}>{row.status}</Tag> },
             { title: 'Potentially affected Routes', key: 'affected', render: (_, row) => <Typography.Text style={{ overflowWrap: 'anywhere' }}>{row.affected.join(', ') || (/^\/consumer(?:s|_groups)\//.test(row.source) ? 'Depends on the authenticated Consumer' : 'No Route references observed')}</Typography.Text> },

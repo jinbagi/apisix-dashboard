@@ -211,7 +211,7 @@ export const FormSectionUpstream = ({
         <Alert
           type="info"
           showIcon
-          message="Traffic resolves through the selected Service."
+          title="Traffic resolves through the selected Service."
           description="Existing Route-level Upstream overrides are preserved on save. Use Admin API JSON to inspect or edit combined configurations."
           style={{ marginBottom: 12 }}
         />
@@ -220,7 +220,7 @@ export const FormSectionUpstream = ({
         <Alert
           type="info"
           showIcon
-          message="Upstream ID is set. Any existing inline configuration is preserved until you change the target."
+          title="Upstream ID is set. Any existing inline configuration is preserved until you change the target."
           style={{ marginBottom: 12 }}
         />
       )}

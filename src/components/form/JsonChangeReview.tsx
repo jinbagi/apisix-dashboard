@@ -52,7 +52,7 @@ export const JsonChangeReview = ({
       confirmLoading={saving}
       cancelButtonProps={{ disabled: saving }}
       closable={!saving}
-      maskClosable={!saving}
+      mask={{ closable: !saving }}
       keyboard={!saving}
       destroyOnHidden
     >

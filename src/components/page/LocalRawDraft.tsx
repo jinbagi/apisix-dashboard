@@ -82,7 +82,7 @@ export const LocalRawDraft = ({ api, snapshot, disabled, onRestore }: Props) => 
     <>
       <Button onClick={show} disabled={disabled}>Drafts</Button>
       <Modal title="Local RAW draft" open={open && !review} onCancel={close} footer={null}
-        closable={!busy} maskClosable={!busy} keyboard={!busy} destroyOnHidden>
+        closable={!busy} mask={{ closable: !busy }} keyboard={!busy} destroyOnHidden>
         <Typography.Paragraph>
           Keep one encrypted draft for this resource on this browser. The password is never stored.
           You need it to recover the draft after reopening the browser. Clearing browser data removes the draft.
@@ -91,10 +91,10 @@ export const LocalRawDraft = ({ api, snapshot, disabled, onRestore }: Props) => 
         <Typography.Paragraph>
           {stored ? `Stored draft: ${getRawDraftDate(stored)}` : 'No stored draft for this resource.'}
         </Typography.Paragraph>
-        {!crypto.subtle && <Alert type="warning" message="Encrypted drafts require HTTPS or localhost." />}
-        {error && <Alert type="error" showIcon message={error} style={{ marginBottom: 12 }} />}
-        {feedback && <Alert type="success" showIcon message={feedback} style={{ marginBottom: 12 }} />}
-        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+        {!crypto.subtle && <Alert type="warning" title="Encrypted drafts require HTTPS or localhost." />}
+        {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 12 }} />}
+        {feedback && <Alert type="success" showIcon title={feedback} style={{ marginBottom: 12 }} />}
+        <Space orientation="vertical" style={{ width: '100%' }} size="middle">
           <Input.Password aria-label="Draft password" placeholder="Draft password (at least 12 characters)"
             autoComplete="off" value={password} disabled={busy} onChange={(event) => setPassword(event.target.value)} />
           {stored && <Button block onClick={restore} loading={busy} disabled={!password || !crypto.subtle}>Unlock and compare</Button>}

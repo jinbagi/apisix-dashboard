@@ -49,7 +49,7 @@ export const FormItemCaCertificates = ({ disableAdd }: { disableAdd: boolean }) 
       error={fieldState.error?.message}
       description="PEM CA certificates for upstream verification. When omitted, APISIX uses its gateway trust configuration. Each certificate must be 128–65536 characters."
     >
-      {fileError && <Alert type="error" message={fileError} />}
+      {fileError && <Alert type="error" title={fileError} />}
       {certificates.map((certificate, index) => (
         <div key={index} style={{ marginBottom: 12 }}>
           <InputWrapper

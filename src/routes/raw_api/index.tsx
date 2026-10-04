@@ -1074,7 +1074,7 @@ function RawApiPage() {
                   <Alert
                     type="info"
                     showIcon
-                    message={
+                    title={
                       method === 'PATCH'
                         ? 'PATCH accepts a partial payload; APISIX validates changed fields.'
                         : 'No dashboard schema is available for this endpoint.'
@@ -1086,7 +1086,7 @@ function RawApiPage() {
                   <Alert
                     type="info"
                     showIcon
-                    message="Loaded as editable request body"
+                    title="Loaded as editable request body"
                     description={`Removed read-only fields: ${loadedBodyNotice.removedKeys.join(', ')}.`}
                     action={
                       <Button size="small" onClick={restoreLoadedRawBody}>
@@ -1100,7 +1100,7 @@ function RawApiPage() {
                   <Alert
                     type="error"
                     showIcon
-                    message={requestBodyError.message}
+                    title={requestBodyError.message}
                     description={
                       <ul style={{ margin: 0, paddingLeft: 18 }}>
                         {requestBodyError.details.slice(0, 5).map((detail) => (
@@ -1195,7 +1195,7 @@ function RawApiPage() {
             <Alert
               type="error"
               showIcon
-              message="Request failed"
+              title="Request failed"
               description={responseError}
               className={classes.responseAlert}
             />

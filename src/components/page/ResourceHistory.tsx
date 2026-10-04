@@ -77,16 +77,16 @@ export const ResourceHistory = ({ api, disabled = false, onRestore }: {
   return <>
     <Button disabled={disabled} onClick={show}>Change history</Button>
     <Modal title="Resource change history" open={open && !compared && !restored} width={1000} onCancel={close}
-      closable={!busy} maskClosable={!busy} keyboard={!busy} footer={<Button disabled={busy} onClick={close}>Close history</Button>} destroyOnHidden>
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+      closable={!busy} mask={{ closable: !busy }} keyboard={!busy} footer={<Button disabled={busy} onClick={close}>Close history</Button>} destroyOnHidden>
+      <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
         <Typography.Paragraph>
           Last {HISTORY_LIMIT} verified RAW and bulk RAW changes made in this tab. This is local history, not a gateway audit log.
           Reloading clears memory unless you save an encrypted archive. Archives include configuration values and may contain secrets.
           Open a resource RAW editor to restore only the fields changed by a recorded operation.
         </Typography.Paragraph>
         {api && <Typography.Text code>{api}</Typography.Text>}
-        {error && <Alert type="error" showIcon message={error} />}
-        {feedback && <Alert type="success" showIcon message={feedback} />}
+        {error && <Alert type="error" showIcon title={error} />}
+        {feedback && <Alert type="success" showIcon title={feedback} />}
         <Table size="small" rowKey="id" dataSource={rows} pagination={{ pageSize: 5 }} scroll={{ x: 650 }} columns={[
           { title: 'Saved at', key: 'at', render: (_, row) => new Date(row.at).toLocaleString() },
           { title: 'Resource', dataIndex: 'api' },

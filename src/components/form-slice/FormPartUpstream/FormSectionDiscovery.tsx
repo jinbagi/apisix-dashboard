@@ -53,7 +53,7 @@ export const FormSectionDiscovery = () => {
       <Alert
         type="info"
         showIcon
-        message="Use Service Discovery instead of static nodes when APISIX should resolve backend targets dynamically."
+        title="Use Service Discovery instead of static nodes when APISIX should resolve backend targets dynamically."
         description="Service Name and Discovery Type should be set together. Discovery Args are optional provider-specific settings."
         style={{ marginBottom: 12 }}
       />
@@ -61,7 +61,7 @@ export const FormSectionDiscovery = () => {
         <Alert
           type="warning"
           showIcon
-          message="Discovery Type is missing."
+          title="Discovery Type is missing."
           description="Select the discovery provider that should resolve this service name."
           style={{ marginBottom: 12 }}
         />
@@ -70,7 +70,7 @@ export const FormSectionDiscovery = () => {
         <Alert
           type="warning"
           showIcon
-          message="Discovery Args are set without a Service Name."
+          title="Discovery Args are set without a Service Name."
           description="Add a Service Name or clear Discovery Args so the discovery configuration has an active target."
           style={{ marginBottom: 12 }}
         />

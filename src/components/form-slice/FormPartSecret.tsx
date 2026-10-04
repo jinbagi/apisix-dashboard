@@ -37,7 +37,7 @@ const VaultSecretForm = () => {
       <Alert
         type="info"
         showIcon
-        message="Vault secrets are referenced as $secret://vault/{id}/{key} in APISIX resources."
+        title="Vault secrets are referenced as $secret://vault/{id}/{key} in APISIX resources."
         description="URI, Prefix, and Token are required to connect APISIX to Vault. Namespace is optional for Vault Enterprise setups."
         style={{ marginBottom: 12 }}
       />
@@ -80,7 +80,7 @@ const AWSSecretForm = () => {
       <Alert
         type="info"
         showIcon
-        message="AWS Secrets Manager references use this credential set."
+        title="AWS Secrets Manager references use this credential set."
         description="Access Key ID and Secret Access Key are required. Session Token is only needed for temporary credentials."
         style={{ marginBottom: 12 }}
       />
@@ -137,7 +137,7 @@ const GCPSecretForm = () => {
       <Alert
         type="info"
         showIcon
-        message="GCP Secret Manager can authenticate with either an auth file path or inline auth configuration."
+        title="GCP Secret Manager can authenticate with either an auth file path or inline auth configuration."
         description="Use one authentication method for a predictable submitted payload."
         style={{ marginBottom: 12 }}
       />
@@ -145,7 +145,7 @@ const GCPSecretForm = () => {
         <Alert
           type="warning"
           showIcon
-          message="Both GCP authentication methods are filled."
+          title="Both GCP authentication methods are filled."
           description="Keep either Auth File or Auth Configuration active so APISIX uses the intended credential source."
           style={{ marginBottom: 12 }}
         />
