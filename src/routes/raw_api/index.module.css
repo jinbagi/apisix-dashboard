@@ -210,6 +210,27 @@
   min-height: 52px;
 }
 
+.workspaceCard :global(.ant-card-head-wrapper) {
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-block: 12px;
+}
+
+.workspaceCard :global(.ant-card-head-title) {
+  flex: 1 1 200px;
+  min-width: 0;
+  overflow: visible;
+  white-space: normal;
+}
+
+.workspaceCard :global(.ant-card-extra) {
+  max-width: 100%;
+}
+
+.workspaceCard :global(.ant-card-extra .ant-space) {
+  flex-wrap: wrap;
+}
+
 .panelTitle {
   gap: 8px;
 }
@@ -222,6 +243,7 @@
 
 .responseTitle {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   font-weight: var(--app-font-weight-strong);
@@ -464,7 +486,7 @@
 
   .requestActions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .requestActions > :first-child {
@@ -473,6 +495,16 @@
 
   .executeButton {
     min-width: 0;
+    height: auto;
+    min-height: var(--ant-control-height);
+    padding-block: 6px;
+    flex-wrap: wrap;
+    row-gap: 2px;
+    white-space: normal;
+  }
+
+  .shortcut {
+    margin-left: 0;
   }
 
   .workspace,
@@ -487,6 +519,10 @@
 }
 
 @media (max-width: 640px) {
-  .requestCard :global(.ant-card-head-wrapper) { flex-direction: column; align-items: stretch; gap: 10px; padding-block: 12px; }
-  .requestCard :global(.ant-card-extra) { margin-inline-start: 0; }
+  .requestCard :global(.ant-card-head-wrapper),
+  .workspaceCard :global(.ant-card-head-wrapper) { flex-direction: column; align-items: stretch; gap: 10px; padding-block: 12px; }
+  .requestCard :global(.ant-card-extra),
+  .workspaceCard :global(.ant-card-extra) { margin-inline-start: 0; }
+  .workspaceCard :global(.ant-card-head-title) { flex-basis: auto; }
+  .workspaceCard :global(.ant-card-extra .ant-btn) { max-width: 100%; height: auto; min-height: var(--ant-control-height-sm); white-space: normal; }
 }
