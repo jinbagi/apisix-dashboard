@@ -17,7 +17,7 @@ This is sequential execution with conflict detection from fresh reads, not atomi
 
 ## Lifetime and privacy
 
-Drafts and outcomes are kept in this browser tab's memory and survive navigation within the app. Closing or reloading the tab removes them unless an encrypted journal has been enabled; a browser unload prompt helps prevent accidental loss. See [Resumable import journals](resumable-import.md) for opt-in encrypted checkpoints and reconnection checks. Configuration payloads may include secrets, so the workspace does not log them or include session credentials.
+Drafts and outcomes are kept in this browser tab's memory and survive navigation within the app. Closing or reloading the tab removes unsaved drafts; a browser unload prompt helps prevent accidental loss. With an encrypted journal enabled, only the last checkpoint survives reload. Newly staged items and draft removals are checkpointed on the next Preview or Apply. To save the current drafts immediately, open Encrypted journal and choose Encrypt and enable checkpoints. See [Resumable import journals](resumable-import.md) for opt-in encrypted checkpoints and reconnection checks. Configuration payloads may include secrets, so the workspace does not log them or include session credentials.
 
 ## Validation evidence
 

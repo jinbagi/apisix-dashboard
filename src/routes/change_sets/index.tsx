@@ -83,7 +83,9 @@ function ChangeSetsPage() {
     <PageHeader title="Change sets" desc="Review related changes before applying them" />
     <Space orientation="vertical" size="middle" style={{ width: '100%', minWidth: 0 }}>
       <Alert type="info" showIcon title={encrypted ? 'Encrypted checkpoints enabled' : 'Drafts stay in this tab'}
-        description={<>Stage changes from RAW or an Import preview. Use an encrypted journal to keep resumable checkpoints; otherwise reloading or closing clears these drafts. <Link to="/export_import">Open Import / Export</Link></>} />
+        description={<>{encrypted
+          ? 'Only checkpointed drafts survive reload. Newly staged items and draft removals are saved on your next Preview or Apply. To save now, open Encrypted journal and choose Encrypt and enable checkpoints. '
+          : 'Stage changes from RAW or an Import preview. Drafts stay in memory unless you save an encrypted journal; reloading or closing clears unsaved drafts. '}<Link to="/export_import">Open Import / Export</Link></>} />
       <Collapse size="small" items={[{ key: 'scope', label: 'How staging and verification work', children: <>
         <Typography.Paragraph>Nothing is applied until you preview and confirm. Changes use explicit-ID PUT: create a new resource or replace its writable configuration. Absent fields may be removed. Create-only drafts must still target a missing resource.</Typography.Paragraph>
         <Typography.Paragraph>References checked: native Service, Upstream, Plugin Config, Consumer Group and child owners; grpc-transcode Proto and traffic-split Upstream IDs. Other plugin references are not inferred.</Typography.Paragraph>

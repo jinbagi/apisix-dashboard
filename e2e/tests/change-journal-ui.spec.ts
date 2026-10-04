@@ -222,3 +222,38 @@ test('independent tabs applying one archive write once and the stale tab resumes
   await expect(page.getByRole('button', { name: /^Apply.*changes$/ })).toBeDisabled();
   expect(controls.writes).toEqual(['/routes/one', '/routes/two', '/routes/three']);
 });
+
+
+test('journal explains that staged additions and removals wait for a checkpoint', async ({ page }) => {
+  const controls = await setup(page); await saveJournal(page);
+  const original = await page.evaluate(() => localStorage.getItem('change-set-journal:v1'));
+  await page.locator('.ant-card').filter({ hasText: '/routes/three' }).getByRole('button', { name: 'Remove draft', exact: true }).click();
+  await page.getByRole('button', { name: 'Remove', exact: true }).click();
+  await expect(page.getByText('2 staged · 0 verified', { exact: true })).toBeVisible();
+  await page.getByRole('menuitem', { name: 'Import / Export', exact: true }).click();
+  const addition = { ...data, resources: { routes: [{ id: 'four', uri: '/journal-four' }] } };
+  await page.locator('input[type="file"]').setInputFiles({ name: 'addition.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(addition)) });
+  await page.getByRole('button', { name: 'Import Selected Resources', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Confirm Import', exact: true }).getByRole('button', { name: 'Stage for resumable import', exact: true }).click();
+  await expect(page.getByText('3 staged · 0 verified', { exact: true })).toBeVisible();
+  await expect(page.getByText(/Only checkpointed drafts survive reload/)).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('change-set-journal:v1'))).toBe(original);
+  expect(controls.writes).toEqual([]);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Encrypted journal enabled', exact: true }).click();
+  await expect(journal(page).getByText(/Newly staged items and draft removals/)).toBeVisible();
+  await expect(journal(page).getByRole('button', { name: 'Done', exact: true })).toBeInViewport();
+  await expect(journal(page)).not.toHaveClass(/ant-zoom-enter|ant-zoom-appear/);
+  await expect(page.locator('.ant-message-notice')).toHaveCount(0);
+  await page.screenshot({ path: test.info().outputPath('journal-checkpoint-scope-narrow.png'), animations: 'disabled' });
+  await journal(page).getByLabel('Journal password', { exact: true }).fill(password);
+  await journal(page).getByLabel('Confirm journal password', { exact: true }).fill(password);
+  await journal(page).getByRole('button', { name: 'Encrypt and enable checkpoints', exact: true }).click();
+  await expect(journal(page).getByText(/Encrypted journal saved/)).toBeVisible();
+  await journal(page).getByRole('button', { name: 'Done', exact: true }).click();
+  await reload(page); await unlock(page);
+  await expect(page.locator('.ant-card')).toHaveCount(3);
+  for (const id of ['one', 'two', 'four']) await expect(page.locator('.ant-card').filter({ hasText: `/routes/${id}` })).toBeVisible();
+  await expect(page.locator('.ant-card').filter({ hasText: '/routes/three' })).toHaveCount(0);
+  expect(controls.writes).toEqual([]);
+});

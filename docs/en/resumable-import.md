@@ -30,3 +30,12 @@ The original same-module concurrency fixture expected one executor Promise to re
 ### Follow-up 49: direct Import selection in the combined workflow
 
 The complete integrated APISIX 3.19 run exposed one legacy fixture using a substring match for the Import button. The new Stage for resumable import action also matched that selector, so Playwright stopped before any import with a strict locator error. The fixture now targets the exact Import action inside Confirm Import. It retains the complete assertions for three sanitized PUT payloads; no application behavior, payload contract or validation is weakened.
+
+
+### Follow-up 51: distinguish enabled checkpoints from saved drafts
+
+An enabled journal does not automatically persist later staging or removal. The page banner and journal dialog now state that only checkpointed drafts survive reload, and explain that the next Preview/Apply or an explicit Encrypt and enable checkpoints action saves the current drafts. The Change sets lifetime documentation uses the same rule. No autosave, storage, execution or retry behavior changes.
+
+A browser fixture removes one saved draft and stages a new one, checks that the archive is still unchanged and no write was sent, then explicitly encrypts and reopens the exact updated draft set. The new scope notice failed before the copy change. A 390px capture checks that the notice is readable in the scrollable dialog and Done remains available: [checkpoint scope](../design/change-journal/checkpoint-scope-narrow.png).
+
+Full ESLint, TypeScript and production build pass. The journal core/UI, staged UI and direct Import suites pass **41/41** against the production build; the final toast-free capture fixture also passes separately. All Admin API calls in this evidence are mocked.

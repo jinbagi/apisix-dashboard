@@ -66,6 +66,7 @@ export const ChangeSetJournal = () => {
       closable={!state.busy} mask={{ closable: !state.busy }} keyboard={!state.busy} style={{ top: 24 }} styles={{ body: { maxHeight: 'calc(100dvh - 180px)', overflowY: 'auto' } }}>
       <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
         <Typography.Paragraph style={{ margin: 0 }}>Keep one encrypted journal on this browser for staged Import and RAW changes. Configuration can contain secrets; only encrypted data is stored. The password is never saved. Clearing browser data removes the journal.</Typography.Paragraph>
+        {enabled && <Typography.Paragraph style={{ margin: 0 }}>Only checkpointed drafts survive reload. Newly staged items and draft removals are saved on your next Preview or Apply. Choose Encrypt and enable checkpoints to save the current drafts now.</Typography.Paragraph>}
         <Alert type="info" showIcon title="Resume always starts with fresh reads" description="After unlocking or reconnecting, compare actual destinations. Matching completed items are skipped, unchanged baselines require explicit confirmation, and conflicts or protected uncertain values stay blocked. No automatic replay or rollback." />
         <Typography.Text>{archive ? `Stored journal: ${getRawDraftDate(archive)}` : 'No stored journal on this browser.'}</Typography.Text>
         {error && <Alert type="error" showIcon title={error} />}
