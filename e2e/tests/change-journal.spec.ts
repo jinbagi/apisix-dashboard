@@ -214,14 +214,34 @@ test('accepted write and failed final checkpoint leaves an uncertain archive for
 });
 
 
-test('simultaneous pre-write checkpoints permit only one PUT for the same archive', async () => {
+test('simultaneous pre-write checkpoints preserve one PUT and safe resumable outcomes', async () => {
   const drafts = [draft()]; await enableChangeJournal(drafts, password, null);
   const plans = await Promise.all([previewChangeSet(drafts), previewChangeSet(drafts)]);
-  const results = await Promise.allSettled(plans.map((plan) => applyChangeSet(plan, async (row, outcome) => {
+  const outcomes: Array<Array<{ result?: string; detail?: string }>> = [[], []];
+  const results = await Promise.allSettled(plans.map((plan, index) => applyChangeSet(plan, async (row, outcome) => {
+    outcomes[index].push({ result: row.result, detail: row.detail });
     await checkpointChangeJournal([{ ...row.draft, ...(outcome ? { outcome } : {}) }]);
   })));
-  expect(results.some((result) => result.status === 'rejected')).toBe(true);
+  // The executor may report Blocked through its callback and return normally.
+  // Rejection depends on whether recording that blocked result also loses the race.
+  const terminal = outcomes.map((attempt) => attempt.at(-1)!);
+  expect(terminal.filter((outcome) => outcome.result === 'Blocked')).toHaveLength(1);
+  expect(terminal.filter((outcome) => ['Verified', 'Uncertain'].includes(outcome.result!))).toHaveLength(1);
+  expect(terminal.find((outcome) => outcome.result === 'Blocked')!.detail).toMatch(/checkpoint|journal/);
+  for (const result of results.filter((result) => result.status === 'rejected')) expect(String(result.reason)).toMatch(/checkpoint|journal/);
   expect(writes).toEqual(['/routes/unit']);
+  expect(store.get(resourceHistoryAtom)).toHaveLength(1);
+  const encoded = disk.get(CHANGE_JOURNAL_KEY)!;
+  lockChangeJournal();
+  const restored = await unlockChangeJournal(encoded, password);
+  expect(['uncertain', 'verified']).toContain(restored[0].outcome);
+  const reconciled = await reconcileChangeJournal(restored);
+  expect(reconciled[0].outcome).toBe('verified');
+  expect(reconciled[0].resumeError).toBeUndefined();
+  await checkpointChangeJournal(reconciled);
+  await applyChangeSet(await previewChangeSet(reconciled), () => {});
+  expect(writes).toEqual(['/routes/unit']);
+  expect(store.get(resourceHistoryAtom)).toHaveLength(1);
 });
 
 test('missing Web Locks blocks persisted execution before any PUT', async () => {

@@ -18,8 +18,8 @@ import { expect, type Page, test } from '@playwright/test';
 
 const data = { version: 3, exportedAt: '2026-10-04T00:00:00Z', resources: { routes: ['one', 'two', 'three'].map((id) => ({ id, name: `Journal ${id}`, uri: `/journal-${id}`, desc: 'fixture-sensitive-configuration' })) } };
 const password = 'fixture journal password';
-async function setup(page: Page, source: unknown = data) {
-  const controls = { records: new Map<string, Record<string, unknown>>(), writes: [] as string[], failReadAfter: new Set<string>(), unavailable: new Set<string>(), ignore: new Set<string>() };
+const createControls = () => ({ records: new Map<string, Record<string, unknown>>(), writes: [] as string[], failReadAfter: new Set<string>(), unavailable: new Set<string>(), ignore: new Set<string>() });
+async function setup(page: Page, source: unknown = data, controls = createControls()) {
   await page.addInitScript(() => {
     localStorage.setItem('settings:adminKey', JSON.stringify('journal-browser-fixture'));
     const original = Storage.prototype.setItem;
@@ -197,4 +197,28 @@ test('a held journal lock returns promptly without PUT and keeps drafts editable
   } finally {
     await other.evaluate(() => ((window as unknown as Record<string, unknown>).releaseJournalLock as () => void)());
   }
+});
+
+test('independent tabs applying one archive write once and the stale tab resumes without replay', async ({ page, context }) => {
+  const controls = await setup(page); await saveJournal(page);
+  await page.getByRole('button', { name: 'Preview destinations', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Apply 3 changes', exact: true })).toBeEnabled();
+  const other = await context.newPage(); await setup(other, data, controls);
+  await other.getByRole('button', { name: 'Encrypted journal', exact: true }).click();
+  await journal(other).getByLabel('Journal password', { exact: true }).fill(password);
+  await journal(other).getByRole('button', { name: 'Unlock and replace staged drafts', exact: true }).click();
+  await expect(journal(other).getByText(/Journal unlocked/)).toBeVisible();
+  await journal(other).getByRole('button', { name: 'Done', exact: true }).click();
+  await other.getByRole('button', { name: 'Reconcile and preview', exact: true }).click();
+  await expect(other.getByRole('button', { name: 'Apply 3 changes', exact: true })).toBeEnabled();
+  await Promise.all([page, other].map((tab) => apply(tab, 3)));
+  await expect(page.getByText(/The encrypted journal changed in another tab/)).toBeVisible();
+  await expect(page.getByText('3 staged · 0 verified', { exact: true })).toBeVisible();
+  await expect(other.getByText('3 staged · 3 verified', { exact: true })).toBeVisible();
+  expect(controls.writes).toEqual(['/routes/one', '/routes/two', '/routes/three']);
+  await reload(page); await unlock(page);
+  await page.getByRole('button', { name: 'Reconcile and preview', exact: true }).click();
+  await expect(page.getByText('3 staged · 3 verified', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Apply.*changes$/ })).toBeDisabled();
+  expect(controls.writes).toEqual(['/routes/one', '/routes/two', '/routes/three']);
 });
