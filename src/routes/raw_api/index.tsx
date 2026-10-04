@@ -1351,7 +1351,12 @@ function RawApiPage() {
           maxLength={128}
           value={presetName}
           onChange={(event) => setPresetName(event.target.value)}
-          onPressEnter={savePreset}
+          onPressEnter={(event) => {
+            // Closing the dialog must not send the same Enter to the window shortcut.
+            event.preventDefault();
+            event.stopPropagation();
+            savePreset();
+          }}
           placeholder="Preset name"
           autoFocus
         />
