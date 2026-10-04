@@ -1,0 +1,771 @@
+{
+  "theme": "light",
+  "size": 390,
+  "send": {
+    "box": {
+      "left": 109,
+      "top": 480.9375,
+      "right": 349,
+      "bottom": 518.9375
+    },
+    "text": [
+      {
+        "value": "Send PUT",
+        "left": 151.078125,
+        "top": 491.4375,
+        "right": 217.921875,
+        "bottom": 508.4375
+      },
+      {
+        "value": "Ctrl/Cmd + Enter",
+        "left": 225.921875,
+        "top": 493.9375,
+        "right": 306.921875,
+        "bottom": 505.9375
+      }
+    ],
+    "contained": true
+  },
+  "shortcut": {
+    "box": {
+      "left": 225.921875,
+      "top": 493.9375,
+      "right": 306.921875,
+      "bottom": 505.9375
+    },
+    "text": [
+      {
+        "value": "Ctrl/Cmd + Enter",
+        "left": 225.921875,
+        "top": 493.9375,
+        "right": 306.921875,
+        "bottom": 505.9375
+      }
+    ],
+    "contained": true
+  },
+  "load": {
+    "box": {
+      "left": 109,
+      "top": 434.9375,
+      "right": 349,
+      "bottom": 472.9375
+    },
+    "text": [
+      {
+        "value": "Load resource",
+        "left": 180.46875,
+        "top": 445.4375,
+        "right": 277.53125,
+        "bottom": 462.4375
+      }
+    ],
+    "contained": true
+  },
+  "request": {
+    "title": {
+      "box": {
+        "left": 109,
+        "top": 572.9375,
+        "right": 349,
+        "bottom": 596.125
+      },
+      "text": [
+        {
+          "value": "Request JSON",
+          "left": 109,
+          "top": 573.9375,
+          "right": 220.96875,
+          "bottom": 593.9375
+        }
+      ],
+      "contained": true
+    },
+    "extra": {
+      "box": {
+        "left": 109,
+        "top": 606.125,
+        "right": 349,
+        "bottom": 634.625
+      },
+      "text": [
+        {
+          "value": "Format Request JSON",
+          "left": 117,
+          "top": 611.875,
+          "right": 265.953125,
+          "bottom": 628.875
+        }
+      ],
+      "contained": true
+    },
+    "caption": {
+      "box": {
+        "left": 85,
+        "top": 560.9375,
+        "right": 373,
+        "bottom": 647.625
+      },
+      "text": [
+        {
+          "value": "Request JSON",
+          "left": 109,
+          "top": 573.9375,
+          "right": 220.96875,
+          "bottom": 593.9375
+        },
+        {
+          "value": "Format Request JSON",
+          "left": 117,
+          "top": 611.875,
+          "right": 265.953125,
+          "bottom": 628.875
+        }
+      ],
+      "contained": true
+    },
+    "actions": [
+      {
+        "box": {
+          "left": 109,
+          "top": 606.125,
+          "right": 273.953125,
+          "bottom": 634.625
+        },
+        "text": [
+          {
+            "value": "Format Request JSON",
+            "left": 117,
+            "top": 611.875,
+            "right": 265.953125,
+            "bottom": 628.875
+          }
+        ],
+        "contained": true
+      }
+    ]
+  },
+  "success": {
+    "title": {
+      "box": {
+        "left": 109,
+        "top": 572.9375,
+        "right": 349,
+        "bottom": 632.625
+      },
+      "text": [
+        {
+          "value": "Response JSON",
+          "left": 109,
+          "top": 573.9375,
+          "right": 233.609375,
+          "bottom": 593.9375
+        },
+        {
+          "value": "200",
+          "left": 249.609375,
+          "top": 576.125,
+          "right": 273.015625,
+          "bottom": 591.125
+        },
+        {
+          "value": "18",
+          "left": 289.015625,
+          "top": 576.828125,
+          "right": 301.328125,
+          "bottom": 591.828125
+        },
+        {
+          "value": "ms",
+          "left": 304.703125,
+          "top": 576.828125,
+          "right": 321.5625,
+          "bottom": 591.828125
+        },
+        {
+          "value": "Body",
+          "left": 122,
+          "top": 609.125,
+          "right": 156.9375,
+          "bottom": 626.125
+        },
+        {
+          "value": "Headers",
+          "left": 170.9375,
+          "top": 609.125,
+          "right": 228.234375,
+          "bottom": 626.125
+        }
+      ],
+      "contained": true
+    },
+    "extra": {
+      "box": {
+        "left": 109,
+        "top": 642.625,
+        "right": 349,
+        "bottom": 671.125
+      },
+      "text": [
+        {
+          "value": "Clear",
+          "left": 117,
+          "top": 648.375,
+          "right": 153.09375,
+          "bottom": 665.375
+        },
+        {
+          "value": "Copy body",
+          "left": 173.09375,
+          "top": 648.375,
+          "right": 246.671875,
+          "bottom": 665.375
+        }
+      ],
+      "contained": true
+    },
+    "caption": {
+      "box": {
+        "left": 85,
+        "top": 560.9375,
+        "right": 373,
+        "bottom": 684.125
+      },
+      "text": [
+        {
+          "value": "Response JSON",
+          "left": 109,
+          "top": 573.9375,
+          "right": 233.609375,
+          "bottom": 593.9375
+        },
+        {
+          "value": "200",
+          "left": 249.609375,
+          "top": 576.125,
+          "right": 273.015625,
+          "bottom": 591.125
+        },
+        {
+          "value": "18",
+          "left": 289.015625,
+          "top": 576.828125,
+          "right": 301.328125,
+          "bottom": 591.828125
+        },
+        {
+          "value": "ms",
+          "left": 304.703125,
+          "top": 576.828125,
+          "right": 321.5625,
+          "bottom": 591.828125
+        },
+        {
+          "value": "Body",
+          "left": 122,
+          "top": 609.125,
+          "right": 156.9375,
+          "bottom": 626.125
+        },
+        {
+          "value": "Headers",
+          "left": 170.9375,
+          "top": 609.125,
+          "right": 228.234375,
+          "bottom": 626.125
+        },
+        {
+          "value": "Clear",
+          "left": 117,
+          "top": 648.375,
+          "right": 153.09375,
+          "bottom": 665.375
+        },
+        {
+          "value": "Copy body",
+          "left": 173.09375,
+          "top": 648.375,
+          "right": 246.671875,
+          "bottom": 665.375
+        }
+      ],
+      "contained": true
+    },
+    "actions": [
+      {
+        "box": {
+          "left": 109,
+          "top": 642.625,
+          "right": 161.09375,
+          "bottom": 671.125
+        },
+        "text": [
+          {
+            "value": "Clear",
+            "left": 117,
+            "top": 648.375,
+            "right": 153.09375,
+            "bottom": 665.375
+          }
+        ],
+        "contained": true
+      },
+      {
+        "box": {
+          "left": 165.09375,
+          "top": 642.625,
+          "right": 254.671875,
+          "bottom": 671.125
+        },
+        "text": [
+          {
+            "value": "Copy body",
+            "left": 173.09375,
+            "top": 648.375,
+            "right": 246.671875,
+            "bottom": 665.375
+          }
+        ],
+        "contained": true
+      }
+    ]
+  },
+  "headers": {
+    "title": {
+      "box": {
+        "left": 109,
+        "top": 572.9375,
+        "right": 349,
+        "bottom": 632.625
+      },
+      "text": [
+        {
+          "value": "Response Headers",
+          "left": 109,
+          "top": 573.9375,
+          "right": 254.90625,
+          "bottom": 593.9375
+        },
+        {
+          "value": "200",
+          "left": 270.90625,
+          "top": 576.125,
+          "right": 294.3125,
+          "bottom": 591.125
+        },
+        {
+          "value": "18",
+          "left": 310.3125,
+          "top": 576.828125,
+          "right": 322.625,
+          "bottom": 591.828125
+        },
+        {
+          "value": "ms",
+          "left": 326,
+          "top": 576.828125,
+          "right": 342.859375,
+          "bottom": 591.828125
+        },
+        {
+          "value": "Body",
+          "left": 122,
+          "top": 609.125,
+          "right": 156.9375,
+          "bottom": 626.125
+        },
+        {
+          "value": "Headers",
+          "left": 170.9375,
+          "top": 609.125,
+          "right": 228.234375,
+          "bottom": 626.125
+        }
+      ],
+      "contained": true
+    },
+    "extra": {
+      "box": {
+        "left": 109,
+        "top": 642.625,
+        "right": 349,
+        "bottom": 671.125
+      },
+      "text": [
+        {
+          "value": "Clear",
+          "left": 117,
+          "top": 648.375,
+          "right": 153.09375,
+          "bottom": 665.375
+        },
+        {
+          "value": "Copy headers",
+          "left": 173.09375,
+          "top": 648.375,
+          "right": 267.671875,
+          "bottom": 665.375
+        }
+      ],
+      "contained": true
+    },
+    "caption": {
+      "box": {
+        "left": 85,
+        "top": 560.9375,
+        "right": 373,
+        "bottom": 684.125
+      },
+      "text": [
+        {
+          "value": "Response Headers",
+          "left": 109,
+          "top": 573.9375,
+          "right": 254.90625,
+          "bottom": 593.9375
+        },
+        {
+          "value": "200",
+          "left": 270.90625,
+          "top": 576.125,
+          "right": 294.3125,
+          "bottom": 591.125
+        },
+        {
+          "value": "18",
+          "left": 310.3125,
+          "top": 576.828125,
+          "right": 322.625,
+          "bottom": 591.828125
+        },
+        {
+          "value": "ms",
+          "left": 326,
+          "top": 576.828125,
+          "right": 342.859375,
+          "bottom": 591.828125
+        },
+        {
+          "value": "Body",
+          "left": 122,
+          "top": 609.125,
+          "right": 156.9375,
+          "bottom": 626.125
+        },
+        {
+          "value": "Headers",
+          "left": 170.9375,
+          "top": 609.125,
+          "right": 228.234375,
+          "bottom": 626.125
+        },
+        {
+          "value": "Clear",
+          "left": 117,
+          "top": 648.375,
+          "right": 153.09375,
+          "bottom": 665.375
+        },
+        {
+          "value": "Copy headers",
+          "left": 173.09375,
+          "top": 648.375,
+          "right": 267.671875,
+          "bottom": 665.375
+        }
+      ],
+      "contained": true
+    },
+    "actions": [
+      {
+        "box": {
+          "left": 109,
+          "top": 642.625,
+          "right": 161.09375,
+          "bottom": 671.125
+        },
+        "text": [
+          {
+            "value": "Clear",
+            "left": 117,
+            "top": 648.375,
+            "right": 153.09375,
+            "bottom": 665.375
+          }
+        ],
+        "contained": true
+      },
+      {
+        "box": {
+          "left": 165.09375,
+          "top": 642.625,
+          "right": 275.671875,
+          "bottom": 671.125
+        },
+        "text": [
+          {
+            "value": "Copy headers",
+            "left": 173.09375,
+            "top": 648.375,
+            "right": 267.671875,
+            "bottom": 665.375
+          }
+        ],
+        "contained": true
+      }
+    ]
+  },
+  "error": {
+    "title": {
+      "box": {
+        "left": 109,
+        "top": 572.9375,
+        "right": 349,
+        "bottom": 632.625
+      },
+      "text": [
+        {
+          "value": "Response JSON",
+          "left": 109,
+          "top": 573.9375,
+          "right": 233.609375,
+          "bottom": 593.9375
+        },
+        {
+          "value": "503",
+          "left": 249.609375,
+          "top": 576.125,
+          "right": 272.59375,
+          "bottom": 591.125
+        },
+        {
+          "value": "18",
+          "left": 288.59375,
+          "top": 576.828125,
+          "right": 300.90625,
+          "bottom": 591.828125
+        },
+        {
+          "value": "ms",
+          "left": 304.28125,
+          "top": 576.828125,
+          "right": 321.140625,
+          "bottom": 591.828125
+        },
+        {
+          "value": "Body",
+          "left": 122,
+          "top": 609.125,
+          "right": 156.9375,
+          "bottom": 626.125
+        },
+        {
+          "value": "Headers",
+          "left": 170.9375,
+          "top": 609.125,
+          "right": 228.234375,
+          "bottom": 626.125
+        }
+      ],
+      "contained": true
+    },
+    "extra": {
+      "box": {
+        "left": 109,
+        "top": 642.625,
+        "right": 349,
+        "bottom": 703.625
+      },
+      "text": [
+        {
+          "value": "Restore request",
+          "left": 117,
+          "top": 648.375,
+          "right": 224.34375,
+          "bottom": 665.375
+        },
+        {
+          "value": "Retry",
+          "left": 244.34375,
+          "top": 648.375,
+          "right": 280.671875,
+          "bottom": 665.375
+        },
+        {
+          "value": "Clear",
+          "left": 300.671875,
+          "top": 648.375,
+          "right": 336.765625,
+          "bottom": 665.375
+        },
+        {
+          "value": "Copy body",
+          "left": 117,
+          "top": 680.875,
+          "right": 190.578125,
+          "bottom": 697.875
+        }
+      ],
+      "contained": true
+    },
+    "caption": {
+      "box": {
+        "left": 85,
+        "top": 560.9375,
+        "right": 373,
+        "bottom": 716.625
+      },
+      "text": [
+        {
+          "value": "Response JSON",
+          "left": 109,
+          "top": 573.9375,
+          "right": 233.609375,
+          "bottom": 593.9375
+        },
+        {
+          "value": "503",
+          "left": 249.609375,
+          "top": 576.125,
+          "right": 272.59375,
+          "bottom": 591.125
+        },
+        {
+          "value": "18",
+          "left": 288.59375,
+          "top": 576.828125,
+          "right": 300.90625,
+          "bottom": 591.828125
+        },
+        {
+          "value": "ms",
+          "left": 304.28125,
+          "top": 576.828125,
+          "right": 321.140625,
+          "bottom": 591.828125
+        },
+        {
+          "value": "Body",
+          "left": 122,
+          "top": 609.125,
+          "right": 156.9375,
+          "bottom": 626.125
+        },
+        {
+          "value": "Headers",
+          "left": 170.9375,
+          "top": 609.125,
+          "right": 228.234375,
+          "bottom": 626.125
+        },
+        {
+          "value": "Restore request",
+          "left": 117,
+          "top": 648.375,
+          "right": 224.34375,
+          "bottom": 665.375
+        },
+        {
+          "value": "Retry",
+          "left": 244.34375,
+          "top": 648.375,
+          "right": 280.671875,
+          "bottom": 665.375
+        },
+        {
+          "value": "Clear",
+          "left": 300.671875,
+          "top": 648.375,
+          "right": 336.765625,
+          "bottom": 665.375
+        },
+        {
+          "value": "Copy body",
+          "left": 117,
+          "top": 680.875,
+          "right": 190.578125,
+          "bottom": 697.875
+        }
+      ],
+      "contained": true
+    },
+    "actions": [
+      {
+        "box": {
+          "left": 109,
+          "top": 642.625,
+          "right": 232.34375,
+          "bottom": 671.125
+        },
+        "text": [
+          {
+            "value": "Restore request",
+            "left": 117,
+            "top": 648.375,
+            "right": 224.34375,
+            "bottom": 665.375
+          }
+        ],
+        "contained": true
+      },
+      {
+        "box": {
+          "left": 236.34375,
+          "top": 642.625,
+          "right": 288.671875,
+          "bottom": 671.125
+        },
+        "text": [
+          {
+            "value": "Retry",
+            "left": 244.34375,
+            "top": 648.375,
+            "right": 280.671875,
+            "bottom": 665.375
+          }
+        ],
+        "contained": true
+      },
+      {
+        "box": {
+          "left": 292.671875,
+          "top": 642.625,
+          "right": 344.765625,
+          "bottom": 671.125
+        },
+        "text": [
+          {
+            "value": "Clear",
+            "left": 300.671875,
+            "top": 648.375,
+            "right": 336.765625,
+            "bottom": 665.375
+          }
+        ],
+        "contained": true
+      },
+      {
+        "box": {
+          "left": 109,
+          "top": 675.125,
+          "right": 198.578125,
+          "bottom": 703.625
+        },
+        "text": [
+          {
+            "value": "Copy body",
+            "left": 117,
+            "top": 680.875,
+            "right": 190.578125,
+            "bottom": 697.875
+          }
+        ],
+        "contained": true
+      }
+    ]
+  },
+  "page": {
+    "client": 390,
+    "scroll": 390
+  }
+}
