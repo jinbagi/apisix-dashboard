@@ -166,13 +166,13 @@
   border-color: color-mix(in srgb, var(--ant-color-primary-border) 65%, transparent);
   background:
     color-mix(in srgb, var(--ant-color-primary-bg) 82%, transparent) !important;
-  color: var(--ant-color-primary) !important;
+  color: var(--app-color-action-text) !important;
   font-weight: var(--app-font-weight-strong);
   box-shadow: 0 1px 2px rgba(37, 99, 235, 0.06);
 }
 
 .menu :global(.ant-menu-item-selected .ant-menu-item-icon) {
-  color: var(--ant-color-primary);
+  color: var(--app-color-action-text);
 }
 
 .menu :global(.ant-menu-item:focus-visible) {

@@ -1,0 +1,1990 @@
+{
+  "action-contrast-dark-prima-a8b93--global-or-protected-colors-chromium": {
+    "Fixture-dashed-contrast.json": {
+      "normal": {
+        "text": "Fixture dashed",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 8.194711833690477
+      },
+      "hover": {
+        "text": "Fixture dashed",
+        "color": "rgb(168, 208, 250)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 11.463854486566037
+      },
+      "active": {
+        "text": "Fixture dashed",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 8.194711833690477
+      },
+      "focus": {
+        "text": "Fixture dashed",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 8.194711833690477
+      }
+    },
+    "Fixture-filled-contrast.json": {
+      "normal": {
+        "text": "Fixture filled",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 4.717000499262874
+      },
+      "hover": {
+        "text": "Fixture filled",
+        "color": "rgb(168, 208, 250)",
+        "background": [
+          54,
+          85,
+          124,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 4.756574443986582
+      },
+      "active": {
+        "text": "Fixture filled",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 4.717000499262874
+      },
+      "focus": {
+        "text": "Fixture filled",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 4.717000499262874
+      }
+    },
+    "Fixture-link-contrast.json": {
+      "normal": {
+        "text": "Fixture link",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 8.194711833690477
+      },
+      "hover": {
+        "text": "Fixture link",
+        "color": "rgb(168, 208, 250)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 11.463854486566037
+      },
+      "active": {
+        "text": "Fixture link",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 8.194711833690477
+      },
+      "focus": {
+        "text": "Fixture link",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 8.194711833690477
+      }
+    },
+    "Fixture-neutral-contrast.json": {
+      "normal": {
+        "text": "Fixture neutral",
+        "color": "rgba(255, 255, 255, 0.85)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 13.402131056145574
+      },
+      "hover": {
+        "text": "Fixture neutral",
+        "color": "rgb(168, 208, 250)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 11.463854486566037
+      },
+      "active": {
+        "text": "Fixture neutral",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 8.194711833690477
+      },
+      "focus": {
+        "text": "Fixture neutral",
+        "color": "rgba(255, 255, 255, 0.85)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 13.402131056145574
+      }
+    },
+    "Fixture-outlined-contrast.json": {
+      "normal": {
+        "text": "Fixture outlined",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 8.194711833690477
+      },
+      "hover": {
+        "text": "Fixture outlined",
+        "color": "rgb(168, 208, 250)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 11.463854486566037
+      },
+      "active": {
+        "text": "Fixture outlined",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 8.194711833690477
+      },
+      "focus": {
+        "text": "Fixture outlined",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 8.194711833690477
+      }
+    },
+    "Fixture-solid-contrast.json": {
+      "normal": {
+        "text": "Fixture solid",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          69,
+          114,
+          170,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 4.9523358905910815
+      },
+      "hover": {
+        "text": "Fixture solid",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          54,
+          92,
+          143,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 6.8085736679547715
+      },
+      "active": {
+        "text": "Fixture solid",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          43,
+          75,
+          118,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 8.857955480908506
+      },
+      "focus": {
+        "text": "Fixture solid",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          69,
+          114,
+          170,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 4.9523358905910815
+      }
+    },
+    "Fixture-text-contrast.json": {
+      "normal": {
+        "text": "Fixture text",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 8.194711833690477
+      },
+      "hover": {
+        "text": "Fixture text",
+        "color": "rgb(168, 208, 250)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 6.598768624699318
+      },
+      "active": {
+        "text": "Fixture text",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 4.717000499262874
+      },
+      "focus": {
+        "text": "Fixture text",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 8.194711833690477
+      }
+    }
+  },
+  "action-contrast-dark-RAW-a-11424-cs-remain-readable-at-390px-chromium": {
+    "Raw-contrast.json": {
+      "normal": {
+        "text": "Raw",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.717000499262874
+      },
+      "hover": {
+        "text": "Raw",
+        "color": "rgb(168, 208, 250)",
+        "background": [
+          32,
+          41,
+          54,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 9.126417656641301
+      },
+      "active": {
+        "text": "Raw",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          32,
+          41,
+          54,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 6.523840899910342
+      },
+      "focus": {
+        "text": "Raw",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": true,
+        "ratio": 4.717000499262874
+      }
+    },
+    "Review-changes-contrast.json": {
+      "normal": {
+        "text": "Review changes",
+        "color": "rgba(255, 255, 255, 0.85)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 13.402131056145574
+      },
+      "hover": {
+        "text": "Review changes",
+        "color": "rgb(168, 208, 250)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 11.463854486566037
+      },
+      "active": {
+        "text": "Review changes",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 8.194711833690477
+      },
+      "focus": {
+        "text": "Review changes",
+        "color": "rgba(255, 255, 255, 0.85)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 13.402131056145574
+      }
+    },
+    "Route-Contrast-API--contrast.json": {
+      "normal": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.717000499262874
+      },
+      "hover": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.717000499262874
+      },
+      "active": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.717000499262874
+      },
+      "focus": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": true,
+        "ratio": 4.717000499262874
+      }
+    },
+    "Save-Changes-contrast.json": {
+      "normal": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          69,
+          114,
+          170,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 4.9523358905910815
+      },
+      "hover": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          54,
+          92,
+          143,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 6.8085736679547715
+      },
+      "active": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          43,
+          75,
+          118,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 8.857955480908506
+      },
+      "focus": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          69,
+          114,
+          170,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 4.9523358905910815
+      }
+    },
+    "success-metrics-contrast.json": [
+      {
+        "text": "0",
+        "color": "rgb(73, 170, 25)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "20px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 6.182270702578478
+      },
+      {
+        "text": "12/12",
+        "color": "rgb(73, 170, 25)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "20px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 6.182270702578478
+      }
+    ]
+  },
+  "action-contrast-dark-RAW-a-c81a7-s-remain-readable-at-1440px-chromium": {
+    "Raw-contrast.json": {
+      "normal": {
+        "text": "Raw",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.717000499262874
+      },
+      "hover": {
+        "text": "Raw",
+        "color": "rgb(168, 208, 250)",
+        "background": [
+          32,
+          41,
+          54,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 9.126417656641301
+      },
+      "active": {
+        "text": "Raw",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          32,
+          41,
+          54,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 6.523840899910342
+      },
+      "focus": {
+        "text": "Raw",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": true,
+        "ratio": 4.717000499262874
+      }
+    },
+    "Review-changes-contrast.json": {
+      "normal": {
+        "text": "Review changes",
+        "color": "rgba(255, 255, 255, 0.85)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 13.402131056145574
+      },
+      "hover": {
+        "text": "Review changes",
+        "color": "rgb(168, 208, 250)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 11.463854486566037
+      },
+      "active": {
+        "text": "Review changes",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 8.194711833690477
+      },
+      "focus": {
+        "text": "Review changes",
+        "color": "rgba(255, 255, 255, 0.85)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 13.402131056145574
+      }
+    },
+    "Route-Contrast-API--contrast.json": {
+      "normal": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.717000499262874
+      },
+      "hover": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.717000499262874
+      },
+      "active": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.717000499262874
+      },
+      "focus": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          43,
+          64,
+          89,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": true,
+        "ratio": 4.717000499262874
+      }
+    },
+    "Routes-contrast.json": {
+      "normal": {
+        "text": "Routes",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          38.805905609999996,
+          56.04751844999999,
+          76.59088353,
+          1
+        ],
+        "fontSize": "13px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 5.313204048885605
+      },
+      "hover": {
+        "text": "Routes",
+        "color": "rgba(255, 255, 255, 0.85)",
+        "background": [
+          32.9875317082353,
+          33.1007580668235,
+          33.3272107839999,
+          1
+        ],
+        "fontSize": "13px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 11.92290378021296
+      },
+      "active": {
+        "text": "Routes",
+        "color": "rgba(255, 255, 255, 0.85)",
+        "background": [
+          32.9875317082353,
+          33.1007580668235,
+          33.3272107839999,
+          1
+        ],
+        "fontSize": "13px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 11.92290378021296
+      },
+      "focus": {
+        "text": "Routes",
+        "color": "rgb(126, 177, 232)",
+        "background": [
+          38.805905609999996,
+          56.04751844999999,
+          76.59088353,
+          1
+        ],
+        "fontSize": "13px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 5.313204048885605
+      }
+    },
+    "Save-Changes-contrast.json": {
+      "normal": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          69,
+          114,
+          170,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 4.9523358905910815
+      },
+      "hover": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          54,
+          92,
+          143,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 6.8085736679547715
+      },
+      "active": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          43,
+          75,
+          118,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 8.857955480908506
+      },
+      "focus": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          69,
+          114,
+          170,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 4.9523358905910815
+      }
+    },
+    "success-metrics-contrast.json": [
+      {
+        "text": "0",
+        "color": "rgb(73, 170, 25)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "26px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 6.182270702578478
+      },
+      {
+        "text": "12/12",
+        "color": "rgb(73, 170, 25)",
+        "background": [
+          20,
+          20,
+          20,
+          1
+        ],
+        "fontSize": "26px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 6.182270702578478
+      }
+    ]
+  },
+  "action-contrast-light-prim-0c7e9--global-or-protected-colors-chromium": {
+    "Fixture-dashed-contrast.json": {
+      "normal": {
+        "text": "Fixture dashed",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 5.168555560022562
+      },
+      "hover": {
+        "text": "Fixture dashed",
+        "color": "rgb(22, 71, 196)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 7.685229475282879
+      },
+      "active": {
+        "text": "Fixture dashed",
+        "color": "rgb(16, 51, 152)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 10.774965857183863
+      },
+      "focus": {
+        "text": "Fixture dashed",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 5.168555560022562
+      }
+    },
+    "Fixture-filled-contrast.json": {
+      "normal": {
+        "text": "Fixture filled",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          240,
+          247,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 4.787893586509427
+      },
+      "hover": {
+        "text": "Fixture filled",
+        "color": "rgb(22, 71, 196)",
+        "background": [
+          204,
+          227,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 5.855086441228227
+      },
+      "active": {
+        "text": "Fixture filled",
+        "color": "rgb(16, 51, 152)",
+        "background": [
+          163,
+          201,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 6.339766060965154
+      },
+      "focus": {
+        "text": "Fixture filled",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          240,
+          247,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 4.787893586509427
+      }
+    },
+    "Fixture-link-contrast.json": {
+      "normal": {
+        "text": "Fixture link",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 5.168555560022562
+      },
+      "hover": {
+        "text": "Fixture link",
+        "color": "rgb(22, 71, 196)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 7.685229475282879
+      },
+      "active": {
+        "text": "Fixture link",
+        "color": "rgb(16, 51, 152)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 10.774965857183863
+      },
+      "focus": {
+        "text": "Fixture link",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 5.168555560022562
+      }
+    },
+    "Fixture-neutral-contrast.json": {
+      "normal": {
+        "text": "Fixture neutral",
+        "color": "rgba(0, 0, 0, 0.88)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 16.558445686376146
+      },
+      "hover": {
+        "text": "Fixture neutral",
+        "color": "rgb(22, 71, 196)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 7.685229475282879
+      },
+      "active": {
+        "text": "Fixture neutral",
+        "color": "rgb(16, 51, 152)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 10.774965857183863
+      },
+      "focus": {
+        "text": "Fixture neutral",
+        "color": "rgba(0, 0, 0, 0.88)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 16.558445686376146
+      }
+    },
+    "Fixture-outlined-contrast.json": {
+      "normal": {
+        "text": "Fixture outlined",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 5.168555560022562
+      },
+      "hover": {
+        "text": "Fixture outlined",
+        "color": "rgb(22, 71, 196)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 7.685229475282879
+      },
+      "active": {
+        "text": "Fixture outlined",
+        "color": "rgb(16, 51, 152)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 10.774965857183863
+      },
+      "focus": {
+        "text": "Fixture outlined",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 5.168555560022562
+      }
+    },
+    "Fixture-solid-contrast.json": {
+      "normal": {
+        "text": "Fixture solid",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          37,
+          99,
+          235,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 5.168555560022562
+      },
+      "hover": {
+        "text": "Fixture solid",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          22,
+          71,
+          196,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 7.685229475282879
+      },
+      "active": {
+        "text": "Fixture solid",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          16,
+          51,
+          152,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 10.774965857183863
+      },
+      "focus": {
+        "text": "Fixture solid",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          37,
+          99,
+          235,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 5.168555560022562
+      }
+    },
+    "Fixture-text-contrast.json": {
+      "normal": {
+        "text": "Fixture text",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 5.168555560022562
+      },
+      "hover": {
+        "text": "Fixture text",
+        "color": "rgb(22, 71, 196)",
+        "background": [
+          240,
+          247,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 7.119215511615684
+      },
+      "active": {
+        "text": "Fixture text",
+        "color": "rgb(16, 51, 152)",
+        "background": [
+          163,
+          201,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 6.339766060965154
+      },
+      "focus": {
+        "text": "Fixture text",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 5.168555560022562
+      }
+    }
+  },
+  "action-contrast-light-RAW--82eb5-cs-remain-readable-at-390px-chromium": {
+    "Raw-contrast.json": {
+      "normal": {
+        "text": "Raw",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          240,
+          247,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.787893586509427
+      },
+      "hover": {
+        "text": "Raw",
+        "color": "rgb(22, 71, 196)",
+        "background": [
+          246,
+          249,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 7.2873683491084
+      },
+      "active": {
+        "text": "Raw",
+        "color": "rgb(16, 51, 152)",
+        "background": [
+          246,
+          249,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 10.217150366544535
+      },
+      "focus": {
+        "text": "Raw",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          240,
+          247,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": true,
+        "ratio": 4.787893586509427
+      }
+    },
+    "Review-changes-contrast.json": {
+      "normal": {
+        "text": "Review changes",
+        "color": "rgba(0, 0, 0, 0.88)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 16.558445686376146
+      },
+      "hover": {
+        "text": "Review changes",
+        "color": "rgb(22, 71, 196)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 7.685229475282879
+      },
+      "active": {
+        "text": "Review changes",
+        "color": "rgb(16, 51, 152)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 10.774965857183863
+      },
+      "focus": {
+        "text": "Review changes",
+        "color": "rgba(0, 0, 0, 0.88)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 16.558445686376146
+      }
+    },
+    "Route-Contrast-API--contrast.json": {
+      "normal": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          240,
+          247,
+          255,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.787893586509427
+      },
+      "hover": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          240,
+          247,
+          255,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.787893586509427
+      },
+      "active": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          240,
+          247,
+          255,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.787893586509427
+      },
+      "focus": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          240,
+          247,
+          255,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": true,
+        "ratio": 4.787893586509427
+      }
+    },
+    "Save-Changes-contrast.json": {
+      "normal": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          37,
+          99,
+          235,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 5.168555560022562
+      },
+      "hover": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          22,
+          71,
+          196,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 7.685229475282879
+      },
+      "active": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          16,
+          51,
+          152,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 10.774965857183863
+      },
+      "focus": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          37,
+          99,
+          235,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 5.168555560022562
+      }
+    },
+    "success-metrics-contrast.json": [
+      {
+        "text": "0",
+        "color": "rgb(35, 120, 4)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "20px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 5.585393881403125
+      },
+      {
+        "text": "12/12",
+        "color": "rgb(35, 120, 4)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "20px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 5.585393881403125
+      }
+    ]
+  },
+  "action-contrast-light-RAW--e3c29-s-remain-readable-at-1440px-chromium": {
+    "Raw-contrast.json": {
+      "normal": {
+        "text": "Raw",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          240,
+          247,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.787893586509427
+      },
+      "hover": {
+        "text": "Raw",
+        "color": "rgb(22, 71, 196)",
+        "background": [
+          246,
+          249,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 7.2873683491084
+      },
+      "active": {
+        "text": "Raw",
+        "color": "rgb(16, 51, 152)",
+        "background": [
+          246,
+          249,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 10.217150366544535
+      },
+      "focus": {
+        "text": "Raw",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          240,
+          247,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "focusVisible": true,
+        "ratio": 4.787893586509427
+      }
+    },
+    "Review-changes-contrast.json": {
+      "normal": {
+        "text": "Review changes",
+        "color": "rgba(0, 0, 0, 0.88)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 16.558445686376146
+      },
+      "hover": {
+        "text": "Review changes",
+        "color": "rgb(22, 71, 196)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 7.685229475282879
+      },
+      "active": {
+        "text": "Review changes",
+        "color": "rgb(16, 51, 152)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 10.774965857183863
+      },
+      "focus": {
+        "text": "Review changes",
+        "color": "rgba(0, 0, 0, 0.88)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 16.558445686376146
+      }
+    },
+    "Route-Contrast-API--contrast.json": {
+      "normal": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          240,
+          247,
+          255,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.787893586509427
+      },
+      "hover": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          240,
+          247,
+          255,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.787893586509427
+      },
+      "active": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          240,
+          247,
+          255,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": false,
+        "ratio": 4.787893586509427
+      },
+      "focus": {
+        "text": "Route: Contrast API\u25cf",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          240,
+          247,
+          255,
+          1
+        ],
+        "fontSize": "13.3333px",
+        "fontWeight": "600",
+        "focusVisible": true,
+        "ratio": 4.787893586509427
+      }
+    },
+    "Routes-contrast.json": {
+      "normal": {
+        "text": "Routes",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          242.5811124,
+          248.3426895,
+          254.9244027,
+          1
+        ],
+        "fontSize": "13px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 4.850620193116094
+      },
+      "hover": {
+        "text": "Routes",
+        "color": "rgba(0, 0, 0, 0.88)",
+        "background": [
+          247.158692103882,
+          247.275158103177,
+          247.3918719024705,
+          1
+        ],
+        "fontSize": "13px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 15.654237898358383
+      },
+      "active": {
+        "text": "Routes",
+        "color": "rgba(0, 0, 0, 0.88)",
+        "background": [
+          247.158692103882,
+          247.275158103177,
+          247.3918719024705,
+          1
+        ],
+        "fontSize": "13px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 15.654237898358383
+      },
+      "focus": {
+        "text": "Routes",
+        "color": "rgb(37, 99, 235)",
+        "background": [
+          242.5811124,
+          248.3426895,
+          254.9244027,
+          1
+        ],
+        "fontSize": "13px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 4.850620193116094
+      }
+    },
+    "Save-Changes-contrast.json": {
+      "normal": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          37,
+          99,
+          235,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 5.168555560022562
+      },
+      "hover": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          22,
+          71,
+          196,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 7.685229475282879
+      },
+      "active": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          16,
+          51,
+          152,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": false,
+        "ratio": 10.774965857183863
+      },
+      "focus": {
+        "text": "Save Changes",
+        "color": "rgb(255, 255, 255)",
+        "background": [
+          37,
+          99,
+          235,
+          1
+        ],
+        "fontSize": "14px",
+        "fontWeight": "620",
+        "focusVisible": true,
+        "ratio": 5.168555560022562
+      }
+    },
+    "success-metrics-contrast.json": [
+      {
+        "text": "0",
+        "color": "rgb(35, 120, 4)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "26px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 5.585393881403125
+      },
+      {
+        "text": "12/12",
+        "color": "rgb(35, 120, 4)",
+        "background": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "fontSize": "26px",
+        "fontWeight": "680",
+        "focusVisible": false,
+        "ratio": 5.585393881403125
+      }
+    ]
+  }
+}

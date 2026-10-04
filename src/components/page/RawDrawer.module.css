@@ -46,7 +46,7 @@
 .tab { display: flex; gap: 8px; border: 0; background: transparent; color: var(--ant-color-text); padding: 8px; cursor: pointer; min-width: 0; }
 .tab > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
 .tabStatus { width: 12px; flex: 0 0 12px; }
-.tab[aria-selected='true'] { color: var(--ant-color-primary); font-weight: 600; }
+.tab[aria-selected='true'] { color: var(--app-color-action-text); font-weight: 600; }
 .tab:focus-visible { outline: 2px solid var(--ant-color-primary); outline-offset: 1px; }
 .workspaceHint { color: var(--ant-color-text-secondary); font-size: 12px; margin: 4px 0 8px; flex-shrink: 0; }
 .tabPanel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
