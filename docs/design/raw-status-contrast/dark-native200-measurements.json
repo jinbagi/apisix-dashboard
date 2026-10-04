@@ -1,0 +1,129 @@
+{
+  "theme": "dark",
+  "size": "native200",
+  "palette": {
+    "warning": "#d89614",
+    "warning-text": "#d89614",
+    "error": "#dc4446",
+    "primary": "#558fd8"
+  },
+  "measurements": [
+    {
+      "factor": 2,
+      "normal": {
+        "innerWidth": 1424,
+        "innerHeight": 985,
+        "outerWidth": 1440,
+        "outerHeight": 1080,
+        "dpr": 1,
+        "visualScale": 1,
+        "cssZoom": "1",
+        "scrollWidth": 1424
+      },
+      "scaled": {
+        "innerWidth": 712,
+        "innerHeight": 492,
+        "outerWidth": 1440,
+        "outerHeight": 1080,
+        "dpr": 2,
+        "visualScale": 1,
+        "cssZoom": "1",
+        "scrollWidth": 712
+      }
+    },
+    {
+      "state": "clean",
+      "text": "No pending changes",
+      "color": "rgba(255, 255, 255, 0.65)",
+      "background": [
+        20,
+        20,
+        20,
+        1
+      ],
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "focusVisible": false,
+      "ratio": 8.18567135559205
+    },
+    {
+      "state": "dirty",
+      "text": "Unsaved changes. Ctrl+S saves changed fields.",
+      "color": "rgb(216, 150, 20)",
+      "background": [
+        20,
+        20,
+        20,
+        1
+      ],
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "focusVisible": false,
+      "ratio": 7.2746435493623425
+    },
+    {
+      "width": 1424,
+      "height": 985,
+      "current": {
+        "innerWidth": 712,
+        "innerHeight": 492,
+        "outerWidth": 1440,
+        "outerHeight": 1080,
+        "dpr": 2,
+        "visualScale": 1,
+        "cssZoom": "1",
+        "scrollWidth": 712
+      }
+    },
+    {
+      "state": "saving",
+      "text": "Saving and verifying with APISIX...",
+      "color": "rgb(216, 150, 20)",
+      "background": [
+        20,
+        20,
+        20,
+        1
+      ],
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "focusVisible": false,
+      "ratio": 7.2746435493623425
+    },
+    {
+      "width": 1424,
+      "height": 985,
+      "current": {
+        "innerWidth": 712,
+        "innerHeight": 492,
+        "outerWidth": 1440,
+        "outerHeight": 1080,
+        "dpr": 2,
+        "visualScale": 1,
+        "cssZoom": "1",
+        "scrollWidth": 712
+      }
+    },
+    {
+      "state": "saved",
+      "text": "Saved at 10:51:34 PM",
+      "color": "rgba(255, 255, 255, 0.65)",
+      "background": [
+        20,
+        20,
+        20,
+        1
+      ],
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "focusVisible": false,
+      "ratio": 8.18567135559205
+    }
+  ],
+  "patches": [
+    {
+      "desc": "Prepared contrast change"
+    }
+  ],
+  "unexpected": []
+}

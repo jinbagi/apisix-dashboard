@@ -17,6 +17,7 @@
 import { writeFile } from 'node:fs/promises';
 
 import { captureNativeViewport, nativeZoomContext, setNativeZoom } from '@e2e/utils/nativeBrowserZoom';
+import { textContrast } from '@e2e/utils/textContrast';
 import { expect, test } from '@playwright/test';
 
 const resource = { id: 'native-zoom', name: 'Native zoom API', uri: '/zoom/*', status: 1,
@@ -69,6 +70,9 @@ for (const theme of ['light', 'dark'] as const) test(`native 200% browser zoom p
     const save = raw.getByRole('button', { name: 'Save Changes', exact: true }); await expect(save).toBeDisabled();
     await page.evaluate(() => { const editor = window.__monacoEditor__!; editor.setValue(JSON.stringify({ ...JSON.parse(editor.getValue()), desc: 'Unsaved native zoom draft' }, null, 2)); });
     await expect(save).toBeEnabled(); await expect(save).toBeInViewport({ ratio: 1 });
+    const statusContrast = await textContrast(raw.getByText('Unsaved changes. Ctrl+S saves changed fields.', { exact: true }));
+    expect(statusContrast.ratio, JSON.stringify(statusContrast)).toBeGreaterThanOrEqual(4.5);
+    measurements.push({ flow: 'raw-dirty-status', ...statusContrast });
     await save.focus(); await page.keyboard.press('Tab'); await expect(save).not.toBeFocused();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     measurements.push(await captureNativeViewport(page, info.outputPath(`${theme}-200-raw.png`)));
