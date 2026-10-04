@@ -79,7 +79,7 @@ export const ResourceHistory = ({ api, disabled = false, onRestore }: {
     <Button disabled={busy} onClick={() => setCompared(row)}>Compare change</Button>
     {onRestore && <Button disabled={busy || !!historyRestoreReason(row)} onClick={() => void prepareRestore(row)}>Restore previous values</Button>}
   </Space>;
-  const entrySummary = (row: ResourceHistoryEntry) => <Space direction="vertical" size={0}>
+  const entrySummary = (row: ResourceHistoryEntry) => <Space orientation="vertical" size={0}>
     <Typography.Text>{row.operation} · {row.source === 'legacy' ? 'legacy RAW/bulk' : row.source}</Typography.Text>
     <Typography.Text type="secondary">{row.verification === 'readable' ? 'Readable fields verified' : 'Verified'}</Typography.Text>
     {historyRestoreReason(row) && <Typography.Text type="secondary">{historyRestoreReason(row)}</Typography.Text>}
@@ -88,16 +88,16 @@ export const ResourceHistory = ({ api, disabled = false, onRestore }: {
     <Button disabled={disabled} onClick={show}>Change history</Button>
     <Modal title="Resource change history" open={open && !compared && !restored} width={1000} onCancel={close}
       style={screens.md ? undefined : { top: 16 }} styles={{ body: { maxHeight: 'calc(100dvh - 180px)', overflowY: 'auto' } }}
-      closable={!busy} maskClosable={!busy} keyboard={!busy} footer={<Button disabled={busy} onClick={close}>Close history</Button>} destroyOnHidden>
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+      closable={!busy} mask={{ closable: !busy }} keyboard={!busy} footer={<Button disabled={busy} onClick={close}>Close history</Button>} destroyOnHidden>
+      <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
         <Typography.Paragraph>
           Last {HISTORY_LIMIT} verified changes from RAW, bulk RAW, forms, import, and supported API Console writes made in this tab. This is local history, not a gateway audit log.
           Reloading clears memory unless you save an encrypted archive. Archives include configuration values and may contain secrets.
           Open a resource RAW editor to restore an update. Create, delete, and protected-field events are view only. Unverified writes are excluded. This read-before/write/read-after history is not an atomic server audit trail.
         </Typography.Paragraph>
         {api && <Typography.Text code>{api}</Typography.Text>}
-        {error && <Alert type="error" showIcon message={error} />}
-        {feedback && <Alert type="success" showIcon message={feedback} />}
+        {error && <Alert type="error" showIcon title={error} />}
+        {feedback && <Alert type="success" showIcon title={feedback} />}
         {screens.md ? <Table size="small" rowKey="id" dataSource={rows} pagination={{ pageSize: 5 }} scroll={{ x: 900 }} columns={[
           { title: 'Verified at', width: 160, key: 'at', render: (_, row) => new Date(row.at).toLocaleString() },
           { title: 'Resource', width: 240, dataIndex: 'api' },
@@ -105,7 +105,7 @@ export const ResourceHistory = ({ api, disabled = false, onRestore }: {
           { title: 'Actions', key: 'actions', render: (_, row) => entryActions(row) },
         ]} /> : <List dataSource={rows} pagination={{ pageSize: 5, size: 'small' }} renderItem={(row) =>
           <List.Item key={row.id}>
-            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+            <Space orientation="vertical" size="small" style={{ width: '100%' }}>
               <Typography.Text code style={{ overflowWrap: 'anywhere' }}>{row.api}</Typography.Text>
               <Typography.Text type="secondary">{new Date(row.at).toLocaleString()}</Typography.Text>
               {entrySummary(row)}

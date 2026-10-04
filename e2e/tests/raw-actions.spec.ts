@@ -20,6 +20,11 @@ import { applyBulkPatch } from '@/apis/bulk-patch';
 
 const initial = { id: 'actions', name: 'Catalog service', upstream_id: 'catalog-origin', desc: 'Before edit', create_time: 1, update_time: 1 };
 async function openEditor(page: Page) {
+  const deprecations: string[] = [];
+  page.on('console', (message) => {
+    const text = message.text();
+    if (/\[antd: (Alert|Space|Modal)\].*deprecated/.test(text)) deprecations.push(text);
+  });
   let value: Record<string, unknown> = { ...initial };
   const writes: Record<string, unknown>[] = [];
   const controls: { hold?: Promise<void> } = {};
@@ -46,7 +51,7 @@ async function openEditor(page: Page) {
     editor.setValue(JSON.stringify({ ...JSON.parse(editor.getValue()), desc: 'Prepared change' }, null, 2));
   });
   await expect(drawer.getByRole('button', { name: 'Save Changes', exact: true })).toBeEnabled();
-  return { drawer, writes, controls };
+  return { drawer, writes, controls, deprecations };
 }
 
 for (const viewport of [{ width: 1920, height: 1080 }, { width: 960, height: 900 }, { width: 390, height: 844 }]) {
@@ -78,7 +83,7 @@ for (const viewport of [{ width: 1920, height: 1080 }, { width: 960, height: 900
 }
 
 test('RAW tool keyboard focus, dialogs, and explicit saving retain the primary action position', async ({ page }) => {
-  const { drawer, controls, writes } = await openEditor(page);
+  const { drawer, controls, writes, deprecations } = await openEditor(page);
   const tools = drawer.getByRole('group', { name: 'RAW editor tools', exact: true });
   const primary = drawer.getByRole('group', { name: 'RAW save actions', exact: true });
   await tools.getByRole('button', { name: 'Format', exact: true }).focus();
@@ -117,4 +122,5 @@ test('RAW tool keyboard focus, dialogs, and explicit saving retain the primary a
   release();
   await expect(drawer.getByText(/Saved at/)).toBeVisible();
   expect(writes).toEqual([{ desc: 'Prepared change' }]);
+  expect(deprecations).toEqual([]);
 });

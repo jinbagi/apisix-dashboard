@@ -133,7 +133,7 @@ const FormErrorSummary = ({
       type="error"
       showIcon
       style={{ marginBottom: 16 }}
-      message={`${errors.length} validation error(s)`}
+      title={`${errors.length} validation error(s)`}
       description={
         <ul className={classes.errorList}>
           {errors.slice(0, 10).map((e) => (
@@ -606,7 +606,7 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
         })}
       >
         {apiError && (
-          <Alert type="error" showIcon closable message={apiError} onClose={() => setApiError(null)} style={{ marginBottom: 16 }} />
+          <Alert type="error" showIcon closable title={apiError} onClose={() => setApiError(null)} style={{ marginBottom: 16 }} />
         )}
         <FormErrorSummary errors={validationErrors} onFocusError={focusFormError} />
         <FormDraftRevisionContext.Provider value={draftRevision}>
@@ -649,11 +649,11 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
       label: 'Payload JSON',
       children: (
         <div>
-          {apiError && <Alert type="error" showIcon message={apiError} style={{ marginBottom: 12 }} />}
+          {apiError && <Alert type="error" showIcon title={apiError} style={{ marginBottom: 12 }} />}
           <Alert
             type="info"
             showIcon
-            message="One draft, two editors"
+            title="One draft, two editors"
             description="Payload JSON and the form share your changes, validation, and save review. Switching to the form applies your JSON without saving."
             style={{ marginBottom: 12, padding: '8px 12px', fontSize: 'var(--app-font-size-sm)' }}
           />
@@ -675,7 +675,7 @@ export const FormJsonTabs = (props: FormJsonTabsProps) => {
           {jsonError && (
             <Alert
               type="error"
-              message={<div style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--app-font-monospace)', fontSize: 'var(--app-font-size-sm)' }}>{jsonError}</div>}
+              title={<div style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--app-font-monospace)', fontSize: 'var(--app-font-size-sm)' }}>{jsonError}</div>}
               style={{ marginTop: 8 }}
               showIcon
             />

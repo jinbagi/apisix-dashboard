@@ -16,11 +16,13 @@
  */
 import { EXPORT_VERSION, getImportRequest, IMPORT_ORDER, RESOURCE_LABELS, type ResourceKey } from '@/apis/export-import';
 import { isDeepEqual, isRecord } from '@/utils/apisixEditable';
+import { type CollectionCoverage, type ExportCoverage, readExportCoverage, scopeKey } from '@/utils/exportCoverage';
+import { SHARING_MARKER } from '@/utils/sharingFormat';
 
 export type SnapshotStatus = 'Added' | 'Removed' | 'Changed' | 'Unchanged' | 'Not comparable';
-export type SnapshotCoverage = 'Present' | 'Omitted' | 'Skipped';
-type SnapshotCollection = { coverage: SnapshotCoverage; items: Map<string, Record<string, unknown>> };
-export type ConfigurationSnapshot = { name: string; version: number; exportedAt?: string; warnings: string[]; collections: Map<ResourceKey, SnapshotCollection> };
+export type SnapshotCoverage = 'Complete' | 'Incomplete' | 'Excluded' | 'Unknown' | 'Omitted' | 'Skipped';
+type SnapshotCollection = { coverage: SnapshotCoverage; declared?: CollectionCoverage; items: Map<string, Record<string, unknown>> };
+export type ConfigurationSnapshot = { name: string; version: number; exportedAt?: string; warnings: string[]; declaredCoverage?: ExportCoverage; collections: Map<ResourceKey, SnapshotCollection> };
 export type SnapshotDifference = {
   url: string; resourceType: ResourceKey; status: SnapshotStatus; paths: string[];
   before?: Record<string, unknown>; after?: Record<string, unknown>;
@@ -86,7 +88,10 @@ export function parseConfigurationSnapshot(text: string, name: string): Configur
   for (const key of Object.keys(data.resources)) if (!known.has(key)) throw new Error(`Unsupported resource collection: ${key}`);
   const skipped = new Set<string>(data.skippedResources as string[] | undefined);
   const unknownScope = [...skipped].some((kind) => !known.has(kind));
-  const warnings = unknownScope ? ['The file declares an unrecognized partial export scope; absent resources cannot establish additions or removals.'] : [];
+  const declared = Object.hasOwn(data, 'coverage') ? readExportCoverage(data.coverage, IMPORT_ORDER) : undefined;
+  const redacted = Object.hasOwn(data, SHARING_MARKER);
+  const warnings = !declared ? ['Legacy export coverage is unknown; absent resources cannot establish additions or removals.'] : [];
+  if (redacted) warnings.push('This is an incomplete sharing artifact; absence cannot establish additions or removals.');
   const collections = new Map<ResourceKey, SnapshotCollection>();
   for (const kind of IMPORT_ORDER) {
     const present = Object.hasOwn(data.resources, kind);
@@ -100,9 +105,19 @@ export function parseConfigurationSnapshot(text: string, name: string): Configur
         items.set(resource.url, resource.body);
       } catch (error) { throw new Error(`${RESOURCE_LABELS[kind]} item ${index + 1}: ${error instanceof Error ? error.message : 'Invalid resource'}`); }
     });
-    collections.set(kind, { coverage: !present ? 'Omitted' : skipped.has(kind) || unknownScope ? 'Skipped' : 'Present', items });
+    const coverage = declared?.collections[kind];
+    if (coverage) {
+      if (coverage.count !== items.size || !present && coverage.state === 'complete') throw new Error(`Coverage count or presence does not match ${kind}`);
+      const scope = coverage.scope;
+      if (scope.type === 'ids' && [...items.keys()].some((url) => !scope.values.includes(url))) throw new Error(`Resource outside declared ID scope in ${kind}`);
+      if (scope.type === 'owners' && [...items.keys()].some((url) => !scope.values.includes(url.split('/').slice(0, 3).join('/')))) throw new Error(`Resource outside declared owner scope in ${kind}`);
+      if ((skipped.has(kind) || unknownScope && declared?.mode === 'full') && coverage.state === 'complete') throw new Error(`Skipped collection cannot have complete coverage: ${kind}`);
+      const owners = coverage.owners;
+      if (owners && [...items.keys()].some((url) => !owners.completed.includes(url.split('/').slice(0, 3).join('/')))) throw new Error(`Unverified owner in ${kind}`);
+    }
+    collections.set(kind, { coverage: !present ? 'Omitted' : redacted ? 'Incomplete' : coverage ? coverage.state === 'complete' ? 'Complete' : coverage.state === 'excluded' ? 'Excluded' : 'Incomplete' : skipped.has(kind) || unknownScope ? 'Skipped' : 'Unknown', declared: coverage, items });
   }
-  return { name, version: Number(data.version), exportedAt: data.exportedAt as string | undefined, warnings, collections };
+  return { name, version: Number(data.version), exportedAt: data.exportedAt as string | undefined, warnings, declaredCoverage: declared, collections };
 }
 
 const escapePointer = (key: string) => key.replace(/~/g, '~0').replace(/\//g, '~1');
@@ -120,14 +135,15 @@ export function compareConfigurationSnapshots(before: ConfigurationSnapshot, aft
   const items: SnapshotDifference[] = [];
   const coverage = IMPORT_ORDER.map((kind) => {
     const left = before.collections.get(kind)!; const right = after.collections.get(kind)!;
+    const comparable = left.coverage === 'Complete' && right.coverage === 'Complete' && left.declared && right.declared && scopeKey(left.declared.scope) === scopeKey(right.declared.scope);
     for (const url of new Set([...left.items.keys(), ...right.items.keys()])) {
       const original = left.items.get(url); const modified = right.items.get(url);
       const status: SnapshotStatus = original && modified ? isDeepEqual(original, modified) ? 'Unchanged' : 'Changed'
-        : !original ? left.coverage === 'Present' ? 'Added' : 'Not comparable'
-          : right.coverage === 'Present' ? 'Removed' : 'Not comparable';
+        : !original ? comparable ? 'Added' : 'Not comparable'
+          : comparable ? 'Removed' : 'Not comparable';
       items.push({ url, resourceType: kind, status, paths: original && modified ? changedPaths(original, modified) : [], before: original, after: modified });
     }
-    return { resourceType: kind, before: left.coverage, after: right.coverage, beforeCount: left.items.size, afterCount: right.items.size };
+    return { resourceType: kind, before: left.coverage, after: right.coverage, beforeCount: left.items.size, afterCount: right.items.size, beforeScope: left.declared?.scope, afterScope: right.declared?.scope, comparable: !!comparable, beforeOwners: left.declared?.owners, afterOwners: right.declared?.owners };
   });
   items.sort((a, b) => a.url.localeCompare(b.url));
   const counts = Object.fromEntries((['Added', 'Removed', 'Changed', 'Unchanged', 'Not comparable'] as const).map((status) => [status, items.filter((row) => row.status === status).length])) as Record<SnapshotStatus, number>;
@@ -144,9 +160,9 @@ export function snapshotJson(value: unknown): unknown {
 export function snapshotComparisonReport(before: ConfigurationSnapshot, after: ConfigurationSnapshot) {
   return {
     format: 'apisix-snapshot-comparison', version: 1,
-    scope: 'File contents only. Added and Removed describe snapshot differences, not proven changes to a gateway. Omitted or skipped collections cannot establish absence.',
-    before: { name: before.name, version: before.version, exportedAt: before.exportedAt, warnings: before.warnings },
-    after: { name: after.name, version: after.version, exportedAt: after.exportedAt, warnings: after.warnings },
+    scope: 'File contents only. Added and Removed describe snapshot differences, not proven changes to a gateway. Only the same complete declared scope on both sides can establish absence. Legacy, excluded, incomplete or different scopes cannot establish absence.',
+    before: { name: before.name, version: before.version, exportedAt: before.exportedAt, warnings: before.warnings, coverage: before.declaredCoverage },
+    after: { name: after.name, version: after.version, exportedAt: after.exportedAt, warnings: after.warnings, coverage: after.declaredCoverage },
     ...compareConfigurationSnapshots(before, after),
   };
 }

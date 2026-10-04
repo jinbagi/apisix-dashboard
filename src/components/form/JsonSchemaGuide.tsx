@@ -78,7 +78,7 @@ export const JsonSchemaGuide = ({
         className={classes.alert}
         type={feedback.syntaxError || feedback.issues.length > 0 ? 'warning' : validAlertType}
         showIcon
-        message={<Typography.Text className={classes.guideTitle}>{title}</Typography.Text>}
+        title={<Typography.Text className={classes.guideTitle}>{title}</Typography.Text>}
         action={collapsible && isValid && (
           <Button
             size="small"
@@ -91,7 +91,7 @@ export const JsonSchemaGuide = ({
           </Button>
         )}
         description={showDescription && (
-          <Space id={descriptionId} direction="vertical" size={compact ? 3 : 6}>
+          <Space id={descriptionId} orientation="vertical" size={compact ? 3 : 6}>
             {identityPaths.length > 0 && (
               <div className={classes.guideSection}>
                 <Typography.Text className={classes.sectionLabel} strong>Resource identity: </Typography.Text>

@@ -78,7 +78,7 @@ const Explanation = ({ id }: { id: string }) => {
           </Tag>
         ) },
         ...(!global ? [{ title: 'Overridden sources', key: 'overridden', render: (_: unknown, row: PluginOrigin) => (
-          <Space direction="vertical" size={0}>{row.overridden.length ? row.overridden.map((item) => (
+          <Space orientation="vertical" size={0}>{row.overridden.length ? row.overridden.map((item) => (
             <SourceLink key={item.source.kind} source={item.source} />
           )) : 'None'}</Space>
         ) }] : []),
@@ -91,7 +91,7 @@ const Explanation = ({ id }: { id: string }) => {
       ]} />
   );
   return (
-    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+    <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
       <Typography.Paragraph style={{ margin: 0 }}>
         Saved configuration only; unsaved form and RAW changes are excluded. This read-only view never applies changes.
         Source links open in a new tab.
@@ -122,7 +122,7 @@ const Explanation = ({ id }: { id: string }) => {
         {data && <Typography.Text type="secondary">Read at {data.readAt}</Typography.Text>}
       </Space>
       {loading && <Spin aria-label="Loading configuration sources" />}
-      {error && <Alert type="error" showIcon message="Configuration could not be explained" description={error} />}
+      {error && <Alert type="error" showIcon title="Configuration could not be explained" description={error} />}
       {data && <>
         <Space wrap>{data.sources.map((source) => <Tag key={source.kind}><SourceLink source={source} /></Tag>)}</Space>
         <Descriptions size="small" column={1} bordered items={[
@@ -136,7 +136,7 @@ const Explanation = ({ id }: { id: string }) => {
             {data.websocket ? <SourceLink source={data.websocket} /> : 'Default'}
           </Space> },
         ]} />
-        {data.script && <Alert type="warning" showIcon message="Script configuration detected"
+        {data.script && <Alert type="warning" showIcon title="Script configuration detected"
           description={<span><SourceLink source={data.script} /> supplies a script. APISIX uses its script path instead of the local plugin chain. Global Rules remain separate.</span>} />}
         <div>
           <Typography.Title level={5}>Local plugin precedence</Typography.Title>
@@ -153,7 +153,7 @@ const Explanation = ({ id }: { id: string }) => {
           </Typography.Paragraph>
           {pluginTable(data.globalPlugins, true)}
         </div>
-        <Alert type="info" showIcon message="Configuration explanation, not a request trace"
+        <Alert type="info" showIcon title="Configuration explanation, not a request trace"
           description="Consumer and Consumer Group plugins can override local configuration after authentication. Request filters, execution phases, plugin availability and run policies still apply. Plugins such as traffic-split or a script can choose a different upstream. Resources are read separately, so this is not an atomic snapshot." />
       </>}
       <Modal open={Boolean(json)} title={json?.title} width={760} footer={<Button onClick={() => setJson(undefined)}>Close JSON</Button>}

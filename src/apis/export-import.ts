@@ -14,21 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { getConsumerGroupListReq } from '@/apis/consumer_groups';
-import { getConsumerListReq } from '@/apis/consumers';
-import { getCredentialListReq } from '@/apis/credentials';
-import { fetchAllResources } from '@/apis/fetchAll';
-import { getGlobalRuleListReq } from '@/apis/global_rules';
-import { getGraphqlCostDecorations, graphqlCostDecorationsApi } from '@/apis/graphql_cost_decorations';
-import { getPluginConfigListReq } from '@/apis/plugin_configs';
-import { getProtoListReq } from '@/apis/protos';
-import { getRouteListReq } from '@/apis/routes';
-import { getSecretListReq } from '@/apis/secrets';
-import { getServiceListReq } from '@/apis/services';
-import { getSSLListReq } from '@/apis/ssls';
-import { getStreamRouteListReq } from '@/apis/stream_routes';
+import { readFullExport } from '@/apis/export-snapshot';
+import { graphqlCostDecorationsApi } from '@/apis/graphql_cost_decorations';
 import { trackResourceWrite } from '@/apis/tracked-resource-write';
-import { getUpstreamListReq } from '@/apis/upstreams';
 import {
   API_CONFIG_VALIDATE,
   API_CONSUMER_GROUPS,
@@ -36,7 +24,6 @@ import {
   API_GLOBAL_RULES,
   API_PLUGIN_CONFIGS,
   API_PLUGIN_METADATA,
-  API_PLUGINS,
   API_PROTOS,
   API_ROUTES,
   API_SECRETS,
@@ -44,12 +31,11 @@ import {
   API_SSLS,
   API_STREAM_ROUTES,
   API_UPSTREAMS,
-  SKIP_INTERCEPTOR_HEADER,
 } from '@/config/constant';
 import { req } from '@/config/req';
-import type { APISIXType } from '@/types/schema/apisix';
 import { GraphqlCostDecoration } from '@/types/schema/apisix/graphql_cost_decorations';
 import { isRecord } from '@/utils/apisixEditable';
+import { excludedCoverage,type ExportCoverage } from '@/utils/exportCoverage';
 import { validateExactResourceSnapshot } from '@/utils/resourceIdentity';
 import { assertRestorableExport } from '@/utils/sharingFormat';
 
@@ -59,6 +45,7 @@ export type ExportData = {
   version: number;
   exportedAt: string;
   skippedResources?: string[];
+  coverage?: ExportCoverage;
   resources: {
     upstreams: Record<string, unknown>[];
     services: Record<string, unknown>[];
@@ -182,7 +169,11 @@ export async function exportSelectedResources(apiBase: string, selectedIds: stri
     pluginConfigs: [], pluginMetadata: [], protos: [], secrets: [],
   };
   resources[resourceKey] = items;
-  return { version: EXPORT_VERSION, exportedAt: new Date().toISOString(), resources };
+  const collections = Object.fromEntries(IMPORT_ORDER.map((kind) => [kind, excludedCoverage()])) as ExportCoverage['collections'];
+  const rootUrls = items.map((item) => getImportRequest(resourceKey, item).url).sort();
+  collections[resourceKey] = { scope: { type: 'ids', values: rootUrls }, state: 'complete', count: items.length };
+  return { version: EXPORT_VERSION, exportedAt: new Date().toISOString(), resources,
+    coverage: { version: 1, mode: 'selected', selectedResources: [resourceKey], rootUrls, collections } };
 }
 
 const VALIDATION_RESOURCE_KEYS: Record<ResourceKey, string | null> = {
@@ -284,92 +275,7 @@ export async function validateConfiguration(
 }
 
 export async function exportAllResources(): Promise<ExportData> {
-  const results = await Promise.allSettled([
-    fetchAllResources(getUpstreamListReq),
-    fetchAllResources(getServiceListReq),
-    fetchAllResources(getRouteListReq),
-    fetchAllResources(getStreamRouteListReq),
-    fetchAllResources(getConsumerListReq),
-    fetchAllResources(getConsumerGroupListReq),
-    fetchAllResources(getSSLListReq),
-    fetchAllResources(getGlobalRuleListReq),
-    fetchAllResources(getPluginConfigListReq),
-    fetchAllResources(getProtoListReq),
-    fetchAllResources(getSecretListReq),
-  ]);
-  const resourceNames: ResourceKey[] = [
-    'upstreams', 'services', 'routes', 'streamRoutes', 'consumers',
-    'consumerGroups', 'ssls', 'globalRules', 'pluginConfigs', 'protos', 'secrets',
-  ];
-  const v = (i: number) => results[i].status === 'fulfilled' ? (results[i] as PromiseFulfilledResult<Record<string, unknown>[]>).value : [];
-  const skipped = resourceNames.filter((_, i) => results[i].status === 'rejected');
-  const consumers = v(4);
-  const extendedResults = await Promise.allSettled([
-    exportCredentials(consumers),
-    exportPluginMetadata(),
-    exportGraphqlCostDecorations(v(1)),
-  ]);
-  if (
-    extendedResults[0].status === 'rejected' ||
-    extendedResults[0].value.hadFailures
-  ) {
-    skipped.push('credentials');
-  }
-  if (
-    extendedResults[1].status === 'rejected' ||
-    extendedResults[1].value.hadFailures
-  ) {
-    skipped.push('pluginMetadata');
-  }
-  const credentials =
-    extendedResults[0].status === 'fulfilled' ? extendedResults[0].value.items : [];
-  const pluginMetadata =
-    extendedResults[1].status === 'fulfilled' ? extendedResults[1].value.items : [];
-  if (results[1].status === 'rejected' || extendedResults[2].status === 'rejected' || extendedResults[2].value.hadFailures) skipped.push('graphqlCostDecorations');
-  const graphqlCostDecorations = extendedResults[2].status === 'fulfilled' ? extendedResults[2].value.items : [];
-
-  return {
-    version: EXPORT_VERSION,
-    exportedAt: new Date().toISOString(),
-    skippedResources: skipped,
-    resources: {
-      upstreams: v(0), services: v(1), graphqlCostDecorations, routes: v(2), streamRoutes: v(3),
-      consumers, credentials, consumerGroups: v(5), ssls: v(6),
-      globalRules: v(7), pluginConfigs: v(8), pluginMetadata, protos: v(9),
-      secrets: v(10),
-    },
-  };
-}
-
-async function exportGraphqlCostDecorations(services: Record<string, unknown>[]) {
-  const results = await Promise.allSettled(services.map(async (service) => {
-    const serviceId = String(service.id);
-    const response = await getGraphqlCostDecorations(req, serviceId);
-    return response.list.map((item) => ({ ...item.value, service_id: serviceId }));
-  }));
-  return {
-    items: results.flatMap((result) => result.status === 'fulfilled' ? result.value : []),
-    hadFailures: results.some((result) => result.status === 'rejected'),
-  };
-}
-
-async function exportCredentials(
-  consumers: Record<string, unknown>[]
-): Promise<{ items: Record<string, unknown>[]; hadFailures: boolean }> {
-  const credentialLists = await Promise.allSettled(
-    consumers.map(async (consumer) => {
-      const username = String(consumer.username ?? '');
-      if (!username) return [];
-      const response = await getCredentialListReq(req, { username });
-      return getExportedCredentialItems(username, response.list);
-    })
-  );
-  return {
-    items: credentialLists.flatMap((result) =>
-      result.status === 'fulfilled' ? result.value : []
-    ),
-    hadFailures: credentialLists.some((result) => result.status === 'rejected'),
-  };
+  return readFullExport();
 }
 
 export function getExportedCredentialItems(
@@ -380,46 +286,6 @@ export function getExportedCredentialItems(
     ...credential.value,
     username,
   }));
-}
-
-async function exportPluginMetadata(): Promise<{
-  items: Record<string, unknown>[];
-  hadFailures: boolean;
-}> {
-  const plugins = await req
-    .get<unknown, APISIXType['RespPlugins']>(API_PLUGINS, {
-      params: { all: true },
-    })
-    .then((response) => response.data);
-  const pluginNames = Object.entries(plugins)
-    .filter(([, plugin]) => plugin.metadata_schema)
-    .map(([name]) => name);
-  const metadata = await Promise.allSettled(
-    pluginNames.map(async (name): Promise<Record<string, unknown> | null> => {
-      try {
-        const response = await req.get<
-          unknown,
-          APISIXType['RespPluginMetadataDetail']
-        >(`${API_PLUGIN_METADATA}/${name}`, {
-          headers: {
-            [SKIP_INTERCEPTOR_HEADER]: ['404'],
-          },
-        });
-        return { id: name, ...stripTimestamps(response.data.value) };
-      } catch (error) {
-        const status = (error as { response?: { status?: number } }).response
-          ?.status;
-        if (status === 404) return null;
-        throw error;
-      }
-    })
-  );
-  return {
-    items: metadata.flatMap((result) =>
-      result.status === 'fulfilled' && result.value ? [result.value] : []
-    ),
-    hadFailures: metadata.some((result) => result.status === 'rejected'),
-  };
 }
 
 function stripTimestamps(data: Record<string, unknown>): Record<string, unknown> {

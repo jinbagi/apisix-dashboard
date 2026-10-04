@@ -53,9 +53,9 @@ export const DependencyExport = ({ apiBase, selectedIds, disabled }: {
           if (!data || data.blocked) return;
           downloadJson(data.data, `apisix-with-dependencies-${new Date().toISOString().slice(0, 10)}.json`);
         }}>Download bundle</Button></Space>}>
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+      <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
         <Typography.Text strong>{ids.length} selected resources · {apiBase}</Typography.Text>
-        <Alert type="info" showIcon message="Included reference scope" description={dependencyExportScope(options)} />
+        <Alert type="info" showIcon title="Included reference scope" description={dependencyExportScope(options)} />
         <Checkbox checked={!!options.graphqlCostDecorations} disabled={loading} onChange={(event) => {
           const next = { ...options, graphqlCostDecorations: event.target.checked }; setOptions(next); void refresh(ids, next);
         }}>Include Service GraphQL cost decorations</Checkbox>
@@ -68,17 +68,17 @@ export const DependencyExport = ({ apiBase, selectedIds, disabled }: {
           Refresh the preview to include changes made since it was prepared.
         </Typography.Paragraph>
         <Button aria-label="Refresh export preview" loading={loading} disabled={loading} onClick={() => void refresh(ids)}>Refresh export preview</Button>
-        {error && <Alert type="error" message="Export could not be prepared" description={error} showIcon />}
+        {error && <Alert type="error" title="Export could not be prepared" description={error} showIcon />}
         {data && <>
           <div role="status">{data.rows.length - data.blocked} included · {data.blocked} unresolved references</div>
           <Typography.Text type="secondary">Snapshot prepared at {new Date(data.data.exportedAt).toLocaleTimeString()}</Typography.Text>
-          {data.blocked > 0 && <Alert type="error" showIcon message="Download blocked"
+          {data.blocked > 0 && <Alert type="error" showIcon title="Download blocked"
             description="Resolve the missing or unreadable resources below, then refresh the preview. No partial bundle will be downloaded." />}
           <Table size="small" rowKey="key" dataSource={data.rows} pagination={{ pageSize: 8 }} scroll={{ x: 700 }}
             columns={[
               { title: 'Resource', key: 'resource', render: (_, row) => <Typography.Text code>{row.key}</Typography.Text> },
               { title: 'Included because', key: 'reasons', render: (_, row) => <span style={{ overflowWrap: 'anywhere' }}>{row.reasons.join('; ')}</span> },
-              { title: 'Result', key: 'result', render: (_, row) => <Space direction="vertical">
+              { title: 'Result', key: 'result', render: (_, row) => <Space orientation="vertical">
                 <Tag color={row.status === 'Included' ? 'green' : 'red'}>{row.status}</Tag>
                 {row.error && <Typography.Text type="danger">{row.error}</Typography.Text>}
               </Space> },

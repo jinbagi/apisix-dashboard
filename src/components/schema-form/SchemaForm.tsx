@@ -168,7 +168,7 @@ const ArrayOfObjectsField = ({
 
   return (
     <FieldWrapper fieldKey={fieldKey} schema={schema} required={required}>
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space orientation="vertical" style={{ width: '100%' }}>
         {items.map((item, index) => (
           <Card
             key={itemKeys[index] ?? index}
@@ -343,7 +343,7 @@ const FreeFormJsonField = ({
         <Alert
           type="error"
           showIcon
-          message={error}
+          title={error}
           style={{ marginTop: 8 }}
         />
       )}
@@ -387,7 +387,7 @@ const ArrayOfScalarsField = ({
 
   return (
     <FieldWrapper fieldKey={fieldKey} schema={schema} required={required}>
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space orientation="vertical" style={{ width: '100%' }}>
         {items.map((item, index) => (
           <Space key={itemKeys[index] ?? index} style={{ width: '100%' }}>
             {itemSchema.enum ? (

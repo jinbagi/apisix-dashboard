@@ -62,16 +62,16 @@ export const SnapshotComparison = () => {
   };
   const details = (row: SnapshotDifference) => <Space orientation="vertical" size={4} style={{ width: '100%' }}>
     {row.paths.length > 0 && <Typography.Text type="secondary" style={{ overflowWrap: 'anywhere' }}>{row.paths.slice(0, 3).join(', ')}{row.paths.length > 3 ? ` +${row.paths.length - 3} more` : ''}</Typography.Text>}
-    {row.status === 'Not comparable' && <Typography.Text type="secondary">The other file omitted or skipped this collection.</Typography.Text>}
+    {row.status === 'Not comparable' && <Typography.Text type="secondary">Absence is not comparable: coverage is unknown, incomplete, excluded, or the scopes differ.</Typography.Text>}
     <Button size="small" onClick={() => setReview(row)} aria-label={`Review snapshot ${row.url}`}>Review JSON</Button>
   </Space>;
   return <>
     <Button onClick={() => setOpen(true)}>Compare snapshots</Button>
     <Modal title="Compare configuration snapshots" open={open} onCancel={close} width={1150} style={{ top: narrow ? 16 : 24 }}
-      styles={{ body: { maxHeight: narrow ? 'calc(100dvh - 250px)' : 'calc(100vh - 180px)', overflowY: 'auto' } }} destroyOnHidden
+      styles={{ container: { maxHeight: 'calc(100dvh - 48px)', display: 'flex', flexDirection: 'column' }, header: { flexShrink: 0 }, body: { minHeight: 0, overflowY: 'auto' }, footer: { flexShrink: 0 } }} destroyOnHidden
       footer={<Space wrap><Button disabled={!comparison} onClick={() => setDownloadOpen(true)}>Download comparison report</Button><Button onClick={close}>Close comparison</Button></Space>}>
       <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
-        <Typography.Paragraph style={{ marginBottom: 0 }}>Compare two exported JSON files locally. Nothing is sent to the Admin API or saved in browser storage. Added and Removed describe file contents; absence from a file does not prove deletion from a gateway.</Typography.Paragraph>
+        <Typography.Paragraph style={{ marginBottom: 0 }}>Compare two exported JSON files locally. Nothing is sent to the Admin API or saved in browser storage. Added and Removed describe file contents; coverage is declared by the files and does not verify the current gateway state.</Typography.Paragraph>
         <Row gutter={[12, 12]} style={{ width: '100%', margin: 0 }}>
           {(['before', 'after'] as const).map((side) => <Col xs={24} md={12} key={side} style={{ paddingLeft: 0 }}>
             <Card size="small" title={side === 'before' ? 'Before snapshot' : 'After snapshot'}>
@@ -81,6 +81,7 @@ export const SnapshotComparison = () => {
                 </Upload>
                 {files[side].name && <Typography.Text style={{ overflowWrap: 'anywhere' }}>{files[side].name}</Typography.Text>}
                 {files[side].data && <Typography.Text type="secondary">Version {files[side].data.version}{files[side].data.exportedAt ? ` · ${files[side].data.exportedAt}` : ''}</Typography.Text>}
+                {files[side].data?.declaredCoverage && <Typography.Text type="secondary">Declared export mode: {files[side].data.declaredCoverage.mode}</Typography.Text>}
                 {files[side].error && <Alert type="error" showIcon title={files[side].error} />}
                 {files[side].data?.warnings.map((warning) => <Alert key={warning} type="warning" title={warning} />)}
               </Space>
@@ -89,11 +90,12 @@ export const SnapshotComparison = () => {
         </Row>
         {comparison && <>
           <Space wrap>{statuses.map((item) => <Tag key={item} color={colors[item]}>{item}: {comparison.counts[item]}</Tag>)}</Space>
-          <Collapse size="small" items={[{ key: 'coverage', label: 'Collection coverage: omitted and skipped are not empty', children:
+          <Collapse size="small" items={[{ key: 'coverage', label: 'Collection coverage: only equal complete scopes establish absence', children:
             <Table size="small" pagination={false} rowKey="resourceType" dataSource={comparison.coverage} scroll={{ x: 480 }} columns={[
               { title: 'Resource', dataIndex: 'resourceType', render: (resource: keyof typeof RESOURCE_LABELS) => RESOURCE_LABELS[resource] },
               { title: 'Before', key: 'before', render: (_, row) => `${row.before} (${row.beforeCount})` },
               { title: 'After', key: 'after', render: (_, row) => `${row.after} (${row.afterCount})` },
+              { title: 'Absence comparison', key: 'scope', render: (_, row) => <Space orientation="vertical" size={2}><Tag color={row.comparable ? 'green' : 'gold'}>{row.comparable ? 'Same complete scope' : 'Not comparable'}</Tag><Typography.Text>{row.beforeScope?.type ?? 'legacy'} → {row.afterScope?.type ?? 'legacy'}</Typography.Text><details><summary>Inspect scope and owners</summary><pre aria-label={`Coverage scope ${row.resourceType}`} style={{ maxHeight: 200, maxWidth: 420, overflow: 'auto', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify({ before: { scope: row.beforeScope ?? 'unknown', owners: row.beforeOwners }, after: { scope: row.afterScope ?? 'unknown', owners: row.afterOwners } }, null, 2)}</pre></details></Space> },
             ]} /> }]} />
           <Space wrap style={{ width: '100%' }}>
             <Input aria-label="Search snapshot differences" placeholder="Search resource paths or changed fields" value={search} onChange={(event) => setSearch(event.target.value)} allowClear style={{ width: narrow ? '100%' : 320, maxWidth: '100%' }} />

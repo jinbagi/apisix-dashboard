@@ -147,7 +147,7 @@ export const PluginMetadata = () => {
         <Alert
           type="warning"
           showIcon
-          message="Plugin metadata catalog is unavailable"
+          title="Plugin metadata catalog is unavailable"
           description="The page remains available, but metadata cannot be listed or added until APISIX returns the plugin schema catalog."
           action={
             <Button size="small" onClick={getMetadataListReq.refetch}>

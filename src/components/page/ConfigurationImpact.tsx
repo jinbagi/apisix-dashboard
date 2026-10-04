@@ -38,7 +38,7 @@ export const ConfigurationImpact = ({ api, disabled = false }: { api: string; di
     <Button size="small" disabled={disabled} onClick={() => { setOpen(true); void refresh(); }}>Analyze impact</Button>
     <Modal title="Configuration impact" open={open} width={1000} onCancel={() => setOpen(false)}
       footer={<Button onClick={() => setOpen(false)}>Close impact</Button>} destroyOnHidden>
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+      <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
         <Typography.Text code>{api}</Typography.Text>
         <Typography.Paragraph style={{ margin: 0 }}>
           Potential impact through saved service_id, upstream_id and plugin_config_id references.
@@ -46,7 +46,7 @@ export const ConfigurationImpact = ({ api, disabled = false }: { api: string; di
           Plugin overrides can reduce the actual impact. Reads are not an atomic snapshot.
         </Typography.Paragraph>
         <Button loading={loading} onClick={() => void refresh()}>Refresh impact</Button>
-        {error && <Alert type="error" showIcon message="Impact could not be verified" description={error} />}
+        {error && <Alert type="error" showIcon title="Impact could not be verified" description={error} />}
         {data && <>
           <Space wrap><Tag color="blue">{data.affected} potentially affected route(s)</Tag>
             <Typography.Text type="secondary">Read at {data.readAt}</Typography.Text></Space>

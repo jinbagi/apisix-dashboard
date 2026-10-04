@@ -81,7 +81,7 @@ export const MatchField = ({ single, multiple, label, pluralLabel, placeholder, 
           onChange={(event) => changeMode(event.target.value)}
         />
       </div>
-      {conflict && <Alert type="warning" showIcon message={`Both ${single} and ${multiple} are set. Clear one below to resolve the conflict.`} style={{ marginBottom: 8 }} />}
+      {conflict && <Alert type="warning" showIcon title={`Both ${single} and ${multiple} are set. Clear one below to resolve the conflict.`} style={{ marginBottom: 8 }} />}
       {(!many || conflict) && <FormItemTextInput control={control} name={single} aria-label={label} aria-required={required} placeholder={placeholder} description={help} required={required} />}
       {(many || conflict) && <FormItemTagsInput control={control} name={multiple} aria-label={pluralLabel} aria-required={required} placeholder={`${placeholder} — press Enter to add`} description={help} required={required} splitChars={[',']} />}
       <Modal title={`Keep one ${label.toLowerCase()}`} open={chooseOne} onCancel={() => setChooseOne(false)} onOk={() => selectSingle(keptValue)} okText="Keep selected value" okButtonProps={{ disabled: !keptValue }}>

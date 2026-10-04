@@ -46,7 +46,7 @@ export const ReverseReferences = ({ resourceType, resourceId }: ReverseReference
         <Alert
           type="error"
           showIcon
-          message="References could not be verified"
+          title="References could not be verified"
           description="The dependency list is unavailable. Do not assume this resource is unused."
           action={
             <Button type="link" onClick={() => void refetch()}>

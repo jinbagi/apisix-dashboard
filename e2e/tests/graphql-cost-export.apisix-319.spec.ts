@@ -88,6 +88,7 @@ test('exports same-named decorations from every service and handles empty servic
   const decorationReads: string[] = [];
   await mockAdmin(page, (path) => {
     if (path === '/services') return { body: { list: services.map((value) => ({ value })), total: services.length } };
+    if (path === '/services/service-empty') return { body: { value: { id: 'service-empty' }, key: '/apisix/services/service-empty' } };
     if (path.endsWith('/graphql_cost_decorations')) {
       const serviceId = path.split('/')[2];
       decorationReads.push(serviceId);

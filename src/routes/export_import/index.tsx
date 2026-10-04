@@ -49,6 +49,7 @@ import {
   type ResourceKey,
   validateConfiguration,
 } from '@/apis/export-import';
+import { InvalidExportCollection } from '@/apis/export-snapshot';
 import { type ImportPreviewItem,previewImport, verifyImportPreview } from '@/apis/import-preview';
 import { EnvironmentIdMapping } from '@/components/page/EnvironmentIdMapping';
 import { ImportChangePreview } from '@/components/page/ImportChangePreview';
@@ -63,22 +64,24 @@ import IconUpload from '~icons/material-symbols/upload';
 
 function ExportSection() {
   const [loading, setLoading] = useState(false);
+  const [exportNotice, setExportNotice] = useState<{ type: 'warning' | 'error'; text: string }>();
   const [validating, setValidating] = useState(false);
   const [validation, setValidation] =
     useState<ConfigValidationResult | null>(null);
 
   const handleExport = async () => {
-    setLoading(true);
+    setLoading(true); setExportNotice(undefined);
     try {
       const data = await exportAllResources();
       downloadJson(data, `apisix-export-${new Date().toISOString().slice(0, 10)}.json`);
       if (data.skippedResources?.length) {
+        setExportNotice({ type: 'warning', text: `Partial export downloaded. Unread collections: ${data.skippedResources.join(', ')}. The file marks these scopes incomplete.` });
         message.warning(`Exported with ${data.skippedResources.length} skipped: ${data.skippedResources.join(', ')}`);
       } else {
         message.success('Configuration exported successfully');
       }
-    } catch {
-      message.error('Failed to export configuration');
+    } catch (cause) {
+      setExportNotice({ type: 'error', text: cause instanceof InvalidExportCollection ? cause.message : 'Failed to export configuration. No file was exported. Refresh and retry.' });
     } finally {
       setLoading(false);
     }
@@ -133,6 +136,7 @@ function ExportSection() {
           Validate Current Configuration
         </Button>
       </Space>
+      {exportNotice && <Alert style={{ marginTop: 16 }} type={exportNotice.type} showIcon title={exportNotice.type === 'error' ? 'Export blocked' : 'Incomplete export'} description={exportNotice.text} />}
       {validation && (
         <ValidationResult result={validation} />
       )}
@@ -327,12 +331,12 @@ function ImportSection() {
         )}
       </Upload.Dragger>
 
-      {fileError && <Alert role="alert" type="error" showIcon message={fileError} style={{ marginBottom: 16 }} />}
+      {fileError && <Alert role="alert" type="error" showIcon title={fileError} style={{ marginBottom: 16 }} />}
       {fileData && (
         <>
           <Alert
             type="info"
-            message={`Exported at ${fileData.exportedAt} (format v${fileData.version})`}
+            title={`Exported at ${fileData.exportedAt} (format v${fileData.version})`}
             style={{ marginBottom: 16 }}
           />
 
@@ -404,7 +408,7 @@ function ImportSection() {
           <Modal open={preview !== null} title="Confirm Import" width={1100} okText="Import"
             style={{ top: 24 }} styles={{ body: { maxHeight: 'calc(100dvh - 160px)', overflowY: 'auto' } }}
             onCancel={() => setPreview(null)} onOk={applyImport} confirmLoading={importing}
-            closable={!importing} maskClosable={!importing} keyboard={!importing}
+            closable={!importing} mask={{ closable: !importing }} keyboard={!importing}
             cancelButtonProps={{ disabled: importing }} destroyOnHidden
             okButtonProps={{ disabled: !selectedItems.length || missingDependencies.length > 0 }}>
             {preview && <>
@@ -417,7 +421,7 @@ function ImportSection() {
                   message.success('Selected drafts added to Change sets. Nothing was imported.'); setPreview(null);
                 } catch (error) { message.error(error instanceof Error ? error.message : 'Could not stage selected changes.'); }
               }}>Stage selected</Button>
-              {missingDependencies.length > 0 && <Alert type="error" showIcon message="Select required new dependencies"
+              {missingDependencies.length > 0 && <Alert type="error" showIcon title="Select required new dependencies"
                 description={missingDependencies.join(', ')} />}
               <ImportChangePreview items={preview.items} selectedKeys={selectedItems} onSelectionChange={setSelectedItems} disabled={importing} />
             </>}
@@ -434,7 +438,7 @@ function ValidationResult({ result }: { result: ConfigValidationResult }) {
       <Alert
         type="success"
         showIcon
-        message={result.warnings?.length ? 'Configuration checks passed' : 'APISIX configuration validation passed'}
+        title={result.warnings?.length ? 'Configuration checks passed' : 'APISIX configuration validation passed'}
         description={result.warnings?.join(' ')}
         style={{ marginTop: 16 }}
       />
@@ -445,7 +449,7 @@ function ValidationResult({ result }: { result: ConfigValidationResult }) {
     <Alert
       type="error"
       showIcon
-      message={`APISIX configuration validation failed (${result.errors.length})`}
+      title={`APISIX configuration validation failed (${result.errors.length})`}
       description={
         <ul style={{ margin: 0, paddingLeft: 20 }}>
           {result.errors.map((error, index) => (

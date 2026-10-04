@@ -37,7 +37,7 @@ function RouteComponent() {
     <PageHeader showBackBtn title="GraphQL Cost Decoration" desc={decorationId}
       extra={<Link to="/services/detail/$id/graphql_cost_decorations" params={{ id }}>All Cost Decorations</Link>} />
     {isLoading && <Skeleton active />}
-    {error && <Alert type="error" message="Could not load cost decoration" description={error.message} />}
+    {error && <Alert type="error" title="Could not load cost decoration" description={error.message} />}
     {data && <FormTOCBox><GraphqlCostDecorationEditor key={`${id}/${decorationId}`} serviceId={id} initialData={data.value} /></FormTOCBox>}
   </>;
 }
