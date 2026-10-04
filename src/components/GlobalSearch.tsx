@@ -34,6 +34,7 @@ const QUICK_ACTIONS = [
   { key: 'services', name: 'Browse Services', context: 'Shared traffic configuration', detailPath: '/services', group: 'Navigate' },
   { key: 'upstreams', name: 'Browse Upstreams', context: 'Backend targets and load balancing', detailPath: '/upstreams', group: 'Navigate' },
   { key: 'topology', name: 'Open Topology', context: 'Explore resource relationships', detailPath: '/topology', group: 'Navigate' },
+  { key: 'plugin-inventory', name: 'Open Plugin inventory', context: 'Find and compare configured plugin instances', detailPath: '/plugin_inventory', group: 'Navigate' },
   { key: 'console', name: 'Open API Console', context: 'Inspect Admin API requests', detailPath: '/raw_api', group: 'Navigate' },
   { key: 'new-route', name: 'Create Route', context: 'Open a new route draft', detailPath: '/routes/add', group: 'Create' },
   { key: 'new-service', name: 'Create Service', context: 'Open a new service draft', detailPath: '/services/add', group: 'Create' },

@@ -69,7 +69,7 @@
 .snapshotDetail {
   margin-top: 5px;
   overflow: hidden;
-  color: var(--ant-color-text-tertiary);
+  color: var(--ant-color-text-secondary);
   font-size: var(--app-font-size-sm);
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -45,6 +45,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   export_import: 'Import / Export',
   change_sets: 'Change sets',
   raw_api: 'API Console',
+  plugin_inventory: 'Plugin inventory',
   services: 'Services',
   routes: 'Routes',
   stream_routes: 'Stream Routes',

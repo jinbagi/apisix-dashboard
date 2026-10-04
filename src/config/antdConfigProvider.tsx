@@ -74,6 +74,9 @@ export const AntdConfigProvider = (props: PropsWithChildren) => {
           borderRadiusLG: 12,
         },
         components: {
+          Typography: {
+            colorTextDescription: 'var(--ant-color-text-secondary)',
+          },
           Button: {
             fontWeight: APP_FONT_WEIGHT_STRONG,
             primaryShadow: 'none',

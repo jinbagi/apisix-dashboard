@@ -49,6 +49,7 @@ async function stage(page: Page) {
   await page.getByRole('dialog', { name: 'Confirm Import', exact: true }).getByRole('button', { name: 'Stage selected', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Change sets', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Change sets', exact: true })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Change sets', exact: true })).toHaveClass(/ant-menu-item-selected/);
 }
 async function apply(page: Page, count: number) {
   await page.getByRole('button', { name: `Apply ${count} changes`, exact: true }).click();
@@ -128,6 +129,10 @@ test('re-preview continues untouched items after a failed prerequisite without r
 
 test('staged drafts survive navigation and retain browser unload protection outside the workspace', async ({ page }) => {
   const controls = await setup(page); await stage(page);
+  await page.getByRole('menuitem', { name: 'Plugin inventory', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Plugin inventory', exact: true })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Plugin inventory', exact: true })).toHaveClass(/ant-menu-item-selected/);
+  await expect(page.getByRole('menuitem', { name: 'Change sets', exact: true })).not.toHaveClass(/ant-menu-item-selected/);
   await page.getByRole('menuitem', { name: 'Import / Export', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Import / Export', exact: true })).toBeVisible();
   expect(await page.evaluate(() => {
@@ -135,5 +140,7 @@ test('staged drafts survive navigation and retain browser unload protection outs
     window.dispatchEvent(event); return event.defaultPrevented;
   })).toBe(true);
   await page.getByRole('menuitem', { name: 'Change sets', exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: 'Change sets', exact: true })).toHaveClass(/ant-menu-item-selected/);
+  await expect(page.getByRole('menuitem', { name: 'Plugin inventory', exact: true })).not.toHaveClass(/ant-menu-item-selected/);
   await expect(page.getByText('3 staged · 0 verified', { exact: true })).toBeVisible(); expect(controls.writes).toEqual([]);
 });

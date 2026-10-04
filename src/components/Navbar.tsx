@@ -96,7 +96,7 @@ export const Navbar = () => {
   }, [setCollapsed]);
 
   const selectedKey =
-    ['/dashboard', '/topology', '/export_import', '/raw_api', '/change_sets']
+    ['/dashboard', '/topology', '/export_import', '/raw_api', '/change_sets', '/plugin_inventory']
       .find((p) => currentPath.startsWith(p))
     ?? navRoutes.find((r) => currentPath.startsWith(r.to))?.to
     ?? '';
@@ -240,6 +240,12 @@ export const Navbar = () => {
                 icon: <IconExportNotes />,
                 label: 'Import / Export',
                 onClick: () => navigate({ to: '/export_import' as Parameters<typeof navigate>[0]['to'] }),
+              },
+              {
+                key: '/plugin_inventory',
+                icon: <IconExtension />,
+                label: 'Plugin inventory',
+                onClick: () => navigate({ to: '/plugin_inventory' as Parameters<typeof navigate>[0]['to'] }),
               },
               {
                 key: '/raw_api',

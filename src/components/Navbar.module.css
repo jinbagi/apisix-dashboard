@@ -118,7 +118,7 @@
 
 .menu :global(.ant-menu-item-group-title) {
   padding: 16px 20px 7px !important;
-  color: var(--ant-color-text-quaternary) !important;
+  color: var(--ant-color-text-secondary) !important;
   font-size: var(--app-font-size-2xs) !important;
   font-weight: var(--app-font-weight-strong) !important;
   letter-spacing: 0;
