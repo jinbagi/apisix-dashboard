@@ -16,7 +16,7 @@
  */
 import type { ProColumns } from '@ant-design/pro-components';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Button, Space, Tag, Typography } from 'antd';
+import { Button, Space, Tag, Tooltip, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
 import { getRouteListQueryOptions, useRouteList } from '@/apis/hooks';
@@ -246,22 +246,26 @@ export const RouteList = (props: RouteListProps) => {
           const upstreamId = record.value.upstream_id;
           if (serviceId) {
             return (
-              <Space size={6}>
+              <div className="resource-table-target">
                 <Tag color="green">Service</Tag>
-                <Link to="/services/detail/$id" params={{ id: serviceId }}>
-                  {serviceId}
-                </Link>
-              </Space>
+                <Tooltip title={serviceId} trigger={['hover', 'focus']}>
+                  <Link className="resource-table-target-link" to="/services/detail/$id" params={{ id: serviceId }}>
+                    {serviceId}
+                  </Link>
+                </Tooltip>
+              </div>
             );
           }
           if (upstreamId) {
             return (
-              <Space size={6}>
+              <div className="resource-table-target">
                 <Tag color="purple">Upstream</Tag>
-                <Link to="/upstreams/detail/$id" params={{ id: upstreamId }}>
-                  {upstreamId}
-                </Link>
-              </Space>
+                <Tooltip title={upstreamId} trigger={['hover', 'focus']}>
+                  <Link className="resource-table-target-link" to="/upstreams/detail/$id" params={{ id: upstreamId }}>
+                    {upstreamId}
+                  </Link>
+                </Tooltip>
+              </div>
             );
           }
           if (record.value.upstream) {

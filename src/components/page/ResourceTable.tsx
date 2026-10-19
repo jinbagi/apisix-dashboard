@@ -44,6 +44,7 @@ import {
 import { CopyableID } from '@/components/CopyableID';
 import { SavedTableViews, type TableViewSnapshot } from '@/components/page/SavedTableViews';
 import { TableColumnLayout } from '@/components/page/TableColumnLayout';
+import { TableEllipsisText } from '@/components/TableEllipsisText';
 import type { PageSearchType } from '@/types/schema/pageSearch';
 import { orderTableColumns, type TablePresentation as View, tablePresentationSchema } from '@/utils/tablePresentation';
 import IconChevronRight from '~icons/material-symbols/chevron-right';
@@ -55,6 +56,7 @@ type ResourceRecord = {
     id?: string | number;
     name?: string;
     username?: string;
+    desc?: string;
     create_time?: number;
     update_time?: number;
   };
@@ -281,6 +283,11 @@ export function ResourceTable<T extends ResourceRecord>({
             </div>
           );
         };
+      }
+      if (key === 'desc') {
+        next.render = (_, record) => record.value.desc
+          ? <TableEllipsisText value={record.value.desc} keyboardAccessible />
+          : <span className="resource-table-muted">—</span>;
       }
       if (key === 'create_time' || key === 'update_time') {
         next.valueType = 'text';
