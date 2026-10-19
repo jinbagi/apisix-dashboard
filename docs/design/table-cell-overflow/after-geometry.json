@@ -1,0 +1,60 @@
+{
+  "viewportWidth": 390,
+  "cases": [
+    {
+      "test": "table-cell-overflow-consum-5a46c-ls-at-minimum-column-widths-chromium",
+      "errors": [],
+      "rowHeight": 220.96875
+    },
+    {
+      "test": "table-cell-overflow-consum-df888-ls-at-minimum-column-widths-chromium",
+      "errors": [],
+      "rowHeight": 231.171875
+    },
+    {
+      "test": "table-cell-overflow-global-90ef7-ls-at-minimum-column-widths-chromium",
+      "errors": [],
+      "rowHeight": 129.6875
+    },
+    {
+      "test": "table-cell-overflow-plugin-d85f0-ls-at-minimum-column-widths-chromium",
+      "errors": [],
+      "rowHeight": 181.46875
+    },
+    {
+      "test": "table-cell-overflow-protos-3f5d5-ls-at-minimum-column-widths-chromium",
+      "errors": [],
+      "rowHeight": 231.171875
+    },
+    {
+      "test": "table-cell-overflow-routes-26578-ls-at-minimum-column-widths-chromium",
+      "errors": [],
+      "rowHeight": 181.46875
+    },
+    {
+      "test": "table-cell-overflow-secret-35059-ls-at-minimum-column-widths-chromium",
+      "errors": [],
+      "rowHeight": 129.6875
+    },
+    {
+      "test": "table-cell-overflow-servic-8c73e-ls-at-minimum-column-widths-chromium",
+      "errors": [],
+      "rowHeight": 220.96875
+    },
+    {
+      "test": "table-cell-overflow-ssls-l-d3fe5-ls-at-minimum-column-widths-chromium",
+      "errors": [],
+      "rowHeight": 139.28125
+    },
+    {
+      "test": "table-cell-overflow-stream-39762-ls-at-minimum-column-widths-chromium",
+      "errors": [],
+      "rowHeight": 220.96875
+    },
+    {
+      "test": "table-cell-overflow-upstre-39e02-ls-at-minimum-column-widths-chromium",
+      "errors": [],
+      "rowHeight": 181.46875
+    }
+  ]
+}

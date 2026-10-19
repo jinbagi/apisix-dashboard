@@ -22,6 +22,7 @@ type TableEllipsisTextProps = {
   displayValue?: string;
   code?: boolean;
   strong?: boolean;
+  keyboardAccessible?: boolean;
 };
 
 export const TableEllipsisText = ({
@@ -29,6 +30,7 @@ export const TableEllipsisText = ({
   displayValue,
   code,
   strong,
+  keyboardAccessible = false,
 }: TableEllipsisTextProps) => {
   const textRef = useRef<HTMLSpanElement>(null);
   const [truncated, setTruncated] = useState(false);
@@ -42,12 +44,13 @@ export const TableEllipsisText = ({
   };
 
   return (
-    <Tooltip title={truncated ? value : undefined}>
+    <Tooltip title={keyboardAccessible || truncated ? value : undefined} trigger={keyboardAccessible ? ['hover', 'focus'] : ['hover']}>
       <Typography.Text
         ref={textRef}
         code={code}
         strong={strong}
         ellipsis
+        tabIndex={keyboardAccessible ? 0 : undefined}
         onMouseEnter={checkTruncation}
         onFocus={checkTruncation}
         style={{ display: 'block', maxWidth: '100%', fontSize: code ? 12 : undefined }}

@@ -1,0 +1,58 @@
+[
+  {
+    "column": "Plugins",
+    "text": "prometheus",
+    "kind": "painted text",
+    "left": 1331.59375,
+    "right": 1393.765625
+  },
+  {
+    "column": "Plugins",
+    "text": "response-rewrite",
+    "kind": "painted text",
+    "left": 1412.765625,
+    "right": 1502.046875
+  },
+  {
+    "column": "Plugins",
+    "text": "+1",
+    "kind": "painted text",
+    "left": 1518.046875,
+    "right": 1530.140625
+  },
+  {
+    "column": "Plugins",
+    "text": "Show all 4 plugins",
+    "kind": "control",
+    "left": 1513.046875,
+    "right": 1535.140625
+  },
+  {
+    "column": "Labels",
+    "text": "production-regionregionregionregionregionregionregionregionregionregionregionregionregionregionregio",
+    "kind": "painted text",
+    "left": 1647.828125,
+    "right": 2366.59375
+  },
+  {
+    "column": "Labels",
+    "text": "production-regionregionregionregionregionregionregionregionregionregionregionregionregionregionregio",
+    "kind": "painted text",
+    "left": 1615.484375,
+    "right": 2334.25
+  },
+  {
+    "column": "Labels",
+    "text": "+",
+    "kind": "painted text",
+    "left": 2354.25,
+    "right": 2361.53125
+  },
+  {
+    "column": "Labels",
+    "text": "1",
+    "kind": "painted text",
+    "left": 2361.53125,
+    "right": 2366.015625
+  }
+]

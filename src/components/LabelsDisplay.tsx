@@ -16,6 +16,8 @@
  */
 import { Tag, Tooltip } from 'antd';
 
+import { TableValueTag } from '@/components/TableValueTag';
+
 type LabelsDisplayProps = {
   labels?: Record<string, string>;
   max?: number;
@@ -30,11 +32,9 @@ export const LabelsDisplay = ({ labels, max = 2 }: LabelsDisplayProps) => {
   const remaining = entries.length - max;
 
   return (
-    <span style={{ display: 'inline-flex', gap: 4, flexWrap: 'wrap' }}>
+    <span style={{ display: 'inline-flex', gap: 4, flexWrap: 'wrap', maxWidth: '100%' }}>
       {visible.map(([k, v]) => (
-        <Tag key={k} style={{ margin: 0, fontSize: 'var(--app-font-size-xs)' }}>
-          {k}={v}
-        </Tag>
+        <TableValueTag key={k} value={`${k}=${v}`} style={{ margin: 0, fontSize: 'var(--app-font-size-xs)' }} />
       ))}
       {remaining > 0 && (
         <Tooltip

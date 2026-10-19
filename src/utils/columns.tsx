@@ -17,6 +17,8 @@
 import { Button, Popover, Tag } from 'antd';
 import dayjs from 'dayjs';
 
+import { TableValueTag } from '@/components/TableValueTag';
+
 const MAX_VISIBLE_PLUGINS = 3;
 
 type PluginListItem = {
@@ -54,11 +56,9 @@ export const renderPluginCount = (
   const remaining = names.length - MAX_VISIBLE_PLUGINS;
 
   return (
-    <span style={{ display: 'inline-flex', gap: 3, maxWidth: '100%' }}>
+    <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 3, maxWidth: '100%' }}>
       {visible.map((n) => (
-        <Tag key={n} style={{ margin: 0, fontSize: 'var(--app-font-size-xs)' }}>
-          {n}
-        </Tag>
+        <TableValueTag key={n} value={n} style={{ margin: 0, fontSize: 'var(--app-font-size-xs)' }} />
       ))}
       {remaining > 0 && (
         <Popover

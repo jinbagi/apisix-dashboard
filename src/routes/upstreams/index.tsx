@@ -31,6 +31,7 @@ import { ResourceSortSelect } from '@/components/page/ResourceSortSelect';
 import { ResourceTable } from '@/components/page/ResourceTable';
 import { SearchInput } from '@/components/page/SearchInput';
 import { ToAddPageBtn } from '@/components/page/ToAddPageBtn';
+import { TableValueTag } from '@/components/TableValueTag';
 import { AntdConfigProvider } from '@/config/antdConfigProvider';
 import { API_UPSTREAMS } from '@/config/constant';
 import { queryClient } from '@/config/global';
@@ -118,7 +119,7 @@ function RouteComponent() {
           return (
             <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 3 }}>
               {visible.map((h) => (
-                <Tag key={h} style={{ margin: 0, fontSize: 'var(--app-font-size-xs)', fontFamily: 'var(--app-font-monospace)' }}>{h}</Tag>
+                <TableValueTag key={h} value={h} style={{ margin: 0, fontSize: 'var(--app-font-size-xs)', fontFamily: 'var(--app-font-monospace)' }} />
               ))}
               {remaining > 0 && (
                 <Tooltip title={hosts.slice(2).join(', ')}>
