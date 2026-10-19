@@ -8,6 +8,7 @@ The correction constrains cell children and Space items, permits narrow status/d
 
 - Full ESLint, TypeScript (`tsc -b`) and production build passed.
 - `table-cell-overflow.spec.ts` and `table-experience.spec.ts`: **58 passed in 2.7 minutes**, one worker, zero retries.
+- Credentials and Service GraphQL cost-decoration tables passed **two additional cases** at minimum widths, including keyboard opening/canceling Delete without writes.
 - Eleven resource lists were checked at 390 px with every optional column enabled and minimum column widths. Painted text and interactive controls are checked against each cell, rather than page overflow alone. Intentional ellipsis is allowed, with separate full-value keyboard assertions.
 - Routes additionally covers both themes at 390/1440/1920 px, associated tooltip identity, ID clipboard contents, full plugin lists and row expansion. Long Description focus is checked for Consumers, Consumer Groups and Plugin Configs.
 - The new fixtures intercept Admin API reads and abort unexpected writes and off-origin requests. They are presentation/contract checks, not live resource mutation coverage.

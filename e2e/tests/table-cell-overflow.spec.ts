@@ -34,6 +34,7 @@ const value = {
   plugins: Object.fromEntries(pluginNames.map(name => [name, {}])),
   labels: { environment: longLabel, owner: longLabel, cluster: longLabel },
   nodes: { [longHost]: 1, ['backup-' + longHost]: 1, 'spare.example.test:9443': 1 },
+  field_path: 'Query.' + 'nestedField.'.repeat(6) + 'name', add_value: 2, mul_value: 3, mul_arguments: ['firstArgument', 'secondArgument'],
   content: 'syntax = "proto3";\nmessage ' + 'LongMessage'.repeat(20) + ' {}',
   validity_end: 2000000000, create_time: 1790982000, update_time: 1790982060,
 };
@@ -52,7 +53,8 @@ async function setup(page: Page, baseURL: string, theme: 'light' | 'dark') {
     if (!url.pathname.startsWith('/apisix/admin/')) return route.continue();
     if (request.method() !== 'GET') { unexpected.push(request.method() + url.pathname); return route.abort(); }
     const path = url.pathname.replace('/apisix/admin/', '');
-    if (collections.includes(path)) return route.fulfill({ json: { list: [{ key: `/apisix/${path}/${longId}`, value: { ...value, ...(path === 'ssls' ? { type: 'server' } : {}) } }], total: 1 } });
+    if (collections.includes(path) || path === `consumers/${longName}/credentials` || path === `services/${longId}/graphql_cost_decorations`) return route.fulfill({ json: { list: [{ key: `/apisix/${path}/${longId}`, value: { ...value, ...(path === 'ssls' ? { type: 'server' } : {}) } }], total: 1 } });
+    if (path === `consumers/${longName}` || path === `services/${longId}`) return route.fulfill({ json: { value } });
     if (path === 'plugins/list') return route.fulfill({ json: [] });
     return route.fulfill({ json: { list: [], total: 0 } });
   });
@@ -174,5 +176,21 @@ for (const path of ['consumers', 'consumer_groups', 'plugin_configs']) test(`${p
   await expect(page.locator('.resource-table tbody tr.ant-table-row')).toHaveCount(1);
   await configure(page, true);
   await expectFullValue(page, page.locator('.resource-table').getByText(value.desc, { exact: true }), value.desc);
+  expect(unexpected).toEqual([]);
+});
+
+for (const path of [`consumers/detail/${longName}/credentials`, `services/detail/${longId}/graphql_cost_decorations`]) test(`${path.split('/')[0]} child table keeps cell contents and Delete within minimum widths`, async ({ page, baseURL }) => {
+  await page.setViewportSize({ width: 390, height: 1000 });
+  const unexpected = await setup(page, baseURL!, 'light');
+  await page.goto(baseURL! + path);
+  await expect(page.locator('.resource-table tbody tr.ant-table-row')).toHaveCount(1);
+  await configure(page, true);
+  expect(await cellViolations(page)).toEqual([]);
+  const remove = page.locator('.resource-table').getByRole('button', { name: 'Delete', exact: true });
+  await remove.focus(); await remove.press('Enter');
+  const dialog = page.getByRole('dialog', { name: /^Delete / });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(dialog).toBeHidden();
   expect(unexpected).toEqual([]);
 });
