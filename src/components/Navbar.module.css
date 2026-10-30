@@ -12,6 +12,12 @@
   box-shadow: 6px 0 24px rgba(15, 23, 42, 0.035);
 }
 
+.sidebar :global(.ant-layout-sider-children) {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
 .brand {
   position: relative;
   display: flex;
@@ -81,6 +87,7 @@
 
 .menuScroller {
   flex: 1;
+  min-height: 0;
   overflow: auto;
   padding-block: 10px 18px;
   scrollbar-color: transparent transparent;
