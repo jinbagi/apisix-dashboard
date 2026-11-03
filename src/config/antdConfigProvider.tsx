@@ -16,7 +16,7 @@
  */
 import { ConfigProvider, Empty, theme } from 'antd';
 import enUS from 'antd/locale/en_US';
-import { type PropsWithChildren, useEffect } from 'react';
+import { type PropsWithChildren, useEffect, useSyncExternalStore } from 'react';
 
 import { useThemeMode } from '@/stores/global';
 
@@ -28,9 +28,21 @@ import {
   APP_FONT_WEIGHT_STRONG,
 } from './typography';
 
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
+const subscribeReducedMotion = (onChange: () => void) => {
+  const query = window.matchMedia(REDUCED_MOTION_QUERY);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+};
+
+const useReducedMotion = () =>
+  useSyncExternalStore(subscribeReducedMotion, () => window.matchMedia(REDUCED_MOTION_QUERY).matches);
+
 export const AntdConfigProvider = (props: PropsWithChildren) => {
   const { children } = props;
   const { mode } = useThemeMode();
+  const reducedMotion = useReducedMotion();
 
   const isDark = mode === 'dark';
 
@@ -72,6 +84,7 @@ export const AntdConfigProvider = (props: PropsWithChildren) => {
           borderRadiusSM: 6,
           borderRadius: 8,
           borderRadiusLG: 12,
+          motion: !reducedMotion,
         },
         components: {
           Typography: {
